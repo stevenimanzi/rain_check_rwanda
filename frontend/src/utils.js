@@ -32,7 +32,9 @@ export const CHART_COLORS = {
   rain: '#6d5ef0',
 }
 
-export const METRICS = {
-  drought: 'Dry months (satellite)',
-  risk: 'Basis risk',
-}
+export const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+export const monthShort = (month) => MONTH_NAMES[month - 1].slice(0, 3)

@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import DistrictDetail from '../components/DistrictDetail'
 import DistrictMap from '../components/DistrictMap'
-import { METRICS } from '../utils'
+
+const METRICS = {
+  history: 'Long-term drought risk',
+  drought: 'Dry months, survey period',
+  risk: 'Basis risk',
+}
 
 export default function MapPage({ districts, selectedId, onSelect }) {
-  const [metric, setMetric] = useState('drought')
+  const [metric, setMetric] = useState('history')
 
   return (
     <>

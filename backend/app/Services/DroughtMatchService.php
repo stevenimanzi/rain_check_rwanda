@@ -14,23 +14,57 @@ class DroughtMatchService
     public function analyse(District $district): array
     {
         $rainfall = $district->rainfallRecords;
-        $totals = $this->monthTotals($rainfall);
+        $valuesByMonth = $this->monthTotals($rainfall);
         $byMonth = $rainfall->keyBy(fn ($record) => $record->year * 100 + $record->month);
 
         $months = $district->droughtReports
             ->sortBy(fn (DroughtReport $report) => $report->year * 100 + $report->month)
-            ->map(fn (DroughtReport $report) => $this->analyseMonth($report, $byMonth, $totals))
+            ->map(fn (DroughtReport $report) => $this->analyseMonth($report, $byMonth, $valuesByMonth))
             ->filter()
             ->values();
 
         $series = $this->rainfallSeries($rainfall);
+        $history = $this->history($series);
 
         return [
             'months' => $months,
             'rainfall' => $series,
+            'history' => $history,
             'summary' => $this->summarise($months) + [
                 'satellite_drought_months' => $this->droughtMonthsInSurveyWindow($series),
+                'avg_dry_months_per_year' => $history['avg_dry_months_per_year'],
             ],
+        ];
+    }
+
+    /**
+     * Long-term drought record: how often, in which months and in which years the satellite saw a dry month.
+     */
+    public function history(Collection $series): array
+    {
+        $judged = $series->where('judged', true);
+        $dry = $judged->where('satellite_drought', true);
+        $years = $series->pluck('year')->unique();
+
+        return [
+            'years_covered' => $years->count(),
+            'dry_months' => $dry->count(),
+            'dry_share_pct' => $judged->count() ? round($dry->count() / $judged->count() * 100, 1) : null,
+            'avg_dry_months_per_year' => $years->count() ? round($dry->count() / $years->count(), 1) : null,
+            'by_calendar_month' => collect(range(1, 12))->map(function (int $month) use ($judged) {
+                $inMonth = $judged->where('month', $month);
+
+                return [
+                    'month' => $month,
+                    'dry_pct' => $inMonth->count()
+                        ? round($inMonth->where('satellite_drought', true)->count() / $inMonth->count() * 100, 1)
+                        : null,
+                ];
+            })->values(),
+            'by_year' => $years->sort()->map(fn ($year) => [
+                'year' => $year,
+                'dry_months' => $dry->where('year', $year)->count(),
+            ])->values(),
         ];
     }
 
@@ -39,12 +73,12 @@ class DroughtMatchService
      */
     public function rainfallSeries(Collection $rainfall): Collection
     {
-        $totals = $this->monthTotals($rainfall);
+        $valuesByMonth = $this->monthTotals($rainfall);
 
         return $rainfall
             ->sortBy(fn ($record) => $record->year * 100 + $record->month)
-            ->map(function ($record) use ($totals) {
-                $baseline = $this->normalRainfall($totals, $record->month, $record->rainfall_mm);
+            ->map(function ($record) use ($valuesByMonth) {
+                $baseline = $this->normalRainfall($valuesByMonth, $record->month, $record->rainfall_mm);
 
                 if (! $baseline) {
                     return null;
@@ -81,31 +115,38 @@ class DroughtMatchService
     }
 
     /**
-     * Rainfall added up for each calendar month across all years, so "normal" is a quick lookup.
+     * Rainfall of every year for each calendar month, so "normal" is a quick lookup.
      */
     private function monthTotals(Collection $rainfall): Collection
     {
-        return $rainfall->groupBy('month')->map(fn (Collection $records) => [
-            'sum' => $records->sum('rainfall_mm'),
-            'count' => $records->count(),
-        ]);
+        return $rainfall->groupBy('month')->map(
+            fn (Collection $records) => $records->pluck('rainfall_mm')->map(fn ($mm) => (float) $mm)->values()
+        );
     }
 
     /**
-     * Average rainfall for this calendar month in all the other years.
+     * Normal rainfall for a calendar month: the typical (median) value of all the other years.
+     * The median is used because a few very wet years would pull an average up and make
+     * ordinary months look dry.
      */
-    private function normalRainfall(Collection $totals, int $month, float $thisYearMm): ?float
+    private function normalRainfall(Collection $valuesByMonth, int $month, float $thisYearMm): ?float
     {
-        $total = $totals->get($month);
+        $others = $valuesByMonth->get($month)?->values();
 
-        if (! $total || $total['count'] < 2) {
+        if (! $others) {
             return null;
         }
 
-        return ($total['sum'] - $thisYearMm) / ($total['count'] - 1);
+        $own = $others->search(fn (float $mm) => $mm === $thisYearMm);
+
+        if ($own !== false) {
+            $others->forget($own);
+        }
+
+        return $others->count() >= 2 ? $others->median() : null;
     }
 
-    private function analyseMonth(DroughtReport $report, Collection $byMonth, Collection $totals): ?array
+    private function analyseMonth(DroughtReport $report, Collection $byMonth, Collection $valuesByMonth): ?array
     {
         $actual = $byMonth->get($report->year * 100 + $report->month);
 
@@ -113,7 +154,7 @@ class DroughtMatchService
             return null;
         }
 
-        $baseline = $this->normalRainfall($totals, $report->month, $actual->rainfall_mm);
+        $baseline = $this->normalRainfall($valuesByMonth, $report->month, $actual->rainfall_mm);
 
         if (! $baseline || $report->households_surveyed === 0) {
             return null;
