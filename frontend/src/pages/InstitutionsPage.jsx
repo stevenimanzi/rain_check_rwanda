@@ -207,9 +207,6 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
           <li>
             <strong>Map:</strong> switch between long-term risk, the survey period and basis risk; click a district.
           </li>
-          <li>
-            <strong>Why it matters:</strong> the national context, with a source for every number.
-          </li>
         </ul>
       </div>
     </>

@@ -10,8 +10,6 @@ surveyed households reported, so insurers, ministries and lenders can see where 
 trusted.
 
 Built for the NISR 2026 Big Data Hackathon, Track 2 (Financial Inclusion & Poverty Reduction).
-Supports the National Financial Inclusion Roadmap 2025-2030 priorities of agriculture insurance and
-financial health.
 
 - **Live app:** _add the deployed link here_
 - **Demo video (max 3 minutes):** [`docs/demo.webm`](docs/demo.webm)
@@ -24,7 +22,6 @@ financial health.
 | Overview | National rainfall against normal, driest years, riskiest months, and all 30 districts ranked by dry months. |
 | Districts | A searchable table of all 30 districts. Click one for its own charts and history. |
 | Map | District map of long-term drought risk, dry months in the survey period, and basis risk. |
-| Why it matters | National context (poverty, financial inclusion, insurance) with a published source for every figure. |
 | For institutions | Who can use the data, CSV downloads, data sources and their status, and how the measures work. |
 
 Every chart has a box underneath saying what it shows, how to read it and where the data comes from.
@@ -46,7 +43,6 @@ On phones the sidebar becomes a menu opened with the button in the top bar.
 | Monthly rainfall, 2014-2024 | [CHIRPS v3](https://www.chc.ucsb.edu/data/chirps3), Climate Hazards Center, UC Santa Barbara | Dry months, drought years, risky months | `data/rainfall.csv` (averaged per district) |
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) Rwanda ADM2 | Maps and district averages | `frontend/public/rwanda-districts.geojson` |
 | Household drought reports and poverty rates | [NISR EICV7 2023/24](https://microdata.statistics.gov.rw/index.php/catalog/119) | Comparing satellite with households (basis risk), poverty | Not included. Download from the NISR portal and import with the commands below. |
-| National context figures | Linked beside each figure in the app (NISR, FinScope 2024, National Bank of Rwanda, IFPRI) | The "Why it matters" page | Sources listed in `frontend/src/sources.js` |
 
 Derived data files, ready to use:
 
@@ -122,7 +118,6 @@ hackathon rules. The authors remain fully responsible for the work.
 ## Declaration and acknowledgements
 
 We declare that this submission is our own work and that all sources of reference are acknowledged in full:
-CHIRPS (Climate Hazards Center), geoBoundaries, NISR (EICV7, press releases), FinScope Rwanda 2024,
-National Bank of Rwanda, IFPRI, the Global Inclusive Insurance Facility, and the open-source libraries in
+CHIRPS (Climate Hazards Center), geoBoundaries, NISR (EICV7), and the open-source libraries in
 `package.json` and `composer.json`. As the competition rules state, intellectual property rights in this
 submission are assigned to the National Institute of Statistics of Rwanda.

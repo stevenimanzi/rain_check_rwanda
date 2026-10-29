@@ -8,7 +8,6 @@ import DistrictsPage from './pages/DistrictsPage'
 import InstitutionsPage from './pages/InstitutionsPage'
 import MapPage from './pages/MapPage'
 import OverviewPage from './pages/OverviewPage'
-import WhyItMattersPage from './pages/WhyItMattersPage'
 import './App.css'
 
 export default function App() {
@@ -50,7 +49,6 @@ export default function App() {
       overview: <OverviewPage districts={districts} overview={overview} onSelect={openDistrict} />,
       districts: <DistrictsPage districts={districts} selectedId={selectedId} onSelect={openDistrict} />,
       map: <MapPage districts={districts} selectedId={selectedId} onSelect={openDistrict} />,
-      why: <WhyItMattersPage />,
       institutions: <InstitutionsPage districts={districts} overview={overview} onNavigate={goTo} />,
     }
     return pages[page]
