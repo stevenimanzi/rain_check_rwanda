@@ -11,7 +11,7 @@ export default function TopBar({ title, onMenuClick }) {
 
       <div className="topbar-info">
         <CalendarDaysIcon className="icon" />
-        <span>Survey period: Oct 2023 - Oct 2024</span>
+        <span>Comparison period: Apr 2023 - Mar 2024</span>
       </div>
     </header>
   )

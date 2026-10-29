@@ -32,8 +32,8 @@ const USERS = [
   },
   {
     who: 'NISR',
-    decision: 'How its EICV7 survey can be used with satellite data for official statistics.',
-    gets: 'A worked method linking household survey shocks with satellite rainfall.',
+    decision: 'How its household surveys (EICV7, CFSVA) can be combined with satellite data.',
+    gets: 'A worked method linking household drought reports with satellite rainfall, district by district.',
     page: 'overview',
     pageLabel: 'Overview',
   },
@@ -43,8 +43,8 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
   const { settings } = overview
   const years = overview.by_year
 
-  const hasReports = districts.some((d) => d.summary.months_tested > 0)
-  const hasPoverty = districts.some((d) => d.poverty_rate !== null)
+  const hasHouseholds = districts.every((d) => d.household_drought_pct !== null)
+  const hasPoverty = districts.every((d) => d.poverty_rate !== null)
 
   const datasets = [
     {
@@ -62,17 +62,17 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
       loaded: true,
     },
     {
-      name: 'Household drought reports',
+      name: 'Households reporting drought, by district',
       use: 'Comparing satellite with what households experienced (basis risk)',
-      source: 'eicv7',
-      status: hasReports ? 'Loaded' : 'Pending import',
-      loaded: hasReports,
+      source: 'cfsva',
+      status: hasHouseholds ? 'Loaded: 30 districts (read from the published chart, about 1 point accuracy)' : 'Pending import',
+      loaded: hasHouseholds,
     },
     {
       name: 'Poverty rate by district',
       use: 'Showing where drought and poverty overlap',
-      source: 'eicv7',
-      status: hasPoverty ? 'Loaded' : 'Pending import',
+      source: 'eicvPoverty',
+      status: hasPoverty ? 'Loaded: 30 districts' : 'Pending import',
       loaded: hasPoverty,
     },
   ]
@@ -181,17 +181,20 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
             season) are not judged, because small changes look huge there.
           </li>
           <li>
-            A <strong>reported drought</strong> is a month where {settings.reported_drought_threshold}% or more of
-            surveyed households in a district say drought was a main problem.
+            <strong>Households reporting drought</strong> is the share of households in each district that said
+            drought affected them in the 12 months before the April 2024 CFSVA survey (April 2023 to March 2024).
           </li>
           <li>
-            <strong>Basis risk</strong> is the share of months where the satellite and households disagree:
-            below {settings.basis_risk_medium}% is low, up to {settings.basis_risk_high}% medium, above that high.
+            Each district is ranked from 0 to 100 on satellite dry months in that same period and on households
+            reporting drought. <strong>Basis risk</strong> is the gap between the two ranks: below{' '}
+            {settings.basis_risk_medium} points is low, up to {settings.basis_risk_high} medium, above that high.
           </li>
         </ol>
         <p className="muted">
-          Limits: satellite rainfall is an estimate, not a farm measurement, and household reports are
-          self-reported. The thresholds can be changed in <code>backend/config/raincheck.php</code>.
+          Limits: satellite rainfall is an estimate on a 5 km grid, not a farm measurement; household answers are
+          self-reported; dry spells shorter than a month are not visible in monthly rainfall; household
+          percentages were read from a published chart and are accurate to about one point. The thresholds can be
+          changed in <code>backend/config/raincheck.php</code>.
         </p>
       </div>
 
@@ -199,13 +202,13 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
         <h3>How to use the dashboard</h3>
         <ul>
           <li>
-            <strong>Overview:</strong> national charts. Read the box under each chart for what it shows.
+            <strong>Overview:</strong> national charts, starting with where satellite and households disagree. Read the box under each chart for what it shows.
           </li>
           <li>
             <strong>Districts:</strong> search and filter all 30 districts, then click one for its history.
           </li>
           <li>
-            <strong>Map:</strong> switch between long-term risk, the survey period and basis risk; click a district.
+            <strong>Map:</strong> switch between long-term risk, recent dry months, households reporting drought and basis risk; click a district.
           </li>
         </ul>
       </div>

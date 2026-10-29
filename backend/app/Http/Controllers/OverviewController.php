@@ -2,36 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\District;
 use App\Models\RainfallRecord;
+use App\Services\DistrictAnalysis;
 use App\Services\DroughtMatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 
 class OverviewController extends Controller
 {
-    public function __invoke(DroughtMatchService $matcher): JsonResponse
+    public function __invoke(DroughtMatchService $matcher, DistrictAnalysis $analysis): JsonResponse
     {
         // Rainfall for the whole country: the average of all districts, month by month.
         $monthly = RainfallRecord::selectRaw('year, month, AVG(rainfall_mm) AS rainfall_mm')
             ->groupBy('year', 'month')
             ->get();
 
-        $histories = District::with('rainfallRecords')->get()
-            ->map(fn (District $district) => $matcher->history($matcher->rainfallSeries($district->rainfallRecords)));
+        $districts = $analysis->all();
+        $histories = $districts->pluck('history');
 
         return response()->json([
             'national' => $matcher->rainfallSeries($monthly),
             'by_year' => $this->averageByYear($histories),
             'by_calendar_month' => $this->averageByCalendarMonth($histories),
-            'survey' => [
-                'start' => config('raincheck.survey_start'),
-                'end' => config('raincheck.survey_end'),
+            'rank_correlation' => $analysis->rankCorrelation($districts),
+            'window' => [
+                'start' => config('raincheck.comparison_start'),
+                'end' => config('raincheck.comparison_end'),
             ],
             'settings' => [
                 'rainfall_deficit_threshold' => config('raincheck.rainfall_deficit_threshold'),
                 'minimum_normal_mm' => config('raincheck.minimum_normal_mm'),
-                'reported_drought_threshold' => config('raincheck.reported_drought_threshold'),
                 'basis_risk_medium' => config('raincheck.basis_risk_medium'),
                 'basis_risk_high' => config('raincheck.basis_risk_high'),
             ],

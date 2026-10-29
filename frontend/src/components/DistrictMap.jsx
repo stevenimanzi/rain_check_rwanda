@@ -12,23 +12,39 @@ const SCALE_COLORS = ['#fef3c7', '#fcd34d', '#fb923c', '#dc2626']
 const VALUE_OF = {
   history: (d) => d.summary.avg_dry_months_per_year,
   drought: (d) => d.summary.satellite_drought_months,
+  households: (d) => d.household_drought_pct,
 }
 
 const UNIT = {
   history: 'dry months a year',
-  drought: 'dry months in the survey period',
+  drought: 'dry months, Apr 2023 to Mar 2024',
+  households: '% of households reporting drought',
 }
 
 /**
- * Splits the districts' values into four equal groups so the colours always show differences.
+ * Colours for a numeric metric. When there are only a few different values each gets its own colour;
+ * otherwise the districts are split into four equal groups so the colours always show differences.
  */
 function buildSteps(districts, metric) {
-  const values = districts.map(VALUE_OF[metric]).sort((a, b) => a - b)
-  const cuts = [0.25, 0.5, 0.75].map((q) => values[Math.floor(q * (values.length - 1))])
-  const colorFor = (value) => SCALE_COLORS[cuts.filter((cut) => value > cut).length]
+  const values = districts.map(VALUE_OF[metric])
+  const distinct = [...new Set(values)].sort((a, b) => a - b)
 
+  if (distinct.length <= SCALE_COLORS.length) {
+    const colors = distinct.map((_, i) => SCALE_COLORS[Math.round((i * (SCALE_COLORS.length - 1)) / Math.max(distinct.length - 1, 1))])
+    return {
+      colorFor: (value) => colors[distinct.indexOf(value)],
+      legend: distinct.map((value, i) => ({ color: colors[i], label: String(value) })),
+    }
+  }
+
+  const sorted = [...values].sort((a, b) => a - b)
+  const cuts = [0.25, 0.5, 0.75].map((q) => sorted[Math.floor(q * (sorted.length - 1))])
   const labels = [`up to ${cuts[0]}`, `${cuts[0]} to ${cuts[1]}`, `${cuts[1]} to ${cuts[2]}`, `above ${cuts[2]}`]
-  return { colorFor, legend: SCALE_COLORS.map((color, i) => ({ color, label: labels[i] })) }
+
+  return {
+    colorFor: (value) => SCALE_COLORS[cuts.filter((cut) => value > cut).length],
+    legend: SCALE_COLORS.map((color, i) => ({ color, label: labels[i] })),
+  }
 }
 
 export default function DistrictMap({ districts, metric, onSelect }) {
@@ -57,7 +73,7 @@ export default function DistrictMap({ districts, metric, onSelect }) {
 
   const legend =
     metric === 'risk'
-      ? Object.entries(RISK_LABELS).map(([level, label]) => ({ color: RISK_COLORS[level], label }))
+      ? ['low', 'medium', 'high'].map((level) => ({ color: RISK_COLORS[level], label: `${RISK_LABELS[level]} basis risk` }))
       : steps.legend
 
   const style = (feature) => ({
@@ -87,6 +103,7 @@ export default function DistrictMap({ districts, metric, onSelect }) {
       </MapContainer>
 
       <div className="legend">
+        {metric !== 'risk' && <strong>{UNIT[metric]}:</strong>}
         {legend.map(({ color, label }) => (
           <span key={label}>
             <i style={{ background: color }} /> {label}
@@ -95,9 +112,9 @@ export default function DistrictMap({ districts, metric, onSelect }) {
       </div>
 
       <ChartInfo
-        shows="Rwanda's 30 districts coloured by drought risk or basis risk, depending on the tab selected."
-        howToRead="Darker red means more dry months. On the long-term and survey-period tabs the colours split the districts into four equal groups, so the darkest districts are the top quarter. Click a district for its charts. Grey on the basis risk tab means no household survey data yet."
-        sources={['rainfall', 'boundaries', 'eicv7']}
+        shows="Rwanda's 30 districts coloured by long-term drought risk, recent dry months, households reporting drought, or basis risk, depending on the tab selected."
+        howToRead="Darker red means more drought. On the first three tabs the colours split the districts into four equal groups, so the darkest districts are the top quarter. On the basis risk tab green means satellite and households agree and red means they disagree strongly. Click a district for its charts."
+        sources={['rainfall', 'boundaries', 'cfsva']}
       />
     </div>
   )

@@ -4,7 +4,8 @@ import DistrictMap from '../components/DistrictMap'
 
 const METRICS = {
   history: 'Long-term drought risk',
-  drought: 'Dry months, survey period',
+  drought: 'Dry months, Apr 2023 to Mar 2024',
+  households: 'Households reporting drought',
   risk: 'Basis risk',
 }
 

@@ -8,8 +8,12 @@ export const SOURCES = {
     label: 'geoBoundaries Rwanda district boundaries (ADM2)',
     url: 'https://www.geoboundaries.org/',
   },
-  eicv7: {
-    label: 'NISR EICV7 2023/24 household survey',
-    url: 'https://microdata.statistics.gov.rw/index.php/catalog/119',
+  cfsva: {
+    label: 'NISR and WFP, Rwanda CFSVA 2024, Figure 8.4 (households affected by drought, by district)',
+    url: 'https://statistics.gov.rw/sites/default/files/documents/2025-07/Rwanda%20CFSVA%202024.pdf',
+  },
+  eicvPoverty: {
+    label: 'NISR, EICV7 Poverty Profile 2023/24, Annex B (poverty rate by district)',
+    url: 'https://statistics.gov.rw/sites/default/files/documents/2025-07/EICV7_Poverty%20Profile.pdf',
   },
 }

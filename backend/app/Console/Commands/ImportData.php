@@ -3,21 +3,20 @@
 namespace App\Console\Commands;
 
 use App\Models\District;
-use App\Models\DroughtReport;
 use App\Models\RainfallRecord;
 use Illuminate\Console\Command;
 
 class ImportData extends Command
 {
-    protected $signature = 'raincheck:import {type : poverty, rainfall or reports} {file : path to a CSV file}';
+    protected $signature = 'raincheck:import {type : poverty, household-drought or rainfall} {file : path to a CSV file}';
 
-    protected $description = 'Import poverty, rainfall or drought report data from a CSV file';
+    protected $description = 'Import poverty, household drought or rainfall data from a CSV file';
 
     /** Required CSV columns for each import type. */
     private const COLUMNS = [
         'poverty' => ['district', 'poverty_rate'],
+        'household-drought' => ['district', 'household_drought_pct'],
         'rainfall' => ['district', 'year', 'month', 'rainfall_mm'],
-        'reports' => ['district', 'year', 'month', 'households_surveyed', 'households_reporting_drought'],
     ];
 
     public function handle(): int
@@ -26,7 +25,7 @@ class ImportData extends Command
         $file = $this->argument('file');
 
         if (! isset(self::COLUMNS[$type])) {
-            $this->error('Type must be poverty, rainfall or reports.');
+            $this->error('Type must be poverty, household-drought or rainfall.');
             return self::FAILURE;
         }
 
@@ -74,11 +73,8 @@ class ImportData extends Command
 
         match ($type) {
             'poverty' => District::whereKey($districtId)->update(['poverty_rate' => $row['poverty_rate']]),
+            'household-drought' => District::whereKey($districtId)->update(['household_drought_pct' => $row['household_drought_pct']]),
             'rainfall' => RainfallRecord::updateOrCreate($key, ['rainfall_mm' => $row['rainfall_mm']]),
-            'reports' => DroughtReport::updateOrCreate($key, [
-                'households_surveyed' => $row['households_surveyed'],
-                'households_reporting_drought' => $row['households_reporting_drought'],
-            ]),
         };
     }
 }
