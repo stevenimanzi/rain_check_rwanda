@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class District extends Model
+{
+    protected $fillable = ['name', 'province', 'poverty_rate'];
+
+    public function rainfallRecords(): HasMany
+    {
+        return $this->hasMany(RainfallRecord::class);
+    }
+
+    public function droughtReports(): HasMany
+    {
+        return $this->hasMany(DroughtReport::class);
+    }
+}
