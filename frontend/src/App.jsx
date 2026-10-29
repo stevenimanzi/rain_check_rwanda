@@ -3,28 +3,27 @@ import { fetchDistricts, fetchOverview } from './api'
 import Notice from './components/Notice'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
-import DistrictsPage from './pages/DistrictsPage'
-import MapPage from './pages/MapPage'
-import MethodPage from './pages/MethodPage'
-import OverviewPage from './pages/OverviewPage'
 import { PAGES } from './navigation'
+import DistrictsPage from './pages/DistrictsPage'
+import InstitutionsPage from './pages/InstitutionsPage'
+import MapPage from './pages/MapPage'
+import OverviewPage from './pages/OverviewPage'
+import WhyItMattersPage from './pages/WhyItMattersPage'
 import './App.css'
 
 export default function App() {
   const [page, setPage] = useState('overview')
   const [menuOpen, setMenuOpen] = useState(false)
-  const [districts, setDistricts] = useState([])
-  const [national, setNational] = useState([])
-  const [survey, setSurvey] = useState({ start: '', end: '' })
+  const [districts, setDistricts] = useState(null)
+  const [overview, setOverview] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [error, setError] = useState(false)
 
   useEffect(() => {
     Promise.all([fetchDistricts(), fetchOverview()])
-      .then(([districtList, overview]) => {
+      .then(([districtList, overviewData]) => {
         setDistricts(districtList)
-        setNational(overview.national)
-        setSurvey(overview.survey)
+        setOverview(overviewData)
       })
       .catch(() => setError(true))
   }, [])
@@ -32,6 +31,7 @@ export default function App() {
   const goTo = (id) => {
     setPage(id)
     setMenuOpen(false)
+    window.scrollTo(0, 0)
   }
 
   // Picking a district from the overview jumps to its detail page.
@@ -40,11 +40,20 @@ export default function App() {
     if (page === 'overview') setPage('districts')
   }
 
-  const pages = {
-    overview: <OverviewPage districts={districts} national={national} survey={survey} onSelect={openDistrict} />,
-    districts: <DistrictsPage districts={districts} selectedId={selectedId} onSelect={openDistrict} />,
-    map: <MapPage districts={districts} selectedId={selectedId} onSelect={openDistrict} />,
-    method: <MethodPage />,
+  const renderPage = () => {
+    if (error) {
+      return <Notice title="Could not load data">Check that the Laravel backend is running on port 8000.</Notice>
+    }
+    if (!districts || !overview) return <p>Loading...</p>
+
+    const pages = {
+      overview: <OverviewPage districts={districts} overview={overview} onSelect={openDistrict} />,
+      districts: <DistrictsPage districts={districts} selectedId={selectedId} onSelect={openDistrict} />,
+      map: <MapPage districts={districts} selectedId={selectedId} onSelect={openDistrict} />,
+      why: <WhyItMattersPage />,
+      institutions: <InstitutionsPage districts={districts} overview={overview} onNavigate={goTo} />,
+    }
+    return pages[page]
   }
 
   const title = PAGES.find((p) => p.id === page).label
@@ -55,13 +64,7 @@ export default function App() {
 
       <div className="main">
         <TopBar title={title} onMenuClick={() => setMenuOpen(true)} />
-        <main className="content">
-          {error ? (
-            <Notice title="Could not load data">Check that the Laravel backend is running on port 8000.</Notice>
-          ) : (
-            pages[page]
-          )}
-        </main>
+        <main className="content">{renderPage()}</main>
       </div>
     </div>
   )

@@ -5,7 +5,7 @@ return [
     'rainfall_deficit_threshold' => 20,
 
     // Months whose normal rainfall is below this many mm are too dry to judge.
-    'minimum_normal_mm' => 30,
+    'minimum_normal_mm' => 50,
 
     // A month counts as a reported drought when this % of surveyed households say they had one.
     'reported_drought_threshold' => 20,
