@@ -33,11 +33,6 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
-  // Picking a district from the overview jumps to its detail page.
-  const openDistrict = (id) => {
-    setSelectedId(id)
-    if (page === 'overview') setPage('districts')
-  }
 
   const renderPage = () => {
     if (error) {
@@ -46,9 +41,9 @@ export default function App() {
     if (!districts || !overview) return <p>Loading...</p>
 
     const pages = {
-      overview: <OverviewPage districts={districts} overview={overview} onSelect={openDistrict} />,
-      districts: <DistrictsPage districts={districts} selectedId={selectedId} onSelect={openDistrict} />,
-      map: <MapPage districts={districts} selectedId={selectedId} onSelect={openDistrict} />,
+      overview: <OverviewPage districts={districts} overview={overview} />,
+      districts: <DistrictsPage districts={districts} selectedId={selectedId} onSelect={setSelectedId} />,
+      map: <MapPage districts={districts} selectedId={selectedId} onSelect={setSelectedId} />,
       institutions: <InstitutionsPage districts={districts} overview={overview} onNavigate={goTo} />,
     }
     return pages[page]

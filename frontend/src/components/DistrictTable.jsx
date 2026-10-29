@@ -9,7 +9,6 @@ const FILTERS = [
   { id: 'high', label: 'High risk' },
   { id: 'medium', label: 'Medium' },
   { id: 'low', label: 'Low' },
-  { id: 'no_data', label: 'No survey data' },
 ]
 
 export default function DistrictTable({ districts, selectedId, onSelect }) {
@@ -49,9 +48,10 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
               <th>District</th>
               <th>Province</th>
               <th>Poverty rate</th>
+              <th>Households reporting drought</th>
               <th>Dry months a year</th>
-              <th>Dry months, survey period</th>
-              <th>Satellite vs households disagree</th>
+              <th>Dry months, Apr 2023 to Mar 2024</th>
+              <th>Gap with households</th>
               <th>Basis risk</th>
             </tr>
           </thead>
@@ -65,9 +65,10 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
                 <td>{district.name}</td>
                 <td>{district.province}</td>
                 <td>{formatPercent(district.poverty_rate)}</td>
+                <td>{formatPercent(district.household_drought_pct)}</td>
                 <td>{district.summary.avg_dry_months_per_year}</td>
                 <td>{district.summary.satellite_drought_months}</td>
-                <td>{formatPercent(district.summary.basis_risk_pct)}</td>
+                <td>{district.summary.basis_risk_pct} points</td>
                 <td>
                   <RiskBadge level={district.summary.risk_level} />
                 </td>
@@ -75,7 +76,7 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
             ))}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={7}>No districts match.</td>
+                <td colSpan={8}>No districts match.</td>
               </tr>
             )}
           </tbody>
@@ -83,9 +84,9 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
       </div>
 
       <ChartInfo
-        shows="One row per district: poverty rate, how often the satellite sees dry months, and how well satellite rainfall matches what households report."
-        howToRead="Click a district to see its charts. A dash means that data has not been imported yet: poverty rates and the household comparison come from the NISR EICV7 survey."
-        sources={['rainfall', 'boundaries', 'eicv7']}
+        shows="One row per district: poverty rate, share of households reporting drought, how often the satellite sees dry months, and how far apart the satellite and households are (basis risk)."
+        howToRead="Click a district to see its charts. Gap with households is the difference, in percentile points, between the district's rank on satellite dry months and its rank on households reporting drought. Below 25 is low, up to 50 medium, above that high."
+        sources={['rainfall', 'cfsva', 'eicvPoverty']}
       />
     </div>
   )

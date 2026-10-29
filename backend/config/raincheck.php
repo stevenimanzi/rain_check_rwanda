@@ -7,14 +7,12 @@ return [
     // Months whose normal rainfall is below this many mm are too dry to judge.
     'minimum_normal_mm' => 50,
 
-    // A month counts as a reported drought when this % of surveyed households say they had one.
-    'reported_drought_threshold' => 20,
-
-    // Share of months where satellite and households disagree.
+    // Basis risk is the gap, in percentile points (0-100), between how a district ranks on satellite
+    // dry months and how it ranks on households reporting drought.
     'basis_risk_medium' => 25,
     'basis_risk_high' => 50,
 
-    // EICV7 fieldwork period (YYYY-MM).
-    'survey_start' => '2023-10',
-    'survey_end' => '2024-10',
+    // The 12 months households were asked about in the CFSVA 2024 survey (YYYY-MM).
+    'comparison_start' => '2023-04',
+    'comparison_end' => '2024-03',
 ];

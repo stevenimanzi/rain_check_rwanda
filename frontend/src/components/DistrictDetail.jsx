@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
 import { fetchDistrict } from '../api'
-import { monthLabel } from '../utils'
+import { formatPercent } from '../utils'
 import ChartInfo from './ChartInfo'
 import DryPatternCharts from './DryPatternCharts'
-import Notice from './Notice'
 import RainDeviationChart from './RainDeviationChart'
 import RiskBadge from './RiskBadge'
+import StatCard from './StatCard'
 
-const OUTCOME_TEXT = {
-  match: 'Match',
-  missed_payout: 'Missed payout',
-  false_payout: 'False payout',
+const VERDICTS = {
+  agrees:
+    'The satellite and households tell a similar story here, so rainfall-based insurance looks reliable in this district.',
+  satellite_understates:
+    'More households reported drought than the satellite ranking suggests. Rainfall-based insurance could leave farmers who lose crops here unpaid.',
+  satellite_overstates:
+    'The satellite shows more drought than households reported. Rainfall-based insurance could pay out when many farmers did not report a drought.',
 }
 
 export default function DistrictDetail({ districtId }) {
@@ -30,10 +33,37 @@ export default function DistrictDetail({ districtId }) {
         <h2>
           {district.name} <RiskBadge level={summary.risk_level} />
         </h2>
-        <p className="muted">
-          {district.province} - {summary.avg_dry_months_per_year} dry months a year on average (2014 to 2024),{' '}
-          {summary.satellite_drought_months} in the survey period
-        </p>
+        <p className="muted">{district.province}</p>
+
+        <h3>Satellite rainfall against what households reported</h3>
+        <div className="stats">
+          <StatCard
+            label="Households reporting drought"
+            value={formatPercent(district.household_drought_pct)}
+            hint={`Rank score ${Math.round(summary.household_rank_pct)} out of 100`}
+          />
+          <StatCard
+            label="Dry months seen by the satellite"
+            value={summary.satellite_drought_months}
+            hint={`Apr 2023 to Mar 2024. Rank score ${Math.round(summary.satellite_rank_pct)} out of 100`}
+          />
+          <StatCard
+            label="Poverty rate"
+            value={formatPercent(district.poverty_rate)}
+            hint="EICV7 2023/24"
+          />
+          <StatCard
+            label="Dry months a year, long term"
+            value={summary.avg_dry_months_per_year}
+            hint="Average 2014 to 2024"
+          />
+        </div>
+        <p className="verdict">{VERDICTS[summary.direction]}</p>
+        <ChartInfo
+          shows="Two measures of drought in this district for the same 12 months: the share of households that reported drought (survey) and the number of dry months the satellite saw."
+          howToRead={`Each is given a rank score against the other 29 districts (0 is the lowest, 100 the highest). The gap between the two ranks is ${summary.basis_risk_pct} points: below 25 is low basis risk, up to 50 medium, above that high.`}
+          sources={['rainfall', 'cfsva', 'eicvPoverty']}
+        />
 
         <h3>Rain compared to normal</h3>
         <RainDeviationChart series={district.rainfall} />
@@ -50,51 +80,6 @@ export default function DistrictDetail({ districtId }) {
         area={district.name}
         isAverage={false}
       />
-
-      <div className="panel">
-        <h3>Satellite vs household reports</h3>
-        {district.months.length === 0 ? (
-          <Notice title="No household survey data yet">
-            Import the NISR EICV7 drought reports for this district to see whether the satellite matches what
-            households experienced.
-          </Notice>
-        ) : (
-          <>
-            <p>
-              Across {summary.months_tested} months the satellite matched households {summary.matches} times,
-              missed {summary.missed_payouts} real droughts and flagged {summary.false_payouts} droughts
-              households did not report.
-            </p>
-            <div className="table-scroll">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Month</th>
-                    <th>Rainfall deficit</th>
-                    <th>Households reporting drought</th>
-                    <th>Result</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {district.months.map((m) => (
-                    <tr key={monthLabel(m)}>
-                      <td>{monthLabel(m)}</td>
-                      <td>{m.rainfall_deficit_pct}%</td>
-                      <td>{m.reported_drought_pct}%</td>
-                      <td>{OUTCOME_TEXT[m.outcome]}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-        <ChartInfo
-          shows="Month by month, whether the satellite and the households surveyed in this district agree there was a drought."
-          howToRead="Match: both agree. Missed payout: households had a drought but the satellite did not. False payout: the satellite saw a drought but households did not."
-          sources={['rainfall', 'eicv7']}
-        />
-      </div>
     </>
   )
 }
