@@ -5,11 +5,11 @@ COPY backend/composer.json backend/composer.lock ./
 RUN composer install --no-dev --no-interaction --no-scripts --prefer-dist --optimize-autoloader --ignore-platform-reqs
 
 FROM php:8.4-apache
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev libzip-dev \
-    && docker-php-ext-install pdo_mysql pdo_pgsql zip \
-    && a2enmod rewrite \
-    && rm -rf /var/lib/apt/lists/*
+
+# This installer adds the database extensions without compiling them, which is faster and safer on small build servers.
+ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN install-php-extensions pdo_mysql pdo_pgsql zip \
+    && a2enmod rewrite
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
