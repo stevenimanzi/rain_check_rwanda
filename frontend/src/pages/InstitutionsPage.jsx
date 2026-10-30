@@ -1,4 +1,5 @@
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+import { API_BASE } from '../api'
 import { SOURCES } from '../sources'
 
 const USERS = [
@@ -117,14 +118,14 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
           Free data for anyone. Both files are CSV files you can open in Excel.
         </p>
         <div className="downloads">
-          <a className="download" href="/api/export/districts" download>
+          <a className="download" href={`${API_BASE}/export/districts`} download>
             <ArrowDownTrayIcon className="icon" />
             <span>
               <strong>District summary</strong>
               <small>Drought, poverty and mismatch risk for all 30 districts</small>
             </span>
           </a>
-          <a className="download" href="/api/export/rainfall" download>
+          <a className="download" href={`${API_BASE}/export/rainfall`} download>
             <ArrowDownTrayIcon className="icon" />
             <span>
               <strong>Monthly rainfall</strong>
