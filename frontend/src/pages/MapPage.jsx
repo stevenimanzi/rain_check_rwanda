@@ -3,10 +3,10 @@ import DistrictDetail from '../components/DistrictDetail'
 import DistrictMap from '../components/DistrictMap'
 
 const METRICS = {
-  history: 'Long-term drought risk',
+  history: 'Drought over many years',
   drought: 'Dry months, Apr 2023 to Mar 2024',
-  households: 'Households reporting drought',
-  risk: 'Basis risk',
+  households: 'Households that reported drought',
+  risk: 'Mismatch risk',
 }
 
 export default function MapPage({ districts, selectedId, onSelect }) {

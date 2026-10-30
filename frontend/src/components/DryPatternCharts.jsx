@@ -20,27 +20,27 @@ export default function DryPatternCharts({ byYear, byMonth, area, isAverage }) {
       <div className="panel">
         <h3>Which years were driest in {area}?</h3>
         <p className="muted">
-          {isAverage ? 'Average number of dry months per district' : 'Number of dry months'} each year, 2014 to 2024.
+          {isAverage ? 'Average number of dry months in each district' : 'Number of dry months'} each year, 2014 to 2024.
         </p>
         <SimpleBarChart data={yearData} color={CHART_COLORS.dry} />
         <ChartInfo
-          shows={`For each year, how many months the satellite saw rainfall at least 20% below normal${
-            isAverage ? ', averaged over all 30 districts' : ''
-          }. Months that are normally very dry (under 50 mm) are not counted.`}
-          howToRead="A tall bar is a drought year. Years with many dry months are the ones when index insurance should have paid out and when farmers lost most."
+          shows={`How many months each year had at least 20% less rain than normal${
+            isAverage ? ' (the average of all 30 districts)' : ''
+          }. We do not count June to August, because it is normally very dry.`}
+          howToRead="A tall bar is a drought year. In those years farmers lose the most, and drought insurance should pay."
           sources={['rainfall', 'boundaries']}
         />
       </div>
 
       <div className="panel">
         <h3>Which months are most often dry in {area}?</h3>
-        <p className="muted">Share of years in which each calendar month was dry, 2014 to 2024.</p>
+        <p className="muted">Share of years when each month was dry, 2014 to 2024.</p>
         <SimpleBarChart data={monthData} color={CHART_COLORS.normal} unit="%" />
         <ChartInfo
-          shows={`For each month of the year, the percentage of years (2014 to 2024) in which rainfall was at least 20% below normal${
-            isAverage ? ', averaged over all districts' : ''
+          shows={`For each month of the year, the share of years (2014 to 2024) when rain was at least 20% below normal${
+            isAverage ? ' (the average of all districts)' : ''
           }.`}
-          howToRead="A tall bar is a risky month. Grey 'n/a' bars are June to August, the normal dry season, which is too dry to judge. Use this to time insurance cover and savings campaigns."
+          howToRead="A tall bar is a risky month. Grey 'n/a' bars are June to August, which we do not judge. Use this to plan when to sell insurance and run savings campaigns."
           sources={['rainfall', 'boundaries']}
         />
       </div>

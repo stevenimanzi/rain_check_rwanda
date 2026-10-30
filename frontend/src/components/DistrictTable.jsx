@@ -48,11 +48,11 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
               <th>District</th>
               <th>Province</th>
               <th>Poverty rate</th>
-              <th>Households reporting drought</th>
-              <th>Dry months a year</th>
+              <th>Households that reported drought</th>
+              <th>Dry months each year</th>
               <th>Dry months, Apr 2023 to Mar 2024</th>
               <th>Gap with households</th>
-              <th>Basis risk</th>
+              <th>Mismatch risk</th>
             </tr>
           </thead>
           <tbody>
@@ -84,8 +84,8 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
       </div>
 
       <ChartInfo
-        shows="One row per district: poverty rate, share of households reporting drought, how often the satellite sees dry months, and how far apart the satellite and households are (basis risk)."
-        howToRead="Click a district to see its charts. Gap with households is the difference, in percentile points, between the district's rank on satellite dry months and its rank on households reporting drought. Below 25 is low, up to 50 medium, above that high."
+        shows="One row for each district: poverty rate, households that reported drought, dry months seen by the satellite, and the gap between the satellite and households."
+        howToRead="Click a district to see its charts. The gap is the difference between two scores from 0 to 100: one for the satellite's dry months and one for households that reported drought. Under 25 is low mismatch risk, 25 to 50 is medium, and over 50 is high."
         sources={['rainfall', 'cfsva', 'eicvPoverty']}
       />
     </div>

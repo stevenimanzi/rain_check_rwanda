@@ -6,7 +6,7 @@ import ChartInfo from './ChartInfo'
 
 const RWANDA_CENTER = [-1.95, 29.9]
 
-// Light to dark red: more dry months.
+// Light to dark: more drought.
 const SCALE_COLORS = ['#fef3c7', '#fcd34d', '#fb923c', '#dc2626']
 
 const VALUE_OF = {
@@ -16,9 +16,9 @@ const VALUE_OF = {
 }
 
 const UNIT = {
-  history: 'dry months a year',
+  history: 'dry months each year',
   drought: 'dry months, Apr 2023 to Mar 2024',
-  households: '% of households reporting drought',
+  households: '% of households that reported drought',
 }
 
 /**
@@ -68,12 +68,12 @@ export default function DistrictMap({ districts, metric, onSelect }) {
 
   const tooltipOf = (district) =>
     metric === 'risk'
-      ? `${district.name}: ${RISK_LABELS[district.summary.risk_level]}`
+      ? `${district.name}: ${RISK_LABELS[district.summary.risk_level]} mismatch risk`
       : `${district.name}: ${VALUE_OF[metric](district)} ${UNIT[metric]}`
 
   const legend =
     metric === 'risk'
-      ? ['low', 'medium', 'high'].map((level) => ({ color: RISK_COLORS[level], label: `${RISK_LABELS[level]} basis risk` }))
+      ? ['low', 'medium', 'high'].map((level) => ({ color: RISK_COLORS[level], label: `${RISK_LABELS[level]} mismatch risk` }))
       : steps.legend
 
   const style = (feature) => ({
@@ -112,8 +112,8 @@ export default function DistrictMap({ districts, metric, onSelect }) {
       </div>
 
       <ChartInfo
-        shows="Rwanda's 30 districts coloured by long-term drought risk, recent dry months, households reporting drought, or basis risk, depending on the tab selected."
-        howToRead="Darker red means more drought. On the first three tabs the colours split the districts into four equal groups, so the darkest districts are the top quarter. On the basis risk tab green means satellite and households agree and red means they disagree strongly. Click a district for its charts."
+        shows="Rwanda's 30 districts, coloured by the measure you pick in the tabs above the map."
+        howToRead="Darker colour means more drought. On the first three tabs the districts are split into four equal groups, so the darkest colour is the top quarter. On the mismatch tab, green means the satellite and households agree, and red means they disagree a lot. Click a district to see its charts below the map."
         sources={['rainfall', 'boundaries', 'cfsva']}
       />
     </div>
