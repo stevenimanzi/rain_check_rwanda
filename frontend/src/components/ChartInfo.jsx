@@ -13,7 +13,7 @@ export default function ChartInfo({ shows, howToRead, sources }) {
         <dd>{shows}</dd>
         <dt>How to read it</dt>
         <dd>{howToRead}</dd>
-        <dt>Data source</dt>
+        <dt>Where the data comes from</dt>
         <dd>
           {sources.map((key, index) => (
             <span key={key}>

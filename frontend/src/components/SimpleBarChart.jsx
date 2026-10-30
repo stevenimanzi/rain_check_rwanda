@@ -1,4 +1,5 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { GRID_LINE, linesBetweenColumns } from '../chartGrid'
 import { CHART_COLORS } from '../utils'
 
 /**
@@ -18,7 +19,7 @@ export default function SimpleBarChart({ data, color, unit = '', height = 240 })
     return (
       <div className="chart-tooltip">
         <strong>{row.fullLabel ?? row.label}</strong>
-        <div>{row.value === null ? 'Not judged (normally a very dry month)' : row.text}</div>
+        <div>{row.value === null ? 'Not judged: this month is normally very dry' : row.text}</div>
       </div>
     )
   }
@@ -26,7 +27,7 @@ export default function SimpleBarChart({ data, color, unit = '', height = 240 })
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={rows} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(rows.length)} />
         <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
         <YAxis tick={{ fontSize: 11 }} width={36} allowDecimals={false} />
         <Tooltip content={tooltip} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />

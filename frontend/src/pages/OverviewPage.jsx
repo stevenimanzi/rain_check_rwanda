@@ -11,14 +11,14 @@ const inWindow = (month, window) => {
   return key >= window.start && key <= window.end
 }
 
-const correlationText = (value) => {
+const matchText = (value) => {
   if (value === null) return ''
-  const strength = Math.abs(value) < 0.3 ? 'weakly' : Math.abs(value) < 0.6 ? 'moderately' : 'strongly'
-  return `Across all 30 districts the two rankings agree only ${strength} (correlation ${value}, where 1 is a perfect match and 0 is no relationship).`
+  const strength = Math.abs(value) < 0.3 ? 'only a little' : Math.abs(value) < 0.6 ? 'fairly well' : 'very well'
+  return `Overall, the satellite and households match ${strength} (match score ${value}, where 1 is a perfect match and 0 is no match).`
 }
 
 export default function OverviewPage({ districts, overview }) {
-  const { national, window, by_year: byYear, by_calendar_month: byMonth, rank_correlation: correlation } = overview
+  const { national, window, by_year: byYear, by_calendar_month: byMonth, rank_correlation: matchScore } = overview
 
   const periodMonths = national.filter((m) => inWindow(m, window))
   const dryMonths = periodMonths.filter((m) => m.satellite_drought).length
@@ -27,46 +27,51 @@ export default function OverviewPage({ districts, overview }) {
 
   return (
     <>
+      <p className="intro">
+        A dry month is a month with at least 20% less rain than normal. This page compares the dry months that
+        satellites measured with what households told NISR about drought.
+      </p>
+
       <div className="stats">
         <StatCard label="Districts covered" value={districts.length} hint="All 30 districts of Rwanda" />
         <StatCard
-          label="Dry months across Rwanda"
+          label="Dry months in Rwanda"
           value={dryMonths}
           hint={`Out of ${periodMonths.length} months, April 2023 to March 2024`}
         />
         <StatCard
           label="Driest year, 2014 to 2024"
           value={driestYear?.year ?? '-'}
-          hint={driestYear ? `${driestYear.dry_months} dry months per district on average` : ''}
+          hint={driestYear ? `On average ${driestYear.dry_months} dry months in each district` : ''}
         />
         <StatCard
-          label="High basis risk districts"
+          label="Districts with a big mismatch"
           value={`${highRisk} of ${districts.length}`}
-          hint="Satellite and households disagree strongly"
+          hint="Satellite and households disagree a lot"
         />
       </div>
 
       <div className="panel">
-        <h3>Where satellite rainfall and households disagree</h3>
+        <h3>Where the satellite and households disagree</h3>
         <p className="muted">
-          Red: more households reported drought than the satellite shows. Blue: the satellite shows more
-          drought than households reported.
+          Red: more households reported drought than the satellite saw. Blue: the satellite saw more drought
+          than households reported.
         </p>
         <GapChart districts={districts} />
         <ChartInfo
-          shows={`For each district, how its rank on satellite dry months differs from its rank on the share of households reporting drought (NISR CFSVA 2024), in percentile points. ${correlationText(correlation)}`}
-          howToRead="A bar near zero means the two agree, so rainfall-based insurance should work. A long red bar means farmers suffered drought the satellite did not see, so a satellite-paid policy could leave them unpaid. A long blue bar means the satellite flagged drought many households did not report. This gap is called basis risk."
+          shows={`Each district gets a score from 0 to 100 for the dry months the satellite saw, and another score for the share of households that reported drought. The bar is the difference between the two scores. ${matchText(matchScore)}`}
+          howToRead="A short bar means the two agree, so insurance based on rain should work. A long red bar means farmers had drought that the satellite missed, so they may not get paid. A long blue bar means the satellite saw drought that many households did not report. We call this gap mismatch risk (some people call it basis risk)."
           sources={['rainfall', 'cfsva']}
         />
       </div>
 
       <div className="panel">
         <h3>Was each month wetter or drier than normal?</h3>
-        <p className="muted">Average rainfall across Rwanda, last 36 months.</p>
+        <p className="muted">Average for all of Rwanda, last 3 years.</p>
         <RainDeviationChart series={national} />
         <ChartInfo
-          shows="How much more or less rain fell in each month than in a normal year, averaged over all 30 districts."
-          howToRead="Blue bars: more rain than normal. Red bars: a dry month, at least 20% below normal (below the dashed line). Grey bars: June to August, normally very dry, so not judged. Hover a bar for the exact rainfall."
+          shows="How much more or less rain fell each month compared with a normal month. We average all 30 districts."
+          howToRead="Blue bar: more rain than normal. Red bar: a dry month, at least 20% less rain than normal (below the red dashed line). Grey bar: June to August, when it is normally very dry, so we do not judge it. Move your mouse over a bar to see the exact rain."
           sources={['rainfall', 'boundaries']}
         />
       </div>
@@ -84,14 +89,14 @@ export default function OverviewPage({ districts, overview }) {
             color={CHART_COLORS.dry}
           />
           <ChartInfo
-            shows="Months in the last 12 before the CFSVA 2024 survey when satellite rainfall was at least 20% below normal."
-            howToRead="Longer bar, more dry months. Compare with the next chart: the districts do not line up, which is the basis risk problem."
+            shows="How many months had at least 20% less rain than normal, in the 12 months before the April 2024 survey."
+            howToRead="A longer bar means more dry months. Now compare with the next chart. The two charts do not match well. That is the mismatch problem."
             sources={['rainfall', 'boundaries']}
           />
         </div>
 
         <div className="panel">
-          <h3>Households reporting drought</h3>
+          <h3>Households that reported drought</h3>
           <p className="muted">Share of households in each district, 2024.</p>
           <DryMonthsChart
             districts={districts}
@@ -100,8 +105,8 @@ export default function OverviewPage({ districts, overview }) {
             color={CHART_COLORS.normal}
           />
           <ChartInfo
-            shows="Percentage of households that said drought affected them in the 12 months before the April 2024 CFSVA survey."
-            howToRead="Longer bar, more households hit by drought. Values were read from the published chart and are accurate to about one percentage point."
+            shows="The share of households that said drought hurt them in the 12 months before the April 2024 survey (CFSVA)."
+            howToRead="A longer bar means more households were hit by drought. We measured these numbers from a published chart, so they can be off by about 1 point."
             sources={['cfsva']}
           />
         </div>
@@ -109,8 +114,8 @@ export default function OverviewPage({ districts, overview }) {
 
       <div className="grid-2 even">
         <div className="panel">
-          <h3>Long-term drought risk by district</h3>
-          <p className="muted">Average dry months per year, 2014 to 2024.</p>
+          <h3>Drought risk over many years</h3>
+          <p className="muted">Average dry months each year, 2014 to 2024.</p>
           <DryMonthsChart
             districts={districts}
             getValue={(d) => d.summary.avg_dry_months_per_year}
@@ -118,8 +123,8 @@ export default function OverviewPage({ districts, overview }) {
             color={CHART_COLORS.dry}
           />
           <ChartInfo
-            shows="On average, how many months a year each district has rainfall at least 20% below its normal."
-            howToRead="Longer bar, more drought-prone. This is the long-run risk an insurer or planner should price in, not just one year."
+            shows="On average, how many months each year have at least 20% less rain than normal."
+            howToRead="A longer bar means the district is dry more often. Insurers and planners should look at this long-term risk, not just one year."
             sources={['rainfall', 'boundaries']}
           />
         </div>
@@ -134,8 +139,8 @@ export default function OverviewPage({ districts, overview }) {
             color={CHART_COLORS.rain}
           />
           <ChartInfo
-            shows="The official headcount poverty rate of each district from the EICV7 household survey."
-            howToRead="Longer bar, higher poverty. Districts with high poverty and high basis risk are where weak insurance matters most."
+            shows="The official poverty rate of each district, from NISR's EICV7 survey."
+            howToRead="A longer bar means more poverty. Districts with high poverty and a big mismatch need the most attention."
             sources={['eicvPoverty']}
           />
         </div>

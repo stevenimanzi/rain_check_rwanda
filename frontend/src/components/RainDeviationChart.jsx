@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { GRID_LINE, linesBetweenColumns } from '../chartGrid'
 import { CHART_COLORS, longMonth, shortMonth } from '../utils'
 
 const DRY_LINE = -20
@@ -29,13 +30,13 @@ function ChartTooltip({ active, payload }) {
     <div className="chart-tooltip">
       <strong>{point.fullLabel}</strong>
       <div>
-        {Math.abs(point.change)}% {direction} normal rainfall
+        {Math.abs(point.change)}% {direction} normal rain
       </div>
       <div className="muted">
-        {point.rainfall} mm fell; normal is {point.normal} mm
+        {point.rainfall} mm of rain fell. A normal month has {point.normal} mm.
       </div>
       {point.dry && <div className="tooltip-dry">Dry month</div>}
-      {!point.judged && <div className="muted">Normally a very dry month, so not judged</div>}
+      {!point.judged && <div className="muted">This month is normally very dry, so we do not judge it</div>}
     </div>
   )
 }
@@ -59,7 +60,7 @@ export default function RainDeviationChart({ series }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(data.length)} />
         <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" minTickGap={24} />
         <YAxis
           domain={[-AXIS_LIMIT, AXIS_LIMIT]}

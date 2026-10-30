@@ -600,3 +600,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.intro {
+  max-width: 760px;
+  color: var(--muted);
+  line-height: 1.6;
+}
