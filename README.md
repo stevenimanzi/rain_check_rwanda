@@ -11,7 +11,8 @@ insurance can be trusted and where it cannot.
 
 Built for the NISR 2026 Big Data Hackathon, Track 2 (Financial Inclusion & Poverty Reduction).
 
-- **Live app:** _add the deployed link here_
+- **Live app:** https://raincheckrwandaweb.onrender.com/
+- **Live API:** https://raincheck-api-7nk6.onrender.com/api/districts (free hosting: the first visit after a quiet period can take up to a minute)
 - **Demo video (max 3 minutes):** [`docs/demo.webm`](docs/demo.webm)
 - No login is required to use the app.
 
