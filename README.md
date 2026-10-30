@@ -13,7 +13,7 @@ Built for the NISR 2026 Big Data Hackathon, Track 2 (Financial Inclusion & Pover
 
 - **Live app:** https://raincheckrwandaweb.onrender.com/
 - **Live API:** https://raincheck-api-7nk6.onrender.com/api/districts (free hosting: the first visit after a quiet period can take up to a minute)
-- **Demo video (max 3 minutes):** [`docs/demo.webm`](docs/demo.webm)
+- **Demo (animated GIF, 89 seconds):** [`docs/demo.gif`](docs/demo.gif)
 - No login is required to use the app.
 
 ## Main finding
@@ -86,7 +86,7 @@ available from the [NISR Microdata Portal](https://microdata.statistics.gov.rw/i
 - `backend/` Laravel API and MySQL database
 - `data-tools/` Python script that turns CHIRPS rasters into district rainfall
 - `data/` data files used and produced
-- `docs/` demo video
+- `docs/` demo GIF
 
 ## Run it on any machine
 
