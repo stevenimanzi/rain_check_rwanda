@@ -117,6 +117,20 @@ pip install -r requirements.txt
 python chirps_to_csv.py ../frontend/public/rwanda-districts.geojson ../data/rainfall.csv 2014 2024
 ```
 
+## Host it on Render
+
+The repo has a `Dockerfile` for the API and a start script that creates the tables and loads the data.
+
+1. Create a PostgreSQL database on Render (Laravel works with MySQL or PostgreSQL).
+2. Create a **Web Service** from this repo: language Docker, root directory empty. Set `APP_KEY`
+   (from `php artisan key:generate --show`), `APP_ENV=production`, `APP_DEBUG=false`, `DB_CONNECTION=pgsql`
+   and `DB_URL` (the database's internal URL).
+3. Create a **Static Site** from this repo: root directory `frontend`, build command
+   `npm install && npm run build`, publish directory `dist`, and `VITE_API_URL` set to
+   `https://<your-api-service>.onrender.com/api`.
+
+Free Render web services go to sleep when nobody uses them, so the first visit can take up to a minute.
+
 ## AI assistance
 
 AI tools (Claude) were used as an assistant during development of this project, as permitted by the

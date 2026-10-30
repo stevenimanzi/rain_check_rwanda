@@ -36,9 +36,11 @@ export default function App() {
 
   const renderPage = () => {
     if (error) {
-      return <Notice title="Could not load data">Check that the Laravel backend is running on port 8000.</Notice>
+      return <Notice title="Could not load the data">The server did not answer. Please refresh the page in a minute.</Notice>
     }
-    if (!districts || !overview) return <p>Loading...</p>
+    if (!districts || !overview) {
+      return <Notice title="Loading the data">The server may need up to a minute to wake up if nobody has used the site recently.</Notice>
+    }
 
     const pages = {
       overview: <OverviewPage districts={districts} overview={overview} />,
