@@ -48,6 +48,10 @@ export default function GapChart({ districts }) {
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    <p className="chart-axis-note">
+      Bar length = size of the disagreement, in points on a 0 to 100 scale. Longer bar = bigger disagreement. No bar =
+      they agree.
+    </p>
     <ChartLegend
       items={[
         { color: CHART_COLORS.dry, label: 'Red: more households reported drought than the satellite saw' },

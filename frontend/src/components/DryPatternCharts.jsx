@@ -28,6 +28,14 @@ export default function DryPatternCharts({ byYear, byMonth, area, isAverage }) {
             isAverage ? ' (the average of all 30 districts)' : ''
           }. We do not count June to August, because it is normally very dry.`}
           howToRead="A tall bar is a drought year. In those years farmers lose the most, and drought insurance should pay."
+          calculation={[
+            `Go through every month of the year, from 2014 to 2024, for ${area}.`,
+            'Mark a month as dry if it had at least 20% less rain than normal for that calendar month.',
+            isAverage
+              ? 'Count the dry months in each year for every district, then take the average across the 30 districts.'
+              : 'Count the dry months in each year.',
+            'June to August are skipped because they are normally very dry.',
+          ]}
           sources={['rainfall', 'boundaries']}
         />
       </div>
@@ -46,6 +54,13 @@ export default function DryPatternCharts({ byYear, byMonth, area, isAverage }) {
             isAverage ? ' (the average of all districts)' : ''
           }.`}
           howToRead="A tall bar is a risky month. Grey 'n/a' bars are June to August, which we do not judge. Use this to plan when to sell insurance and run savings campaigns."
+          calculation={[
+            'Take one calendar month, for example April, and look at it in each year from 2014 to 2024.',
+            'Count the years when that April had at least 20% less rain than normal.',
+            'Divide by the number of years and multiply by 100 to get a percentage.',
+            ...(isAverage ? ['Take the average of the 30 districts.'] : []),
+          ]}
+          example="If April was dry in 4 of 11 years, the bar shows 4 / 11 x 100 = 36%."
           sources={['rainfall', 'boundaries']}
         />
       </div>

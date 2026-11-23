@@ -113,6 +113,12 @@ export default function DistrictMap({ districts, metric, onSelect }) {
       <ChartInfo
         shows="Rwanda's 30 districts, coloured by the measure you pick in the tabs above the map."
         howToRead="Darker colour means more drought. On the first three tabs the districts are split into four equal groups, so the darkest colour is the top quarter. On the mismatch tab, green means the satellite and households agree, and red means they disagree a lot. Click a district to see its charts below the map."
+        calculation={[
+          'Pick a measure with the tabs: long-term dry months, recent dry months, households reporting drought, or mismatch risk.',
+          'Each district gets its number for that measure, the same numbers used in the charts on the Overview page.',
+          'The 30 districts are sorted and split into four equal groups, and each group gets a colour from light (least) to dark (most).',
+          'On the mismatch tab, the colour comes from the gap between the satellite score and the household score: under 25 points is green, 25 to 50 is amber, over 50 is red.',
+        ]}
         sources={['rainfall', 'boundaries', 'cfsva']}
       />
     </div>

@@ -62,6 +62,11 @@ export default function DistrictDetail({ districtId }) {
         <ChartInfo
           shows="Two ways of measuring drought for the same 12 months: the share of households that reported drought, and the dry months the satellite saw."
           howToRead={`Each one gets a score from 0 (lowest) to 100 (highest) compared with the other 29 districts. The gap between the two scores is ${summary.basis_risk_pct} points. Under 25 is low mismatch risk, 25 to 50 is medium, and over 50 is high.`}
+          calculation={[
+            `Households: ${district.name} ranks ${Math.round(summary.household_rank_pct)} out of 100 among the 30 districts for the share of households that reported drought (0 = lowest share, 100 = highest).`,
+            `Satellite: ${district.name} ranks ${Math.round(summary.satellite_rank_pct)} out of 100 for dry months from April 2023 to March 2024 (0 = fewest, 100 = most).`,
+            `The gap is the difference between the two scores: ${summary.basis_risk_pct} points.`,
+          ]}
           sources={['rainfall', 'cfsva', 'eicvPoverty']}
         />
 
@@ -70,6 +75,12 @@ export default function DistrictDetail({ districtId }) {
         <ChartInfo
           shows={`How much more or less rain ${district.name} had each month compared with a normal month, last 3 years.`}
           howToRead="Blue bar: more rain than normal. Red bar: a dry month, at least 20% less rain than normal. Grey bar: June to August, when it is normally very dry, so we do not judge it."
+          calculation={[
+            `Take the rain that fell in ${district.name} in the month.`,
+            'Work out a normal month: the middle value (median) of that same calendar month in the other years, 2014 to 2024.',
+            'Bar height = (rain - normal) / normal x 100. Above 0% is wetter than normal, below 0% is drier.',
+            'If the bar is 20% or more below normal, it is a dry month and turns red. June to August are grey and not judged.',
+          ]}
           sources={['rainfall', 'boundaries']}
         />
       </div>

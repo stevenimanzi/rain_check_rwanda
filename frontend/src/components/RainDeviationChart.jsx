@@ -77,7 +77,7 @@ export default function RainDeviationChart({ series }) {
           y={DRY_LINE}
           stroke={CHART_COLORS.dry}
           strokeDasharray="5 4"
-          label={{ value: 'Dry month line (-20%)', position: 'insideBottomLeft', fontSize: 11, fill: CHART_COLORS.dry }}
+          label={{ value: 'Below this line = dry month (-20%)', position: 'insideBottomLeft', fontSize: 11, fill: CHART_COLORS.dry }}
         />
         <Bar dataKey="barHeight" radius={[3, 3, 0, 0]}>
           {data.map((point) => (
@@ -86,12 +86,16 @@ export default function RainDeviationChart({ series }) {
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    <p className="chart-axis-note">
+      Bar height = how much more rain (above 0%) or less rain (below 0%) fell than in a normal month. Only bars that
+      go below the dashed line are dry months.
+    </p>
     <ChartLegend
       items={[
-        { color: CHART_COLORS.wet, label: 'Wetter than normal, or less than 20% drier' },
-        { color: CHART_COLORS.dry, label: 'Dry month (20% or more below normal)' },
-        { color: CHART_COLORS.skipped, label: 'Not judged (June to August, normally very dry)' },
-        { color: CHART_COLORS.dry, label: 'Dry month line (-20%)', line: true },
+        { color: CHART_COLORS.wet, label: 'Blue: more rain than normal, or only a little less (under 20% drier)' },
+        { color: CHART_COLORS.dry, label: 'Red: dry month (20% or more less rain than normal)' },
+        { color: CHART_COLORS.skipped, label: 'Grey: not judged (June to August, normally very dry)' },
+        { color: CHART_COLORS.dry, label: 'Dashed line: the -20% dry month line', line: true },
       ]}
     />
     </>
