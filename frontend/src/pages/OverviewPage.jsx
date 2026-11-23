@@ -53,10 +53,6 @@ export default function OverviewPage({ districts, overview }) {
 
       <div className="panel">
         <h3>Where the satellite and households disagree</h3>
-        <p className="muted">
-          Red: more households reported drought than the satellite saw. Blue: the satellite saw more drought
-          than households reported.
-        </p>
         <GapChart districts={districts} />
         <ChartInfo
           shows={`Each district gets a score from 0 to 100 for the dry months the satellite saw, and another score for the share of households that reported drought. The bar is the difference between the two scores. ${matchText(matchScore)}`}
