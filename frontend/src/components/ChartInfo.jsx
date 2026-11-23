@@ -19,16 +19,19 @@ export default function ChartInfo({ shows, howToRead, calculation, example, sour
           <>
             <dt>How it is calculated</dt>
             <dd>
-              <ol className="calc-steps">
-                {calculation.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
-              {example && (
-                <p className="calc-example">
-                  <strong>Example:</strong> {example}
-                </p>
-              )}
+              <details className="calc-details">
+                <summary>Show the steps</summary>
+                <ol className="calc-steps">
+                  {calculation.map((step) => (
+                    <li key={step}>{step}</li>
+                  ))}
+                </ol>
+                {example && (
+                  <p className="calc-example">
+                    <strong>Example:</strong> {example}
+                  </p>
+                )}
+              </details>
             </dd>
           </>
         )}

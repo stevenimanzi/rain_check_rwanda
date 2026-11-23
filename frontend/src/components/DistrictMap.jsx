@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css'
 import { RISK_COLORS, RISK_LABELS } from '../utils'
 import ChartInfo from './ChartInfo'
 import ChartLegend from './ChartLegend'
+import Takeaway from './Takeaway'
 
 const RWANDA_CENTER = [-1.95, 29.9]
 
@@ -108,6 +109,10 @@ export default function DistrictMap({ districts, metric, onSelect }) {
         <GeoJSON key={`${metric}-${districts.length}`} data={boundaries} style={style} onEachFeature={bindEvents} />
       </MapContainer>
 
+      <Takeaway>
+        Darker colours mean more drought. On the mismatch tab, green means the satellite and households agree and red
+        means they disagree a lot.
+      </Takeaway>
       <ChartLegend title={metric === 'risk' ? undefined : `${UNIT[metric]}:`} items={legend} />
 
       <ChartInfo

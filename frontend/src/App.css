@@ -492,6 +492,16 @@
   line-height: 1.5;
 }
 
+.chart-info .calc-details summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.chart-info .calc-details[open] summary {
+  margin-bottom: 4px;
+}
+
 .chart-info .calc-steps {
   margin: 2px 0 0;
   padding-left: 20px;
@@ -507,6 +517,13 @@
   border-left: 3px solid var(--accent);
   background: #ffffff;
   border-radius: 6px;
+}
+
+.plain-list {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  line-height: 1.6;
+  font-size: 14px;
 }
 
 .chart-takeaway {

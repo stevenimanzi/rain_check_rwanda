@@ -4,6 +4,7 @@ import DryPatternCharts from '../components/DryPatternCharts'
 import GapChart from '../components/GapChart'
 import RainDeviationChart from '../components/RainDeviationChart'
 import StatCard from '../components/StatCard'
+import Takeaway from '../components/Takeaway'
 import { CHART_COLORS } from '../utils'
 
 const inWindow = (month, window) => {
@@ -27,6 +28,21 @@ export default function OverviewPage({ districts, overview }) {
   const biggestGap = districts
     .filter((d) => d.summary.rank_gap !== undefined)
     .sort((a, b) => b.summary.rank_gap - a.summary.rank_gap)[0]
+  const judgedMonths = periodMonths.filter((m) => m.judged).length
+
+  // "Highest: A (n unit). Lowest: B (m unit)." Built from the data, with ties listed together.
+  const namesAt = (getValue, value) => {
+    const names = districts.filter((d) => getValue(d) === value).map((d) => d.name)
+    return names.length > 3 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ')
+  }
+  const highLow = (getValue, format) => {
+    const values = districts.map(getValue).filter((v) => v !== null && v !== undefined)
+    if (!values.length) return null
+    const max = Math.max(...values)
+    const min = Math.min(...values)
+    return `Highest: ${namesAt(getValue, max)} (${format(max)}). Lowest: ${namesAt(getValue, min)} (${format(min)}).`
+  }
+
   const gapExample = biggestGap
     ? `In ${biggestGap.name}, ${biggestGap.household_drought_pct}% of households reported drought, but the satellite saw only ${biggestGap.summary.satellite_drought_months} dry ${biggestGap.summary.satellite_drought_months === 1 ? 'month' : 'months'} there. That is the biggest disagreement in the country.`
     : null
@@ -59,7 +75,7 @@ export default function OverviewPage({ districts, overview }) {
 
       <div className="panel">
         <h3>Where the satellite and households disagree</h3>
-        {gapExample && <p className="chart-takeaway">{gapExample}</p>}
+        <Takeaway>{gapExample}</Takeaway>
         <GapChart districts={districts} />
         <ChartInfo
           shows={`Each district gets a score from 0 to 100 for the dry months the satellite saw, and another score for the share of households that reported drought. The bar is the difference between the two scores. ${matchText(matchScore)}`}
@@ -79,13 +95,16 @@ export default function OverviewPage({ districts, overview }) {
       <div className="panel">
         <h3>Was each month wetter or drier than normal?</h3>
         <p className="muted">Average for all of Rwanda, last 3 years.</p>
+        <Takeaway>
+          {`Between April 2023 and March 2024, Rwanda had ${dryMonths} dry ${dryMonths === 1 ? 'month' : 'months'} out of ${judgedMonths} months judged (a dry month has at least 20% less rain than normal).`}
+        </Takeaway>
         <RainDeviationChart series={national} />
         <ChartInfo
           shows="How much more or less rain fell each month compared with a normal month. We average all 30 districts."
           howToRead="Blue bar: more rain than normal. Red bar: a dry month, at least 20% less rain than normal (below the red dashed line). Grey bar: June to August, when it is normally very dry, so we do not judge it. Move your mouse over a bar to see the exact rain."
           calculation={[
             'Take the rain that fell in the month, averaged over all 30 districts.',
-            'Work out a normal month: the middle value (median) of that same calendar month in the other years, 2014 to 2024.',
+            'Work out a normal month: the typical middle value (the median) of that same calendar month in the other years, 2014 to 2024.',
             'Bar height = (rain - normal) / normal x 100. Above 0% is wetter than normal, below 0% is drier.',
             'If the bar is 20% or more below normal, the month counts as a dry month and turns red.',
             'Months that are normally under 50 mm (June to August) are grey and not judged.',
@@ -101,6 +120,7 @@ export default function OverviewPage({ districts, overview }) {
         <div className="panel">
           <h3>Dry months seen by the satellite</h3>
           <p className="muted">All 30 districts, April 2023 to March 2024.</p>
+          <Takeaway>{highLow((d) => d.summary.satellite_drought_months, (v) => `${v} dry ${v === 1 ? 'month' : 'months'}`)}</Takeaway>
           <DryMonthsChart
             districts={districts}
             getValue={(d) => d.summary.satellite_drought_months}
@@ -123,6 +143,7 @@ export default function OverviewPage({ districts, overview }) {
         <div className="panel">
           <h3>Households that reported drought</h3>
           <p className="muted">Share of households in each district, 2024.</p>
+          <Takeaway>{highLow((d) => d.household_drought_pct, (v) => `${v}% of households`)}</Takeaway>
           <DryMonthsChart
             districts={districts}
             getValue={(d) => d.household_drought_pct}
@@ -147,6 +168,7 @@ export default function OverviewPage({ districts, overview }) {
         <div className="panel">
           <h3>Drought risk over many years</h3>
           <p className="muted">Average dry months each year, 2014 to 2024.</p>
+          <Takeaway>{highLow((d) => d.summary.avg_dry_months_per_year, (v) => `${v} dry months a year`)}</Takeaway>
           <DryMonthsChart
             districts={districts}
             getValue={(d) => d.summary.avg_dry_months_per_year}
@@ -169,6 +191,10 @@ export default function OverviewPage({ districts, overview }) {
         <div className="panel">
           <h3>Poverty rate by district</h3>
           <p className="muted">Share of people living in poverty, 2023/24.</p>
+          <Takeaway>
+            {highLow((d) => d.poverty_rate, (v) => `${v}% in poverty`)}
+            {' '}For comparison, the national rate is 27.4%.
+          </Takeaway>
           <DryMonthsChart
             districts={districts}
             getValue={(d) => d.poverty_rate}
@@ -181,8 +207,9 @@ export default function OverviewPage({ districts, overview }) {
             howToRead="A longer bar means more poverty. Districts with high poverty and a big mismatch need the most attention."
             calculation={[
               'NISR surveyed households across the country (EICV7, 2023/24).',
-              'A household is counted as poor if its spending is below the national poverty line.',
-              'The bar is the share of people in poverty in each district. We copy these numbers from the official table, we do not calculate them.',
+              'A person is counted as poor if their household spending per adult is below the national poverty line. NISR sets that line at the cost of 2,400 calories a day plus basic non-food needs.',
+              'The bar is the share of people who are poor in each district (Annex B of the NISR report). Nationally it is 27.4%.',
+              'We copy these official numbers as printed. We do not calculate them.',
             ]}
             sources={['eicvPoverty']}
           />

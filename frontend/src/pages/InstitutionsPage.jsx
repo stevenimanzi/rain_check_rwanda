@@ -40,6 +40,39 @@ const USERS = [
   },
 ]
 
+const QUALITY = [
+  {
+    data: 'Poverty rate by district',
+    publisher: 'NISR, EICV7 Poverty Profile (official statistic)',
+    period: '2023/24, by district',
+    checked:
+      'All 30 district values match Annex B of the report. The national rate shown, 27.4%, is the figure printed in the report (95% confidence range 26.4% to 28.4%).',
+    limit: 'District rates come from a survey sample, so each has a margin of error.',
+  },
+  {
+    data: 'Households that reported drought',
+    publisher: 'NISR and WFP, CFSVA 2024 (official survey)',
+    period: 'Asked in April 2024 about the 12 months before, by district',
+    checked:
+      'The report prints these values only as a bar chart. We measured each bar and cross-checked against figures quoted in the report text (for example Gisagara: 39% in the text, 38.4% measured).',
+    limit: 'Accurate to about 1 percentage point. Households answered from memory.',
+  },
+  {
+    data: 'Satellite rainfall',
+    publisher: 'Climate Hazards Center, UC Santa Barbara (CHIRPS v3)',
+    period: 'Monthly, 2014 to 2024, averaged over each district',
+    checked: 'Every district uses the same rule: normal rain is the typical middle value of that month in the other years.',
+    limit: 'An estimate on a 5 km grid, not a measurement on a farm. Dry spells shorter than a month are not visible.',
+  },
+  {
+    data: 'District boundaries',
+    publisher: 'geoBoundaries (open data)',
+    period: '30 districts',
+    checked: 'All 30 districts match the districts in both NISR surveys.',
+    limit: 'Open boundary file, so edges may differ slightly from official survey boundaries.',
+  },
+]
+
 export default function InstitutionsPage({ districts, overview, onNavigate }) {
   const { settings } = overview
   const years = overview.by_year
@@ -167,6 +200,55 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="panel">
+        <h3>Data quality and standards</h3>
+        <p className="muted">
+          Where each number comes from, what we checked, and how accurate it is. Two of the four datasets are
+          official NISR statistics.
+        </p>
+        <div className="table-scroll">
+          <table className="table plain">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Publisher</th>
+                <th>Period and level</th>
+                <th>What we checked</th>
+                <th>Known limit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {QUALITY.map((row) => (
+                <tr key={row.data}>
+                  <td>
+                    <strong>{row.data}</strong>
+                  </td>
+                  <td>{row.publisher}</td>
+                  <td>{row.period}</td>
+                  <td>{row.checked}</td>
+                  <td>{row.limit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <h4>What this analysis can and cannot show</h4>
+        <ul className="plain-list">
+          <li>
+            <strong>It can show</strong> where satellite rainfall and household reports of drought agree or disagree
+            in each district for one year (April 2023 to March 2024).
+          </li>
+          <li>
+            <strong>It cannot show</strong> what an insurance product would have paid, or whether one year is typical.
+            It is a first test that tells insurers and ministries where to look more closely.
+          </li>
+          <li>
+            <strong>Open and repeatable:</strong> every number on the charts can be downloaded as a CSV, and the
+            thresholds (20% below normal, 50 mm, 25 and 50 points) are in one settings file, so anyone can rerun it.
+          </li>
+        </ul>
       </div>
 
       <div className="panel prose">

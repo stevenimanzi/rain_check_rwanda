@@ -6,6 +6,7 @@ import DryPatternCharts from './DryPatternCharts'
 import RainDeviationChart from './RainDeviationChart'
 import RiskBadge from './RiskBadge'
 import StatCard from './StatCard'
+import Takeaway from './Takeaway'
 
 const VERDICTS = {
   agrees:
@@ -58,7 +59,7 @@ export default function DistrictDetail({ districtId }) {
             hint="Average, 2014 to 2024"
           />
         </div>
-        <p className="verdict">{VERDICTS[summary.direction]}</p>
+        <Takeaway>{VERDICTS[summary.direction]}</Takeaway>
         <ChartInfo
           shows="Two ways of measuring drought for the same 12 months: the share of households that reported drought, and the dry months the satellite saw."
           howToRead={`Each one gets a score from 0 (lowest) to 100 (highest) compared with the other 29 districts. The gap between the two scores is ${summary.basis_risk_pct} points. Under 25 is low mismatch risk, 25 to 50 is medium, and over 50 is high.`}
@@ -71,13 +72,16 @@ export default function DistrictDetail({ districtId }) {
         />
 
         <h3>Rain compared to normal</h3>
+        <Takeaway>
+          {`Between April 2023 and March 2024, ${district.name} had ${summary.satellite_drought_months} dry ${summary.satellite_drought_months === 1 ? 'month' : 'months'} (a dry month has at least 20% less rain than normal).`}
+        </Takeaway>
         <RainDeviationChart series={district.rainfall} />
         <ChartInfo
           shows={`How much more or less rain ${district.name} had each month compared with a normal month, last 3 years.`}
           howToRead="Blue bar: more rain than normal. Red bar: a dry month, at least 20% less rain than normal. Grey bar: June to August, when it is normally very dry, so we do not judge it."
           calculation={[
             `Take the rain that fell in ${district.name} in the month.`,
-            'Work out a normal month: the middle value (median) of that same calendar month in the other years, 2014 to 2024.',
+            'Work out a normal month: the typical middle value (the median) of that same calendar month in the other years, 2014 to 2024.',
             'Bar height = (rain - normal) / normal x 100. Above 0% is wetter than normal, below 0% is drier.',
             'If the bar is 20% or more below normal, it is a dry month and turns red. June to August are grey and not judged.',
           ]}

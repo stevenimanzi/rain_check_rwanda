@@ -1,6 +1,7 @@
 import { CHART_COLORS, MONTH_NAMES, monthShort } from '../utils'
 import ChartInfo from './ChartInfo'
 import SimpleBarChart from './SimpleBarChart'
+import Takeaway from './Takeaway'
 
 /**
  * Two long-term charts for one area (the whole country or a single district):
@@ -15,6 +16,19 @@ export default function DryPatternCharts({ byYear, byMonth, area, isAverage }) {
     value: row.dry_pct,
   }))
 
+  const maxYear = Math.max(...byYear.map((row) => row.dry_months))
+  const driestYears = byYear.filter((row) => row.dry_months === maxYear).map((row) => row.year)
+  const judgedMonths = byMonth.filter((row) => row.dry_pct !== null)
+  const maxPct = Math.max(...judgedMonths.map((row) => row.dry_pct))
+  const riskiestMonths = judgedMonths.filter((row) => row.dry_pct === maxPct).map((row) => MONTH_NAMES[row.month - 1])
+
+  const yearTakeaway = byYear.length
+    ? `${area}'s driest ${driestYears.length > 1 ? 'years were' : 'year was'} ${driestYears.join(' and ')}, with ${maxYear} dry months${isAverage ? ' per district on average' : ''}.`
+    : null
+  const monthTakeaway = judgedMonths.length
+    ? `${riskiestMonths.join(' and ')} ${riskiestMonths.length > 1 ? 'are the months' : 'is the month'} most often dry in ${area}: dry in ${maxPct}% of the years from 2014 to 2024.`
+    : null
+
   return (
     <div className="grid-2 even">
       <div className="panel">
@@ -22,6 +36,7 @@ export default function DryPatternCharts({ byYear, byMonth, area, isAverage }) {
         <p className="muted">
           {isAverage ? 'Average number of dry months in each district' : 'Number of dry months'} each year, 2014 to 2024.
         </p>
+        <Takeaway>{yearTakeaway}</Takeaway>
         <SimpleBarChart data={yearData} color={CHART_COLORS.dry} legendLabel="Number of dry months in the year" />
         <ChartInfo
           shows={`How many months each year had at least 20% less rain than normal${
@@ -43,6 +58,7 @@ export default function DryPatternCharts({ byYear, byMonth, area, isAverage }) {
       <div className="panel">
         <h3>Which months are most often dry in {area}?</h3>
         <p className="muted">Share of years when each month was dry, 2014 to 2024.</p>
+        <Takeaway>{monthTakeaway}</Takeaway>
         <SimpleBarChart
           data={monthData}
           color={CHART_COLORS.normal}
