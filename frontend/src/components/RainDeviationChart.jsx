@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { GRID_LINE, linesBetweenColumns } from '../chartGrid'
 import { CHART_COLORS, longMonth, shortMonth } from '../utils'
+import ChartLegend from './ChartLegend'
 
 const DRY_LINE = -20
 const MONTHS_SHOWN = 36
@@ -58,6 +59,7 @@ export default function RainDeviationChart({ series }) {
   }))
 
   return (
+    <>
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(data.length)} />
@@ -84,5 +86,14 @@ export default function RainDeviationChart({ series }) {
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    <ChartLegend
+      items={[
+        { color: CHART_COLORS.wet, label: 'Wetter than normal, or less than 20% drier' },
+        { color: CHART_COLORS.dry, label: 'Dry month (20% or more below normal)' },
+        { color: CHART_COLORS.skipped, label: 'Not judged (June to August, normally very dry)' },
+        { color: CHART_COLORS.dry, label: 'Dry month line (-20%)', line: true },
+      ]}
+    />
+    </>
   )
 }

@@ -22,7 +22,7 @@ export default function DryPatternCharts({ byYear, byMonth, area, isAverage }) {
         <p className="muted">
           {isAverage ? 'Average number of dry months in each district' : 'Number of dry months'} each year, 2014 to 2024.
         </p>
-        <SimpleBarChart data={yearData} color={CHART_COLORS.dry} />
+        <SimpleBarChart data={yearData} color={CHART_COLORS.dry} legendLabel="Number of dry months in the year" />
         <ChartInfo
           shows={`How many months each year had at least 20% less rain than normal${
             isAverage ? ' (the average of all 30 districts)' : ''
@@ -35,7 +35,12 @@ export default function DryPatternCharts({ byYear, byMonth, area, isAverage }) {
       <div className="panel">
         <h3>Which months are most often dry in {area}?</h3>
         <p className="muted">Share of years when each month was dry, 2014 to 2024.</p>
-        <SimpleBarChart data={monthData} color={CHART_COLORS.normal} unit="%" />
+        <SimpleBarChart
+          data={monthData}
+          color={CHART_COLORS.normal}
+          unit="%"
+          legendLabel="Share of years when the month was dry"
+        />
         <ChartInfo
           shows={`For each month of the year, the share of years (2014 to 2024) when rain was at least 20% below normal${
             isAverage ? ' (the average of all districts)' : ''

@@ -358,6 +358,14 @@
   margin-right: 4px;
 }
 
+.legend i.legend-line {
+  height: 0;
+  width: 18px;
+  border-radius: 0;
+  border-top: 2px dashed;
+  vertical-align: middle;
+}
+
 /* Text pages */
 .prose p,
 .prose li {

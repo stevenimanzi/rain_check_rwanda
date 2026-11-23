@@ -1,15 +1,17 @@
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { GRID_LINE, linesBetweenRows } from '../chartGrid'
+import ChartLegend from './ChartLegend'
 
 /**
  * Every district, from the highest value to the lowest. getValue picks the number to rank by.
  */
-export default function DryMonthsChart({ districts, getValue, unit, color }) {
+export default function DryMonthsChart({ districts, getValue, unit, color, legendLabel }) {
   const data = districts
     .map((d) => ({ name: d.name, value: getValue(d) }))
     .sort((a, b) => b.value - a.value)
 
   return (
+    <>
     <ResponsiveContainer width="100%" height={data.length * 26 + 30}>
       <BarChart data={data} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
         <CartesianGrid {...GRID_LINE} horizontalCoordinatesGenerator={linesBetweenRows(data.length)} />
@@ -21,5 +23,7 @@ export default function DryMonthsChart({ districts, getValue, unit, color }) {
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    <ChartLegend items={[{ color, label: legendLabel ?? unit }]} />
+    </>
   )
 }

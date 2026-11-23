@@ -1,11 +1,12 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { GRID_LINE, linesBetweenColumns } from '../chartGrid'
 import { CHART_COLORS } from '../utils'
+import ChartLegend from './ChartLegend'
 
 /**
  * Plain bar chart. Each item is { label, fullLabel, value } where a null value means "not judged".
  */
-export default function SimpleBarChart({ data, color, unit = '', height = 240 }) {
+export default function SimpleBarChart({ data, color, unit = '', height = 240, legendLabel }) {
   const rows = data.map((item) => ({
     ...item,
     shown: item.value ?? 0,
@@ -24,7 +25,13 @@ export default function SimpleBarChart({ data, color, unit = '', height = 240 })
     )
   }
 
+  const legendItems = [{ color, label: legendLabel }]
+  if (rows.some((row) => row.value === null)) {
+    legendItems.push({ color: CHART_COLORS.skipped, label: 'Not judged (June to August, normally very dry)' })
+  }
+
   return (
+    <>
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={rows} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
         <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(rows.length)} />
@@ -39,5 +46,7 @@ export default function SimpleBarChart({ data, color, unit = '', height = 240 })
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    <ChartLegend items={legendItems} />
+    </>
   )
 }

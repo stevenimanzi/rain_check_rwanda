@@ -3,6 +3,7 @@ import { GeoJSON, MapContainer, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { RISK_COLORS, RISK_LABELS } from '../utils'
 import ChartInfo from './ChartInfo'
+import ChartLegend from './ChartLegend'
 
 const RWANDA_CENTER = [-1.95, 29.9]
 
@@ -73,7 +74,12 @@ export default function DistrictMap({ districts, metric, onSelect }) {
 
   const legend =
     metric === 'risk'
-      ? ['low', 'medium', 'high'].map((level) => ({ color: RISK_COLORS[level], label: `${RISK_LABELS[level]} mismatch risk` }))
+      ? [
+          ...['low', 'medium', 'high'].map((level) => ({ color: RISK_COLORS[level], label: `${RISK_LABELS[level]} mismatch risk` })),
+          ...(districts.some((d) => d.summary.risk_level === 'no_data')
+            ? [{ color: RISK_COLORS.no_data, label: RISK_LABELS.no_data }]
+            : []),
+        ]
       : steps.legend
 
   const style = (feature) => ({
@@ -102,14 +108,7 @@ export default function DistrictMap({ districts, metric, onSelect }) {
         <GeoJSON key={`${metric}-${districts.length}`} data={boundaries} style={style} onEachFeature={bindEvents} />
       </MapContainer>
 
-      <div className="legend">
-        {metric !== 'risk' && <strong>{UNIT[metric]}:</strong>}
-        {legend.map(({ color, label }) => (
-          <span key={label}>
-            <i style={{ background: color }} /> {label}
-          </span>
-        ))}
-      </div>
+      <ChartLegend title={metric === 'risk' ? undefined : `${UNIT[metric]}:`} items={legend} />
 
       <ChartInfo
         shows="Rwanda's 30 districts, coloured by the measure you pick in the tabs above the map."

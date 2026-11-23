@@ -87,6 +87,7 @@ export default function OverviewPage({ districts, overview }) {
             getValue={(d) => d.summary.satellite_drought_months}
             unit="dry months"
             color={CHART_COLORS.dry}
+            legendLabel="Dry months seen by the satellite"
           />
           <ChartInfo
             shows="How many months had at least 20% less rain than normal, in the 12 months before the April 2024 survey."
@@ -103,6 +104,7 @@ export default function OverviewPage({ districts, overview }) {
             getValue={(d) => d.household_drought_pct}
             unit="% of households"
             color={CHART_COLORS.normal}
+            legendLabel="Share of households that reported drought"
           />
           <ChartInfo
             shows="The share of households that said drought hurt them in the 12 months before the April 2024 survey (CFSVA)."
@@ -121,6 +123,7 @@ export default function OverviewPage({ districts, overview }) {
             getValue={(d) => d.summary.avg_dry_months_per_year}
             unit="dry months a year"
             color={CHART_COLORS.dry}
+            legendLabel="Average dry months each year"
           />
           <ChartInfo
             shows="On average, how many months each year have at least 20% less rain than normal."
@@ -137,6 +140,7 @@ export default function OverviewPage({ districts, overview }) {
             getValue={(d) => d.poverty_rate}
             unit="% in poverty"
             color={CHART_COLORS.rain}
+            legendLabel="Share of people living in poverty"
           />
           <ChartInfo
             shows="The official poverty rate of each district, from NISR's EICV7 survey."

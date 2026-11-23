@@ -1,6 +1,7 @@
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { GRID_LINE, linesBetweenRows } from '../chartGrid'
 import { CHART_COLORS } from '../utils'
+import ChartLegend from './ChartLegend'
 
 /**
  * For every district, the gap between its score for households that reported drought and its score
@@ -32,6 +33,7 @@ export default function GapChart({ districts }) {
   }
 
   return (
+    <>
     <ResponsiveContainer width="100%" height={data.length * 24 + 40}>
       <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
         <CartesianGrid {...GRID_LINE} horizontalCoordinatesGenerator={linesBetweenRows(data.length)} />
@@ -46,5 +48,12 @@ export default function GapChart({ districts }) {
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    <ChartLegend
+      items={[
+        { color: CHART_COLORS.dry, label: 'Red: more households reported drought than the satellite saw' },
+        { color: CHART_COLORS.wet, label: 'Blue: the satellite saw more drought than households reported' },
+      ]}
+    />
+    </>
   )
 }
