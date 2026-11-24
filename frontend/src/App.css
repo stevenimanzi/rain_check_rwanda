@@ -442,8 +442,8 @@ body {
 .table th,
 .table td {
   padding: 10px 8px;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-right: 0;
+  border-bottom: 0;
   text-align: left;
 }
 
@@ -816,4 +816,46 @@ body {
   max-width: 760px;
   color: var(--muted);
   line-height: 1.6;
+}
+
+/* Borderless container system */
+.topbar,
+.topbar-info,
+.language-switcher-button,
+.language-menu,
+.panel,
+.stat-card,
+.chart-tooltip,
+.tab,
+.search,
+.table th,
+.table td,
+.fact,
+.link-button,
+.download {
+  border: 0 !important;
+}
+
+.topbar {
+  border-bottom: 0;
+}
+
+.table th,
+.table td {
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.table th {
+  border-bottom: 0;
+}
+
+.tab.active,
+.menu-button,
+.close-button,
+.search,
+.chart-tooltip,
+.link-button,
+.download {
+  border-color: transparent;
 }

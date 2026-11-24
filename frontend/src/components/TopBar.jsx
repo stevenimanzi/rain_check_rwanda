@@ -1,4 +1,4 @@
-import { Bars3Icon, CalendarDaysIcon, ChevronDownIcon, LanguageIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, CalendarDaysIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import { useEffect, useRef, useState } from 'react'
 
 const LANGUAGES = {
@@ -123,7 +123,6 @@ export default function TopBar({ title, onMenuClick }) {
             aria-expanded={languageMenuOpen}
             onClick={() => setLanguageMenuOpen((open) => !open)}
           >
-            <LanguageIcon className="language-icon" />
             <span className="language-current-flag" aria-hidden="true">
               <Flag code={language} />
             </span>
