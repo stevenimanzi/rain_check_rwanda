@@ -33,11 +33,12 @@
 }
 
 .brand-icon {
-  background: var(--sidebar-active);
-  border-radius: 8px;
-  padding: 5px;
-  width: 32px;
-  height: 32px;
+  background: #fff;
+  color: var(--primary);
+  border-radius: 10px;
+  padding: 6px;
+  width: 38px;
+  height: 38px;
 }
 
 .nav-item {
@@ -52,20 +53,21 @@
   background: transparent;
   color: inherit;
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
   text-align: left;
   transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
   transform: translateX(2px);
 }
 
 .nav-item.active {
-  background: var(--sidebar-active);
-  color: #fff;
-  box-shadow: inset 3px 0 0 #fff;
+  background: #fff;
+  color: var(--primary);
+  box-shadow: none;
 }
 
 .icon {
@@ -120,33 +122,68 @@
   font-size: 20px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
 .topbar-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 13px;
+  gap: 9px;
+  padding: 8px 14px;
+  border-radius: 24px;
+  background: #fff;
+  color: var(--primary);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .topbar-info .icon {
-  width: 16px;
-  height: 16px;
+  width: 21px;
+  height: 21px;
 }
 
-.menu-button,
-.close-button {
-  place-items: center;
-  padding: 6px;
+.language-switcher {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 9px 0 11px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 24px;
+  background: #fff;
+  color: var(--primary);
+}
+
+.language-switcher .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.language-switcher select {
+  border: 0;
+  outline: 0;
   background: transparent;
-  color: inherit;
+  color: var(--primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+}
+
+#google_translate_element,
+.goog-te-banner-frame,
+.goog-te-gadget-icon {
+  display: none !important;
+}
+
+body {
+  top: 0 !important;
 }
 
 /* Page */

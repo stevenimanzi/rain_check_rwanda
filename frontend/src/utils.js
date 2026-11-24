@@ -29,7 +29,7 @@ export const CHART_COLORS = {
   skipped: '#cbd5e1',
   dry: '#dc2626',
   normal: '#f59e0b',
-  rain: '#0066b3',
+  rain: '#1d4f91',
 }
 
 export const MONTH_NAMES = [

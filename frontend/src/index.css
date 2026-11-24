@@ -1,8 +1,10 @@
 :root {
-  --sidebar: #004b87;
-  --sidebar-active: #0072bc;
-  --accent: #0066b3;
-  --accent-soft: #e7f4fb;
+  --primary: #1d4f91;
+  --secondary: #40a6df;
+  --sidebar: var(--primary);
+  --sidebar-active: var(--secondary);
+  --accent: var(--primary);
+  --accent-soft: #eaf5fc;
   --risk-high: #dc2626;
   --bg: #f4f8fc;
   --card: #ffffff;
