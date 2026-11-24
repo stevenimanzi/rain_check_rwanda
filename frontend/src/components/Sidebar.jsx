@@ -8,10 +8,10 @@ export default function Sidebar({ page, open, onChange, onClose }) {
 
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="brand">
-          <CloudIcon className="icon brand-icon" />
+          <CloudIcon className="icon brand-icon" aria-hidden="true" />
           <span>RainCheck Rwanda</span>
           <button className="close-button" onClick={onClose} aria-label="Close menu">
-            <XMarkIcon className="icon" />
+            <XMarkIcon className="icon" aria-hidden="true" />
           </button>
         </div>
 
@@ -20,9 +20,10 @@ export default function Sidebar({ page, open, onChange, onClose }) {
             <button
               key={id}
               className={`nav-item ${page === id ? 'active' : ''}`}
+              aria-current={page === id ? 'page' : undefined}
               onClick={() => onChange(id)}
             >
-              <Icon className="icon" />
+              <Icon className="icon" aria-hidden="true" />
               {label}
             </button>
           ))}

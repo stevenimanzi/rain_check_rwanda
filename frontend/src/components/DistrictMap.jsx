@@ -7,7 +7,7 @@ import ChartInfo from './ChartInfo'
 const RWANDA_CENTER = [-1.95, 29.9]
 
 // Light to dark: more drought.
-const SCALE_COLORS = ['#fef3c7', '#fcd34d', '#fb923c', '#dc2626']
+const SCALE_COLORS = ['#e7f4fb', '#a7dcf2', '#4eb4e5', '#0066b3']
 
 const VALUE_OF = {
   history: (d) => d.summary.avg_dry_months_per_year,

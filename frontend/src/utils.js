@@ -25,11 +25,11 @@ export const RISK_COLORS = {
 }
 
 export const CHART_COLORS = {
-  wet: '#3b82f6',
+  wet: '#00a6d6',
   skipped: '#cbd5e1',
   dry: '#dc2626',
   normal: '#f59e0b',
-  rain: '#6d5ef0',
+  rain: '#0066b3',
 }
 
 export const MONTH_NAMES = [
