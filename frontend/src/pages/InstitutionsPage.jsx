@@ -137,6 +137,12 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
 
       <div className="panel">
         <h3>The data we use and where it comes from</h3>
+        <p className="muted">
+          Household and poverty figures link to NISR publications on the NISR Statistics Portal. Rainfall is CHIRPS
+          v3 satellite data from the Climate Hazards Center at UC Santa Barbara, not an NISR product. District
+          boundaries come from geoBoundaries; uploaded surveys retain the source name entered by the uploader and
+          are not independently verified by NISR.
+        </p>
         <div className="table-scroll">
           <table className="table plain">
             <thead>

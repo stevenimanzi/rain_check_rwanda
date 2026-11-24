@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUpTrayIcon, ChevronDownIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowUpTrayIcon,
+  CalendarDaysIcon,
+  ChevronDownIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import { fetchDistrict, fetchHouseholdSurveyImports } from '../api'
 import ChartInfo from '../components/ChartInfo'
 import CountryDroughtCharts from '../components/CountryDroughtCharts'
@@ -90,6 +96,7 @@ function DistrictMultiSelect({ districts, selectedIds, onChange }) {
   const [search, setSearch] = useState('')
   const ref = useRef(null)
   const allSelected = selectedIds === null
+  const selectedCount = allSelected ? districts.length : selectedIds.length
   const summary = allSelected
     ? 'All districts'
     : selectedIds.length === 0
@@ -120,8 +127,9 @@ function DistrictMultiSelect({ districts, selectedIds, onChange }) {
     <div className="filter-field district-filter">
       <span>Districts</span>
       <div className="district-picker" ref={ref}>
-        <button type="button" className="district-picker-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
-          <span>{summary}</span>
+        <button type="button" className="district-picker-trigger" aria-haspopup="true" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+          <span className="district-picker-summary">{summary}</span>
+          <span className="district-picker-count">{selectedCount}/{districts.length}</span>
           <ChevronDownIcon className={`custom-select-chevron ${open ? 'open' : ''}`} />
         </button>
         {open && (
@@ -131,8 +139,11 @@ function DistrictMultiSelect({ districts, selectedIds, onChange }) {
               <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search districts" autoFocus />
             </div>
             <div className="district-picker-actions">
-              <button type="button" className="district-picker-all" onClick={() => onChange(null)}>Select all</button>
-              <button type="button" className="district-picker-clear" onClick={() => onChange([])}>Clear</button>
+              <span>{selectedCount} of {districts.length} selected</span>
+              <div className="district-picker-action-buttons">
+                <button type="button" className="district-picker-all" disabled={allSelected} onClick={() => onChange(null)}>Select all</button>
+                <button type="button" className="district-picker-clear" disabled={selectedCount === 0} onClick={() => onChange([])}>Clear</button>
+              </div>
             </div>
             <div className="district-picker-list">
               {visibleDistricts.map((district) => (
@@ -213,10 +224,12 @@ export default function OverviewPage({ districts, overview }) {
     ...national.map((month) => month.year),
     ...surveyImports.map((surveyImport) => Number(surveyImport.survey_year)),
   ])].sort((a, b) => a - b)
+  const yearOptions = rainfallYears.length ? rainfallYears : availableYears
   const [selectedYears, setSelectedYears] = useState(null)
-  const defaultYear = rainfallYears[rainfallYears.length - 1] ?? availableYears[0]
-  const startYear = selectedYears?.start ?? defaultYear
-  const endYear = selectedYears?.end ?? defaultYear
+  const defaultStartYear = yearOptions[0]
+  const defaultEndYear = yearOptions[yearOptions.length - 1]
+  const startYear = selectedYears?.start ?? defaultStartYear
+  const endYear = selectedYears?.end ?? defaultEndYear
   const [selectedDistrictIds, setSelectedDistrictIds] = useState(null)
   const [districtDetails, setDistrictDetails] = useState({})
   const [districtError, setDistrictError] = useState(null)
@@ -366,82 +379,92 @@ export default function OverviewPage({ districts, overview }) {
 
   const filters = (
     <section className="overview-filters" aria-label="Overview filters">
-      <CustomSelect
-        label="From year"
-        value={startYear}
-        options={availableYears.map((year) => ({ value: year, label: String(year) }))}
-        onChange={(year) => {
-          setSelectedYears((current) => {
-            const currentEnd = current?.end ?? availableYears[availableYears.length - 1]
-            return { start: Number(year), end: Number(year) > currentEnd ? Number(year) : currentEnd }
-          })
-        }}
-      />
-
-      <CustomSelect
-        label="To year"
-        value={endYear}
-        options={availableYears.map((year) => ({ value: year, label: String(year) }))}
-        onChange={(year) => {
-          setSelectedYears((current) => {
-            const currentStart = current?.start ?? availableYears[0]
-            return { start: Number(year) < currentStart ? Number(year) : currentStart, end: Number(year) }
-          })
-        }}
-      />
-
-      <DistrictMultiSelect
-        districts={districts}
-        selectedIds={selectedDistrictIds}
-        onChange={(ids) => {
-          setSelectedDistrictIds(ids)
-          setDistrictError(null)
-        }}
-      />
-
-      <div className="overview-filter-actions">
-        <button
-          type="button"
-          className="survey-import-toggle"
-          aria-expanded={importFormOpen}
-          aria-haspopup="dialog"
-          onClick={() => setImportFormOpen(true)}
-        >
-          <ArrowUpTrayIcon className="icon" />
-          Import survey data
-        </button>
-        {surveyImports.length > 0 && (
-          <>
-            <CustomSelect
-              label="Household survey view"
-              className="survey-view-filter"
-              value={surveyView}
-              options={[
-                { value: 'merged', label: 'Merge with CFSVA 2024' },
-                { value: 'imported', label: 'Imported data only' },
-              ]}
-              onChange={setSurveyView}
-            />
-            <CustomSelect
-              label="Survey upload"
-              className="survey-source-select"
-              value={selectedImport?.id ?? ''}
-              options={surveyImports.map((surveyImport) => ({
-                value: surveyImport.id,
-                label: `${surveyImport.source_name} (${surveyImport.survey_year})`,
-              }))}
-              onChange={setSelectedImportId}
-            />
-          </>
-        )}
+      <div className="overview-filter-heading">
+        <div>
+          <h2>Explore by year and district</h2>
+          <p>Choose a rainfall period and districts to update the dashboard.</p>
+        </div>
+        <div className="overview-filter-range">
+          <CalendarDaysIcon className="icon" aria-hidden="true" />
+          <span>Showing {startYear} - {endYear}</span>
+        </div>
       </div>
 
-      <p className="filter-note">
-        The year filters default to the latest rainfall year; choose the same year twice for one year or a range.
-        Select one or more districts for individual comparisons; rainfall
-        trends average the selected districts. Imported-only charts show the chosen upload. Merge mode uses that
-        upload where available and CFSVA 2024 for missing districts; mismatch comparisons always use CFSVA 2024.
-      </p>
+      <div className="overview-filter-controls">
+        <div className="overview-filter-years" role="group" aria-label="Rainfall year range">
+          <CustomSelect
+            label="From year"
+            value={startYear}
+            className="overview-year-filter"
+            options={yearOptions.map((year) => ({ value: year, label: String(year) }))}
+            onChange={(year) => {
+              setSelectedYears((current) => {
+                const currentEnd = current?.end ?? defaultEndYear
+                return { start: Number(year), end: Number(year) > currentEnd ? Number(year) : currentEnd }
+              })
+            }}
+          />
+
+          <CustomSelect
+            label="To year"
+            value={endYear}
+            className="overview-year-filter"
+            options={yearOptions.map((year) => ({ value: year, label: String(year) }))}
+            onChange={(year) => {
+              setSelectedYears((current) => {
+                const currentStart = current?.start ?? defaultStartYear
+                return { start: Number(year) < currentStart ? Number(year) : currentStart, end: Number(year) }
+              })
+            }}
+          />
+        </div>
+
+        <DistrictMultiSelect
+          districts={districts}
+          selectedIds={selectedDistrictIds}
+          onChange={(ids) => {
+            setSelectedDistrictIds(ids)
+            setDistrictError(null)
+          }}
+        />
+
+        <div className="overview-filter-actions">
+          <button
+            type="button"
+            className="survey-import-toggle"
+            aria-expanded={importFormOpen}
+            aria-haspopup="dialog"
+            onClick={() => setImportFormOpen(true)}
+          >
+            <ArrowUpTrayIcon className="icon" />
+            Import survey data
+          </button>
+          {surveyImports.length > 0 && (
+            <>
+              <CustomSelect
+                label="Household survey view"
+                className="survey-view-filter"
+                value={surveyView}
+                options={[
+                  { value: 'merged', label: 'Merge with CFSVA 2024' },
+                  { value: 'imported', label: 'Imported data only' },
+                ]}
+                onChange={setSurveyView}
+              />
+              <CustomSelect
+                label="Survey upload"
+                className="survey-source-select"
+                value={selectedImport?.id ?? ''}
+                options={surveyImports.map((surveyImport) => ({
+                  value: surveyImport.id,
+                  label: `${surveyImport.source_name} (${surveyImport.survey_year})`,
+                }))}
+                onChange={setSelectedImportId}
+              />
+            </>
+          )}
+        </div>
+      </div>
     </section>
   )
 

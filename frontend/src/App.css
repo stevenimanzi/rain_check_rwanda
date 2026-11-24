@@ -312,14 +312,91 @@ body {
 }
 
 .overview-filters {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff 0%, var(--card) 100%);
+  box-shadow: 0 8px 24px rgba(24, 50, 71, 0.06);
+}
+
+.overview-filter-heading {
   display: flex;
-  align-items: end;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
+}
+
+.overview-filter-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.overview-filter-heading p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.overview-filter-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.overview-filter-range .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.overview-filter-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.overview-filter-years {
+  display: flex;
+  flex: 0 1 270px;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.overview-year-filter {
+  flex: 1 1 112px;
+  min-width: 112px;
+}
+
+.overview-year-filter .custom-select {
+  width: 100%;
+}
+
+.district-filter {
+  flex: 1 1 220px;
+  min-width: 220px;
+  max-width: 300px;
+}
+
+.overview-filter-actions {
+  display: flex;
+  flex: 1 1 300px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-left: auto;
 }
 
 .filter-field {
@@ -457,29 +534,53 @@ body {
   min-width: 220px;
 }
 
+.district-picker-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.district-picker-count {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.district-picker-options {
+  max-height: 340px;
+  overflow: hidden;
+  padding: 10px;
+}
+
 .district-picker-search {
   display: flex;
   align-items: center;
   width: 100%;
-  height: 46px;
+  height: 44px;
   gap: 8px;
-  margin-bottom: 6px;
-  padding: 0 10px;
-  border: 0;
+  margin-bottom: 8px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: #f8fafc;
 }
 
 .district-picker-search .icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: var(--accent);
 }
 
 .district-picker-search input {
   width: 100%;
-  height: 44px;
+  height: 42px;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -499,25 +600,77 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--accent-soft);
-  margin: 2px 0 5px;
+  gap: 8px;
+  padding: 2px 2px 9px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.district-picker-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.district-picker-action-buttons button {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.district-picker-action-buttons button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.district-picker-action-buttons button:disabled {
+  color: #94a3b8;
+  cursor: default;
 }
 
 .district-picker-list {
-  max-height: 190px;
+  max-height: 230px;
   overflow-y: auto;
   scrollbar-width: none;
+  padding-top: 5px;
 }
 
 .district-picker-options label {
-  min-height: 38px;
-  margin: 1px 0;
-  padding: 7px 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  margin: 2px 0;
+  padding: 7px 9px;
   border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .district-picker-options label:hover {
   background: var(--accent-soft);
+}
+
+.district-picker-options input[type="checkbox"] {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 
 .district-picker-empty {
@@ -537,6 +690,27 @@ body {
   justify-content: center;
   gap: 9px;
   min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(24, 50, 71, 0.12);
+  transition: background-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+
+.survey-import-toggle:hover {
+  background: var(--accent);
+  box-shadow: 0 5px 14px rgba(24, 50, 71, 0.16);
+  transform: translateY(-1px);
+}
+
+.survey-import-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .survey-import-dialog {
@@ -1199,18 +1373,57 @@ body {
 }
 
 @media (max-width: 700px) {
+  .overview-filters {
+    padding: 16px;
+  }
+
+  .overview-filter-heading {
+    align-items: flex-start;
+  }
+
+  .overview-filter-years {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .overview-year-filter {
+    min-width: 0;
+  }
+
+  .overview-year-filter .custom-select-trigger {
+    min-width: 0;
+  }
+
+  .district-filter {
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .district-picker-trigger {
+    min-width: 0;
+  }
+
+  .district-picker-options {
+    max-width: calc(100vw - 32px);
+    min-width: 0;
+  }
+
   .overview-filter-actions {
     width: 100%;
+    min-width: 0;
     margin-left: 0;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .survey-import-toggle {
     width: 100%;
   }
 
-  .overview-filter-actions .filter-field,
-  .overview-filter-actions .filter-field select {
+  .overview-filter-actions .filter-field {
     width: 100%;
+    min-width: 0;
   }
 }
 
