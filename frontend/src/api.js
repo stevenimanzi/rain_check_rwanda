@@ -14,6 +14,14 @@ export const fetchDistrict = (id) => client.get(`/districts/${id}`).then((res) =
 export const fetchHouseholdSurveyImports = () =>
   client.get('/imports/household-drought').then((res) => res.data.data)
 
+export const loginHouseholdSurveyImporter = ({ email, password }) =>
+  client.post('/imports/household-drought/login', { email, password }).then((res) => res.data.data)
+
+export const logoutHouseholdSurveyImporter = (token) =>
+  client.post('/imports/household-drought/logout', null, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+
 export const importHouseholdSurvey = ({ file, surveyYear, sourceName, token }) => {
   const formData = new FormData()
   formData.append('file', file)

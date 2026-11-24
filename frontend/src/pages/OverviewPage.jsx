@@ -138,6 +138,7 @@ export default function OverviewPage({ districts, overview }) {
   const [selectedImportId, setSelectedImportId] = useState('')
   const [surveyView, setSurveyView] = useState('merged')
   const [importFormOpen, setImportFormOpen] = useState(false)
+  const [importAccessToken, setImportAccessToken] = useState('')
   const importDialogRef = useRef(null)
   const availableYears = [...new Set([
     ...national.map((month) => month.year),
@@ -403,6 +404,9 @@ export default function OverviewPage({ districts, overview }) {
             event.preventDefault()
             setImportFormOpen(false)
           }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setImportFormOpen(false)
+          }}
           onClick={(event) => {
             if (event.target === event.currentTarget) setImportFormOpen(false)
           }}
@@ -415,7 +419,13 @@ export default function OverviewPage({ districts, overview }) {
           >
             <XMarkIcon className="icon" />
           </button>
-          <HouseholdSurveyImportPanel districts={districts} onImported={handleSurveyImport} />
+          <HouseholdSurveyImportPanel
+            districts={districts}
+            accessToken={importAccessToken}
+            onImported={handleSurveyImport}
+            onLogin={setImportAccessToken}
+            onLogout={() => setImportAccessToken('')}
+          />
         </dialog>
       )}
 

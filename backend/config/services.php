@@ -36,7 +36,8 @@ return [
     ],
 
     'imports' => [
-        'token' => env('IMPORT_TOKEN'),
+        'email' => env('IMPORT_EMAIL'),
+        'password' => env('IMPORT_PASSWORD'),
     ],
 
 ];
