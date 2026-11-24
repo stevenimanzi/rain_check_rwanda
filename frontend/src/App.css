@@ -33,11 +33,12 @@
 }
 
 .brand-icon {
-  background: var(--sidebar-active);
-  border-radius: 8px;
-  padding: 5px;
-  width: 32px;
-  height: 32px;
+  background: #fff;
+  color: var(--primary);
+  border-radius: 10px;
+  padding: 6px;
+  width: 38px;
+  height: 38px;
 }
 
 .nav-item {
@@ -52,20 +53,21 @@
   background: transparent;
   color: inherit;
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
   text-align: left;
   transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
   transform: translateX(2px);
 }
 
 .nav-item.active {
-  background: var(--sidebar-active);
-  color: #fff;
-  box-shadow: inset 3px 0 0 #fff;
+  background: #fff;
+  color: var(--primary);
+  box-shadow: none;
 }
 
 .icon {
@@ -120,33 +122,148 @@
   font-size: 20px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
 .topbar-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 13px;
+  gap: 9px;
+  padding: 8px 14px;
+  border-radius: 24px;
+  background: #fff;
+  color: var(--primary);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .topbar-info .icon {
-  width: 16px;
-  height: 16px;
+  width: 21px;
+  height: 21px;
 }
 
-.menu-button,
-.close-button {
-  place-items: center;
+.language-switcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.language-flag {
+  display: block;
+  width: 24px;
+  height: 16px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(24, 50, 71, 0.12);
+}
+
+.language-switcher-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  min-width: 176px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 23px;
+  background: #fff;
+  color: var(--primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.language-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.language-current-flag,
+.language-option-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.language-current-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.language-chevron {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  transition: transform 150ms ease;
+}
+
+.language-chevron.open {
+  transform: rotate(180deg);
+}
+
+.language-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 196px;
   padding: 6px;
   border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(24, 50, 71, 0.16);
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
   border-radius: 8px;
   background: transparent;
-  color: inherit;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
   cursor: pointer;
+}
+
+.language-option:hover,
+.language-option.active {
+  background: var(--accent-soft);
+  color: var(--primary);
+}
+
+#google_translate_element,
+.goog-te-banner-frame,
+.goog-te-gadget,
+.goog-te-gadget-icon,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.goog-te-spinner-pos,
+.skiptranslate,
+body > .skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+body {
+  top: 0 !important;
 }
 
 /* Page */
@@ -603,8 +720,8 @@
 .table th,
 .table td {
   padding: 10px 8px;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-right: 0;
+  border-bottom: 0;
   text-align: left;
 }
 
@@ -993,4 +1110,46 @@
   max-width: 760px;
   color: var(--muted);
   line-height: 1.6;
+}
+
+/* Borderless container system */
+.topbar,
+.topbar-info,
+.language-switcher-button,
+.language-menu,
+.panel,
+.stat-card,
+.chart-tooltip,
+.tab,
+.search,
+.table th,
+.table td,
+.fact,
+.link-button,
+.download {
+  border: 0 !important;
+}
+
+.topbar {
+  border-bottom: 0;
+}
+
+.table th,
+.table td {
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.table th {
+  border-bottom: 0;
+}
+
+.tab.active,
+.menu-button,
+.close-button,
+.search,
+.chart-tooltip,
+.link-button,
+.download {
+  border-color: transparent;
 }

@@ -1,4 +1,4 @@
-import { CloudIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { PAGES } from '../navigation'
 
 export default function Sidebar({ page, open, onChange, onClose }) {
@@ -8,7 +8,6 @@ export default function Sidebar({ page, open, onChange, onClose }) {
 
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="brand">
-          <CloudIcon className="icon brand-icon" aria-hidden="true" />
           <span>RainCheck Rwanda</span>
           <button className="close-button" onClick={onClose} aria-label="Close menu">
             <XMarkIcon className="icon" aria-hidden="true" />
