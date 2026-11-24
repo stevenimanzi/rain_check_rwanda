@@ -2,9 +2,9 @@ import { Bars3Icon, CalendarDaysIcon, ChevronDownIcon, LanguageIcon } from '@her
 import { useEffect, useRef, useState } from 'react'
 
 const LANGUAGES = {
-  en: { label: 'English', flag: '🇬🇧' },
-  rw: { label: 'Kinyarwanda', flag: '🇷🇼' },
-  fr: { label: 'French', flag: '🇫🇷' },
+  en: { label: 'English' },
+  rw: { label: 'Kinyarwanda' },
+  fr: { label: 'French' },
 }
 
 function setGoogleTranslateLanguage(language) {
@@ -18,6 +18,40 @@ function setGoogleTranslateLanguage(language) {
   }
 
   window.location.reload()
+}
+
+function Flag({ code }) {
+  if (code === 'rw') {
+    return (
+      <svg className="language-flag" viewBox="0 0 30 20" role="img" aria-label="Rwanda flag">
+        <rect width="30" height="7" fill="#00A1DE" />
+        <rect y="7" width="30" height="7" fill="#FAD201" />
+        <rect y="14" width="30" height="6" fill="#20603D" />
+        <circle cx="24" cy="5" r="2.2" fill="#FAD201" />
+        <circle cx="24" cy="5" r="1.3" fill="#00A1DE" />
+      </svg>
+    )
+  }
+
+  if (code === 'fr') {
+    return (
+      <svg className="language-flag" viewBox="0 0 30 20" role="img" aria-label="France flag">
+        <rect width="10" height="20" fill="#1D4F91" />
+        <rect x="10" width="10" height="20" fill="#fff" />
+        <rect x="20" width="10" height="20" fill="#EF3340" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg className="language-flag" viewBox="0 0 30 20" role="img" aria-label="United Kingdom flag">
+      <rect width="30" height="20" fill="#1D4F91" />
+      <path d="M0 0L30 20M30 0L0 20" stroke="#fff" strokeWidth="4" />
+      <path d="M0 0L30 20M30 0L0 20" stroke="#C8102E" strokeWidth="1.5" />
+      <path d="M15 0V20M0 10H30" stroke="#fff" strokeWidth="6" />
+      <path d="M15 0V20M0 10H30" stroke="#C8102E" strokeWidth="3" />
+    </svg>
+  )
 }
 
 export default function TopBar({ title, onMenuClick }) {
@@ -90,14 +124,16 @@ export default function TopBar({ title, onMenuClick }) {
             onClick={() => setLanguageMenuOpen((open) => !open)}
           >
             <LanguageIcon className="language-icon" />
-            <span className="language-current-flag" aria-hidden="true">{activeLanguage.flag}</span>
+            <span className="language-current-flag" aria-hidden="true">
+              <Flag code={language} />
+            </span>
             <span className="language-current-name">{activeLanguage.label}</span>
             <ChevronDownIcon className={`language-chevron ${languageMenuOpen ? 'open' : ''}`} />
           </button>
 
           {languageMenuOpen && (
             <div className="language-menu" role="menu" aria-label="Choose language">
-              {Object.entries(LANGUAGES).map(([code, { label, flag }]) => (
+              {Object.entries(LANGUAGES).map(([code, { label }]) => (
                 <button
                   key={code}
                   type="button"
@@ -105,7 +141,9 @@ export default function TopBar({ title, onMenuClick }) {
                   className={`language-option ${language === code ? 'active' : ''}`}
                   onClick={() => changeLanguage(code)}
                 >
-                  <span className="language-option-flag" aria-hidden="true">{flag}</span>
+                  <span className="language-option-flag" aria-hidden="true">
+                    <Flag code={code} />
+                  </span>
                   <span>{label}</span>
                 </button>
               ))}
@@ -113,8 +151,6 @@ export default function TopBar({ title, onMenuClick }) {
           )}
         </div>
       </div>
-
-      <div id="google_translate_element" aria-hidden="true" />
     </header>
   )
 }

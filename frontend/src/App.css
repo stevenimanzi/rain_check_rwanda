@@ -152,13 +152,14 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 7px;
-  height: 38px;
-  padding: 0 9px 0 11px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  background: #fff;
-  color: var(--primary);
+}
+
+.language-flag {
+  display: block;
+  width: 24px;
+  height: 16px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(24, 50, 71, 0.12);
 }
 
 .language-switcher-button {
@@ -248,8 +249,17 @@
 
 #google_translate_element,
 .goog-te-banner-frame,
-.goog-te-gadget-icon {
+.goog-te-gadget,
+.goog-te-gadget-icon,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.goog-te-spinner-pos,
+.skiptranslate,
+body > .skiptranslate {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 
 body {
