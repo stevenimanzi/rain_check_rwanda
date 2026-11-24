@@ -14,7 +14,7 @@ Built for the NISR 2026 Big Data Hackathon, Track 2 (Financial Inclusion & Pover
 - **Live app:** https://raincheckrwandaweb.onrender.com/
 - **Live API:** https://raincheck-api-7nk6.onrender.com/api/districts (free hosting: the first visit after a quiet period can take up to a minute)
 - **Demo (animated GIF, 89 seconds):** [`docs/demo.gif`](docs/demo.gif)
-- No login is required to use the app.
+- No login is required for read-only use. Survey imports require a private backend token.
 
 ## Main finding
 
@@ -27,10 +27,10 @@ Insurance paid on satellite rainfall alone would have left many of those farmers
 
 | Page | What it communicates |
 | --- | --- |
-| Overview | Country-level satellite and household drought-share pies, where satellite and households disagree, national rainfall against normal, driest years and riskiest months, and all 30 districts ranked on dry months, household drought reports, long-term risk and poverty. |
+| Overview | Filter satellite analysis by year range and one or more districts; choose an imported household survey view, compare satellite and household drought, and see rainfall, driest years, risky months and district rankings. Mismatch comparisons remain tied to the 2024 survey. |
 | Districts | A searchable, filterable table of all 30 districts. Click one for its own comparison, rainfall and history. |
 | Map | District map of long-term drought risk, recent dry months, households reporting drought, and basis risk. |
-| For institutions | Who can use the data, CSV downloads, data sources and their status, and how the measures work. |
+| For institutions | Who can use the data, CSV downloads, data sources and how the measures work. |
 
 Every chart has a box underneath saying what it shows, how to read it and where the data comes from.
 
@@ -39,7 +39,21 @@ Every chart has a box underneath saying what it shows, how to read it and where 
 1. Start on **Overview** and read the explanation under each chart.
 2. Open **Districts**, search or filter by risk level, and click a district to see its comparison and history.
 3. Open **Map** and switch between the four views. Click a district to see its charts below the map.
-4. Open **For institutions** to download the data as CSV.
+4. Open **For institutions** to download data. On **Overview**, use the **Import survey data** button beside the filters to upload a district household CSV.
+
+## Import another household survey
+
+The **Overview** page accepts a CSV with `district` and `household_drought_pct` columns. Download the provided template, fill in percentages from 0 to 100, enter the survey year and source name, then upload it with the private import token. District names must match the dashboard; blank percentage rows are skipped, so partial coverage is allowed. Files are limited to 1 MiB, and unknown or repeated districts are rejected.
+
+Imports are stored as separate source- and year-labelled records. **Imported data only** shows one chosen upload. **Merge selected upload with CFSVA 2024** uses that upload where it has values and fills districts missing from the upload with the existing CFSVA 2024 values; values are never averaged or overwritten in storage. The household pie and district bars follow this selection, while mismatch comparisons remain fixed to the CFSVA 2024 period. Select multiple districts to compare each separately; rainfall trend charts average only the selected districts. Satellite charts only show years with rainfall data; importing household data does not create rainfall observations.
+
+Set `IMPORT_TOKEN` privately in `backend/.env` for local use or in the backend service's environment settings on Render. Generate a strong value with:
+
+```bash
+php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
+```
+
+Never put this secret in a `VITE_*` variable or commit it to the repository. The public read-only app does not expose it; the upload endpoint rejects requests unless the configured token is supplied.
 
 On phones the sidebar becomes a menu opened with the button in the top bar.
 
@@ -101,6 +115,7 @@ cd backend
 composer install
 cp .env.example .env          # then set DB_USERNAME and DB_PASSWORD
 php artisan key:generate
+# Set a private IMPORT_TOKEN in .env before enabling survey uploads.
 php artisan migrate --seed
 php artisan raincheck:import rainfall ../data/rainfall.csv
 php artisan raincheck:import poverty ../data/poverty_eicv7_2024.csv
@@ -128,7 +143,7 @@ The repo has a `Dockerfile` for the API and a start script that creates the tabl
 1. Create a PostgreSQL database on Render (Laravel works with MySQL or PostgreSQL).
 2. Create a **Web Service** from this repo: language Docker, root directory empty. Set `APP_KEY`
    (from `php artisan key:generate --show`), `APP_ENV=production`, `APP_DEBUG=false`, `DB_CONNECTION=pgsql`
-   and `DB_URL` (the database's internal URL).
+   and `DB_URL` (the database's internal URL). Set a strong `IMPORT_TOKEN` in the backend environment settings; do not expose it as a `VITE_*` variable.
 3. Create a **Static Site** from this repo: root directory `frontend`, build command
    `npm install && npm run build`, publish directory `dist`, and `VITE_API_URL` set to
    `https://<your-api-service>.onrender.com/api`.

@@ -45,8 +45,8 @@ function ChartTooltip({ active, payload }) {
  * Bars show how much more (blue) or less (red) rain fell than normal each month.
  * Bars that cross the dashed line are "dry months".
  */
-export default function RainDeviationChart({ series }) {
-  const data = series.slice(-MONTHS_SHOWN).map((m) => ({
+export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN }) {
+  const data = series.slice(-maxMonths).map((m) => ({
     label: shortMonth(m),
     fullLabel: longMonth(m),
     change: -m.rainfall_deficit_pct,

@@ -1,16 +1,16 @@
+import { useEffect, useRef, useState } from 'react'
+import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { fetchDistrict, fetchHouseholdSurveyImports } from '../api'
 import ChartInfo from '../components/ChartInfo'
 import CountryDroughtCharts from '../components/CountryDroughtCharts'
 import DryMonthsChart from '../components/DryMonthsChart'
 import DryPatternCharts from '../components/DryPatternCharts'
 import GapChart from '../components/GapChart'
+import HouseholdSurveyImportPanel from '../components/HouseholdSurveyImportPanel'
+import Notice from '../components/Notice'
 import RainDeviationChart from '../components/RainDeviationChart'
 import StatCard from '../components/StatCard'
-import { CHART_COLORS } from '../utils'
-
-const inWindow = (month, window) => {
-  const key = `${month.year}-${String(month.month).padStart(2, '0')}`
-  return key >= window.start && key <= window.end
-}
+import { CHART_COLORS, RISK_LABELS } from '../utils'
 
 const matchText = (value) => {
   if (value === null) return ''
@@ -18,136 +18,595 @@ const matchText = (value) => {
   return `Overall, the satellite and households match ${strength} (match score ${value}, where 1 is a perfect match and 0 is no match).`
 }
 
-export default function OverviewPage({ districts, overview }) {
-  const { national, window, by_year: byYear, by_calendar_month: byMonth, rank_correlation: matchScore } = overview
+const average = (values) => (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null)
 
-  const periodMonths = national.filter((m) => inWindow(m, window))
-  const dryMonths = periodMonths.filter((m) => m.satellite_drought).length
+const calendarMonthShares = (series) =>
+  Array.from({ length: 12 }, (_, index) => {
+    const month = index + 1
+    const judged = series.filter((item) => item.month === month && item.judged)
+
+    return {
+      month,
+      dry_pct: judged.length
+        ? Math.round((judged.filter((item) => item.satellite_drought).length / judged.length) * 1000) / 10
+        : null,
+    }
+  })
+
+const aggregateRainfall = (districtDetails, settings) => {
+  const grouped = new Map()
+
+  districtDetails.forEach((district) => {
+    district.rainfall.forEach((month) => {
+      const key = `${month.year}-${month.month}`
+      const group = grouped.get(key) ?? { year: month.year, month: month.month, rainfall: [], normal: [] }
+      group.rainfall.push(Number(month.rainfall_mm))
+      group.normal.push(Number(month.normal_mm))
+      grouped.set(key, group)
+    })
+  })
+
+  return [...grouped.values()]
+    .sort((a, b) => a.year - b.year || a.month - b.month)
+    .map((group) => {
+      const rainfall = average(group.rainfall)
+      const normal = average(group.normal)
+      const rainfallDeficit = normal > 0 ? ((normal - rainfall) / normal) * 100 : 0
+      const judged = normal >= settings.minimum_normal_mm
+
+      return {
+        year: group.year,
+        month: group.month,
+        rainfall_mm: rainfall,
+        normal_mm: normal,
+        rainfall_deficit_pct: rainfallDeficit,
+        judged,
+        satellite_drought: judged && rainfallDeficit >= settings.rainfall_deficit_threshold,
+      }
+    })
+}
+
+const aggregateYearlyHistory = (districtDetails) => {
+  const grouped = new Map()
+
+  districtDetails.forEach((district) => {
+    district.history.by_year.forEach((row) => {
+      const group = grouped.get(row.year) ?? { year: row.year, dryMonths: [] }
+      group.dryMonths.push(Number(row.dry_months))
+      grouped.set(row.year, group)
+    })
+  })
+
+  return [...grouped.values()]
+    .sort((a, b) => a.year - b.year)
+    .map((group) => ({
+      year: group.year,
+      dry_months: Math.round(average(group.dryMonths) * 10) / 10,
+    }))
+}
+
+function DistrictMultiSelect({ districts, selectedIds, onChange }) {
+  const allSelected = selectedIds === null
+  const summary = allSelected
+    ? 'All districts'
+    : selectedIds.length === 0
+      ? 'No districts selected'
+      : selectedIds.length === 1
+      ? districts.find((district) => district.id === selectedIds[0])?.name ?? '1 district selected'
+      : `${selectedIds.length} districts selected`
+
+  const toggle = (id) => {
+    const activeIds = allSelected ? districts.map((district) => district.id) : selectedIds
+    const next = activeIds.includes(id) ? activeIds.filter((selectedId) => selectedId !== id) : [...activeIds, id]
+    onChange(next.length === districts.length ? null : next)
+  }
+
+  return (
+    <div className="filter-field district-filter">
+      <span>Districts</span>
+      <details className="district-picker">
+        <summary>{summary}</summary>
+        <div className="district-picker-options" role="group" aria-label="Select districts">
+          <div className="district-picker-actions">
+            <button type="button" className="district-picker-all" onClick={() => onChange(null)}>
+              Select all
+            </button>
+            <button type="button" className="district-picker-clear" onClick={() => onChange([])}>
+              Clear
+            </button>
+          </div>
+          {districts.map((district) => (
+            <label key={district.id}>
+              <input
+                type="checkbox"
+                checked={allSelected || selectedIds.includes(district.id)}
+                onChange={() => toggle(district.id)}
+              />
+              {district.name}
+            </label>
+          ))}
+        </div>
+      </details>
+    </div>
+  )
+}
+
+export default function OverviewPage({ districts, overview }) {
+  const { national, by_year: countryByYear, rank_correlation: matchScore } = overview
+  const [surveyImports, setSurveyImports] = useState([])
+  const [surveyImportsError, setSurveyImportsError] = useState(null)
+  const [selectedImportId, setSelectedImportId] = useState('')
+  const [surveyView, setSurveyView] = useState('merged')
+  const [importFormOpen, setImportFormOpen] = useState(false)
+  const importDialogRef = useRef(null)
+  const availableYears = [...new Set([
+    ...national.map((month) => month.year),
+    ...surveyImports.map((surveyImport) => Number(surveyImport.survey_year)),
+  ])].sort((a, b) => a - b)
+  const [selectedYears, setSelectedYears] = useState(null)
+  const startYear = selectedYears?.start ?? availableYears[0]
+  const endYear = selectedYears?.end ?? availableYears[availableYears.length - 1]
+  const [selectedDistrictIds, setSelectedDistrictIds] = useState(null)
+  const [districtDetails, setDistrictDetails] = useState({})
+  const [districtError, setDistrictError] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    fetchHouseholdSurveyImports()
+      .then((imports) => {
+        if (active) setSurveyImports(imports)
+      })
+      .catch((error) => {
+        if (active) setSurveyImportsError(error.response?.data?.message || error.message)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedDistrictIds === null || selectedDistrictIds.length === 0) return undefined
+
+    let active = true
+    Promise.all(selectedDistrictIds.map((id) => fetchDistrict(id)))
+      .then((details) => {
+        if (active) {
+          setDistrictDetails((current) => ({
+            ...current,
+            ...Object.fromEntries(details.map((district) => [district.id, district])),
+          }))
+        }
+      })
+      .catch((error) => {
+        if (active) setDistrictError(error.message || 'The selected district data could not be loaded.')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [selectedDistrictIds])
+
+  useEffect(() => {
+    const dialog = importDialogRef.current
+    if (importFormOpen && dialog && !dialog.open) dialog.showModal()
+  }, [importFormOpen])
+
+  const selectedImport =
+    surveyImports.find((surveyImport) => String(surveyImport.id) === selectedImportId) ?? surveyImports[0] ?? null
+  const selectedDistrictIdList = selectedDistrictIds ?? []
+  const selectedIds = new Set(selectedDistrictIdList)
+  const activeDistricts = selectedDistrictIds !== null
+    ? districts.filter((district) => selectedIds.has(district.id))
+    : districts
+  const selectedDistrictDetails = selectedDistrictIdList
+    .map((id) => districtDetails[id])
+    .filter(Boolean)
+  const selectedDistrictReady =
+    selectedDistrictIds === null ||
+    (selectedDistrictIdList.length > 0 && selectedDistrictDetails.length === selectedDistrictIdList.length)
+  const districtLoading =
+    selectedDistrictIds !== null && selectedDistrictIdList.length > 0 && !districtError && !selectedDistrictReady
+  const districtCount = activeDistricts.length
+  const isAllDistricts = selectedDistrictIds === null
+  const noDistrictsSelected = selectedDistrictIds !== null && selectedDistrictIdList.length === 0
+  const isSingleDistrict = selectedDistrictIdList.length === 1
+  const singleDistrict = isSingleDistrict ? activeDistricts[0] : null
+  const area = isAllDistricts
+    ? 'Rwanda'
+    : isSingleDistrict
+      ? singleDistrict?.name ?? 'Selected district'
+      : `${districtCount} selected districts`
+  const rainfallSeries = isAllDistricts
+    ? national
+    : isSingleDistrict
+      ? selectedDistrictDetails[0]?.rainfall ?? []
+      : aggregateRainfall(selectedDistrictDetails, overview.settings)
+  const filteredSeries = rainfallSeries.filter((month) => month.year >= startYear && month.year <= endYear)
+  const assessedMonths = filteredSeries.filter((month) => month.judged)
+  const dryMonths = assessedMonths.filter((month) => month.satellite_drought).length
+  const byYearSource = isAllDistricts
+    ? countryByYear
+    : isSingleDistrict
+      ? selectedDistrictDetails[0]?.history.by_year ?? []
+      : aggregateYearlyHistory(selectedDistrictDetails)
+  const byYear = byYearSource.filter((row) => row.year >= startYear && row.year <= endYear)
+  const byMonth = calendarMonthShares(filteredSeries)
   const driestYear = [...byYear].sort((a, b) => b.dry_months - a.dry_months)[0]
-  const highRisk = districts.filter((d) => d.summary.risk_level === 'high').length
+  const highRisk = activeDistricts.filter((district) => district.summary.risk_level === 'high').length
+  const periodLabel = `${startYear} to ${endYear}`
+  const mismatchValue = isSingleDistrict
+    ? RISK_LABELS[singleDistrict.summary.risk_level] ?? 'No survey data'
+    : `${highRisk} of ${districtCount}`
+  const mismatchLabel = isSingleDistrict ? 'Mismatch risk (2024 survey)' : 'High-mismatch districts'
+  const filteredDistricts = activeDistricts.map((district) => {
+    const years = district.history.by_year.filter((row) => row.year >= startYear && row.year <= endYear)
+
+    return {
+      ...district,
+      filtered_avg_dry_months: years.length ? Math.round(average(years.map((row) => row.dry_months)) * 10) / 10 : null,
+    }
+  })
+  const importValues = new Map(
+    (selectedImport?.observations ?? []).map((observation) => [
+      Number(observation.district_id),
+      Number(observation.household_drought_pct),
+    ]),
+  )
+  const householdChartDistricts = activeDistricts
+    .map((district) => {
+      const hasImportedValue = importValues.has(district.id)
+      const householdValue = surveyView === 'imported'
+        ? hasImportedValue ? importValues.get(district.id) : null
+        : hasImportedValue ? importValues.get(district.id) : district.household_drought_pct
+
+      return {
+        ...district,
+        household_drought_pct: householdValue,
+        household_source: hasImportedValue ? `${selectedImport.source_name} (${selectedImport.survey_year})` : 'CFSVA 2024',
+      }
+    })
+    .filter((district) => district.household_drought_pct !== null && district.household_drought_pct !== undefined)
+  const householdSurveyLabel = surveyView === 'imported'
+    ? selectedImport
+      ? `${selectedImport.source_name} (${selectedImport.survey_year}), imported only`
+      : 'Imported survey only'
+    : selectedImport
+      ? `${selectedImport.source_name} (${selectedImport.survey_year}) with CFSVA 2024 fallback`
+      : 'CFSVA 2024'
+  const householdSurveyNote = surveyView === 'imported'
+    ? selectedImport
+      ? isSingleDistrict
+        ? `Selected district value source: ${householdChartDistricts[0]?.household_source ?? 'no value in this upload'}.`
+        : `Imported survey: ${selectedImport.source_name}, ${selectedImport.survey_year}. Districts absent from this upload have no value.`
+      : 'Upload a survey to view imported-only data.'
+    : selectedImport
+      ? isSingleDistrict
+        ? `Selected district value source: ${householdChartDistricts[0]?.household_source ?? 'no value available'}.`
+        : `${selectedImport.source_name} (${selectedImport.survey_year}) values are used where available; missing districts use CFSVA 2024. The summary is an unweighted district average across the available values, not a single-survey national estimate.`
+      : 'Household reports cover April 2023 to March 2024.'
+  const includeCfsvaSource = surveyView === 'merged'
+
+  const handleSurveyImport = (imported) => {
+    setSurveyImports((current) => [imported, ...current.filter((item) => item.id !== imported.id)])
+    setSelectedImportId(String(imported.id))
+    setSurveyImportsError(null)
+  }
+
+  const filters = (
+    <section className="overview-filters" aria-label="Overview filters">
+      <label className="filter-field">
+        <span>From year</span>
+        <select
+          value={startYear}
+          onChange={(event) => {
+            const year = Number(event.target.value)
+            setSelectedYears((current) => {
+              const currentEnd = current?.end ?? availableYears[availableYears.length - 1]
+              return { start: year, end: year > currentEnd ? year : currentEnd }
+            })
+          }}
+        >
+          {availableYears.map((year) => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className="filter-field">
+        <span>To year</span>
+        <select
+          value={endYear}
+          onChange={(event) => {
+            const year = Number(event.target.value)
+            setSelectedYears((current) => {
+              const currentStart = current?.start ?? availableYears[0]
+              return { start: year < currentStart ? year : currentStart, end: year }
+            })
+          }}
+        >
+          {availableYears.map((year) => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+      </label>
+
+      <DistrictMultiSelect
+        districts={districts}
+        selectedIds={selectedDistrictIds}
+        onChange={(ids) => {
+          setSelectedDistrictIds(ids)
+          setDistrictError(null)
+        }}
+      />
+
+      <div className="overview-filter-actions">
+        <button
+          type="button"
+          className="survey-import-toggle"
+          aria-expanded={importFormOpen}
+          aria-haspopup="dialog"
+          onClick={() => setImportFormOpen(true)}
+        >
+          <ArrowUpTrayIcon className="icon" />
+          Import survey data
+        </button>
+        {surveyImports.length > 0 && (
+          <>
+            <label className="filter-field survey-view-filter">
+              <span>Household survey view</span>
+              <select value={surveyView} onChange={(event) => setSurveyView(event.target.value)}>
+                <option value="merged">Merge with CFSVA 2024</option>
+                <option value="imported">Imported data only</option>
+              </select>
+            </label>
+            <label className="filter-field survey-source-select">
+              <span>Survey upload</span>
+              <select
+                value={selectedImport?.id ?? ''}
+                onChange={(event) => setSelectedImportId(event.target.value)}
+              >
+                {surveyImports.map((surveyImport) => (
+                  <option key={surveyImport.id} value={surveyImport.id}>
+                    {surveyImport.source_name} ({surveyImport.survey_year})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
+      </div>
+
+      <p className="filter-note">
+        Year range filters satellite rainfall. Select one or more districts for individual comparisons; rainfall
+        trends average the selected districts. Imported-only charts show the chosen upload. Merge mode uses that
+        upload where available and CFSVA 2024 for missing districts; mismatch comparisons always use CFSVA 2024.
+      </p>
+    </section>
+  )
 
   return (
     <>
       <p className="intro">
-        A dry month is a month with at least 20% less rain than normal. This page compares the dry months that
-        satellites measured with what households told NISR about drought.
+        A dry month is a month with at least 20% less rain than normal. This page compares satellite rainfall with what
+        households told NISR about drought.
       </p>
 
-      <div className="stats">
-        <StatCard label="Districts covered" value={districts.length} hint="All 30 districts of Rwanda" />
-        <StatCard
-          label="Dry months in Rwanda"
-          value={dryMonths}
-          hint={`Out of ${periodMonths.length} months, April 2023 to March 2024`}
-        />
-        <StatCard
-          label="Driest year, 2014 to 2024"
-          value={driestYear?.year ?? '-'}
-          hint={driestYear ? `On average ${driestYear.dry_months} dry months in each district` : ''}
-        />
-        <StatCard
-          label="Districts with a big mismatch"
-          value={`${highRisk} of ${districts.length}`}
-          hint="Satellite and households disagree a lot"
-        />
-      </div>
+      {filters}
 
-      <CountryDroughtCharts districts={districts} national={national} window={window} />
+      {importFormOpen && (
+        <dialog
+          ref={importDialogRef}
+          className="survey-import-dialog"
+          aria-labelledby="survey-import-title"
+          onCancel={(event) => {
+            event.preventDefault()
+            setImportFormOpen(false)
+          }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setImportFormOpen(false)
+          }}
+        >
+          <button
+            type="button"
+            className="survey-import-close"
+            aria-label="Close import dialog"
+            onClick={() => setImportFormOpen(false)}
+          >
+            <XMarkIcon className="icon" />
+          </button>
+          <HouseholdSurveyImportPanel districts={districts} onImported={handleSurveyImport} />
+        </dialog>
+      )}
 
-      <div className="panel">
-        <h3>Where the satellite and households disagree</h3>
-        <p className="muted">
-          Red: more households reported drought than the satellite saw. Blue: the satellite saw more drought
-          than households reported.
-        </p>
-        <GapChart districts={districts} />
-        <ChartInfo
-          shows={`Each district gets a score from 0 to 100 for the dry months the satellite saw, and another score for the share of households that reported drought. The bar is the difference between the two scores. ${matchText(matchScore)}`}
-          howToRead="A short bar means the two agree, so insurance based on rain should work. A long red bar means farmers had drought that the satellite missed, so they may not get paid. A long blue bar means the satellite saw drought that many households did not report. We call this gap mismatch risk (some people call it basis risk)."
-          sources={['rainfall', 'cfsva']}
-        />
-      </div>
+      {surveyImportsError && (
+        <Notice title="Could not load imported survey data">
+          {surveyImportsError} Existing CFSVA comparisons remain available; uploaded survey choices may be incomplete.
+        </Notice>
+      )}
+      {noDistrictsSelected && (
+        <Notice title="No districts selected">
+          Select one or more districts, or choose Select all districts to view the dashboard.
+        </Notice>
+      )}
+      {districtLoading && <div className="panel" role="status">Loading {area} data...</div>}
+      {districtError && (
+        <Notice title="Could not load district data">
+          {districtError} Change the district selection or choose all districts to continue.
+        </Notice>
+      )}
 
-      <div className="panel">
-        <h3>Was each month wetter or drier than normal?</h3>
-        <p className="muted">Average for all of Rwanda, last 3 years.</p>
-        <RainDeviationChart series={national} />
-        <ChartInfo
-          shows="How much more or less rain fell each month compared with a normal month. We average all 30 districts."
-          howToRead="Blue bar: more rain than normal. Red bar: a dry month, at least 20% less rain than normal (below the red dashed line). Grey bar: June to August, when it is normally very dry, so we do not judge it. Move your mouse over a bar to see the exact rain."
-          sources={['rainfall', 'boundaries']}
-        />
-      </div>
+      {selectedDistrictReady && (
+        <>
+          <div className="stats">
+            <StatCard
+              label={isAllDistricts ? 'Districts covered' : isSingleDistrict ? 'Selected district' : 'Selected districts'}
+              value={isAllDistricts ? districts.length : isSingleDistrict ? singleDistrict.name : districtCount}
+              hint={isAllDistricts ? 'All 30 districts of Rwanda' : isSingleDistrict ? singleDistrict.province : 'District charts show each selection separately'}
+            />
+            <StatCard
+              label={`Dry months in ${area}`}
+              value={dryMonths}
+              hint={`${assessedMonths.length} assessable months, ${periodLabel}`}
+            />
+            <StatCard
+              label={`Driest year, ${periodLabel}`}
+              value={driestYear?.year ?? '-'}
+              hint={
+                driestYear
+                  ? isSingleDistrict
+                    ? `${driestYear.dry_months} dry months in ${area}`
+                    : `Average ${driestYear.dry_months} dry months across ${districtCount} districts`
+                  : 'No rainfall data for this period'
+              }
+            />
+            <StatCard label={mismatchLabel} value={mismatchValue} hint="Household survey comparison: Apr 2023 to Mar 2024" />
+          </div>
 
-      <DryPatternCharts byYear={byYear} byMonth={byMonth} area="Rwanda" isAverage />
+          <CountryDroughtCharts
+            districts={householdChartDistricts}
+            series={filteredSeries}
+            startYear={startYear}
+            endYear={endYear}
+            area={area}
+            isAllDistricts={isAllDistricts}
+            isSingleDistrict={isSingleDistrict}
+            districtCount={districtCount}
+            householdSurveyLabel={householdSurveyLabel}
+            householdSurveyNote={householdSurveyNote}
+            householdSourceName={selectedImport?.source_name}
+            includeCfsvaSource={includeCfsvaSource}
+          />
 
-      <div className="grid-2 even">
-        <div className="panel">
-          <h3>Dry months seen by the satellite</h3>
-          <p className="muted">All 30 districts, April 2023 to March 2024.</p>
-          <DryMonthsChart
-            districts={districts}
-            getValue={(d) => d.summary.satellite_drought_months}
-            unit="dry months"
-            color={CHART_COLORS.dry}
-          />
-          <ChartInfo
-            shows="How many months had at least 20% less rain than normal, in the 12 months before the April 2024 survey."
-            howToRead="A longer bar means more dry months. Now compare with the next chart. The two charts do not match well. That is the mismatch problem."
-            sources={['rainfall', 'boundaries']}
-          />
-        </div>
+          <div className="panel">
+            <h3>{isAllDistricts ? 'Where the satellite and households disagree' : `Satellite and households in ${area}`}</h3>
+            <p className="muted">
+              This comparison uses the 2024 household survey period, regardless of the selected satellite years.
+              Red: households reported more drought; blue: satellite rainfall indicated more drought.
+            </p>
+            <GapChart districts={activeDistricts} />
+            <ChartInfo
+              shows={`Each district is ranked on satellite dry months and households reporting drought for Apr 2023 to Mar 2024. The bar is the difference between those ranks. ${
+                isSingleDistrict
+                  ? `The selected district's mismatch risk is ${mismatchValue}.`
+                  : isAllDistricts
+                    ? matchText(matchScore)
+                    : `The ${districtCount} selected districts are shown separately. ${highRisk} have high mismatch risk.`
+              }`}
+              howToRead="A short bar means the two agree. A long red bar means households reported drought that the satellite missed; a long blue bar means satellite rainfall indicated drought that fewer households reported."
+              sources={['rainfall', 'cfsva']}
+            />
+          </div>
 
-        <div className="panel">
-          <h3>Households that reported drought</h3>
-          <p className="muted">Share of households in each district, 2024.</p>
-          <DryMonthsChart
-            districts={districts}
-            getValue={(d) => d.household_drought_pct}
-            unit="% of households"
-            color={CHART_COLORS.normal}
-          />
-          <ChartInfo
-            shows="The share of households that said drought hurt them in the 12 months before the April 2024 survey (CFSVA)."
-            howToRead="A longer bar means more households were hit by drought. We measured these numbers from a published chart, so they can be off by about 1 point."
-            sources={['cfsva']}
-          />
-        </div>
-      </div>
+          <div className="panel">
+            <h3>Was each month wetter or drier than normal?</h3>
+            <p className="muted">
+              {isSingleDistrict
+                ? `${area} rainfall`
+                : `Average rainfall across ${districtCount} ${isAllDistricts ? 'districts' : 'selected districts'}`}, {periodLabel}.
+            </p>
+            <RainDeviationChart series={filteredSeries} maxMonths={filteredSeries.length} />
+            <ChartInfo
+              shows={`How much more or less rain ${isSingleDistrict ? `${area} had` : `averaged across ${districtCount} districts`} each month compared with normal, ${periodLabel}.`}
+              howToRead="Blue bar: more rain than normal. Red bar: a dry month, at least 20% less rain than normal (below the red dashed line). Grey bar: normally very dry months, which are not judged."
+              sources={['rainfall', 'boundaries']}
+            />
+          </div>
 
-      <div className="grid-2 even">
-        <div className="panel">
-          <h3>Drought risk over many years</h3>
-          <p className="muted">Average dry months each year, 2014 to 2024.</p>
-          <DryMonthsChart
-            districts={districts}
-            getValue={(d) => d.summary.avg_dry_months_per_year}
-            unit="dry months a year"
-            color={CHART_COLORS.dry}
+          <DryPatternCharts
+            byYear={byYear}
+            byMonth={byMonth}
+            area={area}
+            isAverage={!isSingleDistrict}
+            averageDistrictCount={districtCount}
+            isAllDistricts={isAllDistricts}
+            startYear={startYear}
+            endYear={endYear}
           />
-          <ChartInfo
-            shows="On average, how many months each year have at least 20% less rain than normal."
-            howToRead="A longer bar means the district is dry more often. Insurers and planners should look at this long-term risk, not just one year."
-            sources={['rainfall', 'boundaries']}
-          />
-        </div>
 
-        <div className="panel">
-          <h3>Poverty rate by district</h3>
-          <p className="muted">Share of people living in poverty, 2023/24.</p>
-          <DryMonthsChart
-            districts={districts}
-            getValue={(d) => d.poverty_rate}
-            unit="% in poverty"
-            color={CHART_COLORS.rain}
-          />
-          <ChartInfo
-            shows="The official poverty rate of each district, from NISR's EICV7 survey."
-            howToRead="A longer bar means more poverty. Districts with high poverty and a big mismatch need the most attention."
-            sources={['eicvPoverty']}
-          />
-        </div>
-      </div>
+          <div className="grid-2 even">
+            <div className="panel">
+              <h3>Dry months seen by the satellite</h3>
+              <p className="muted">
+                {isAllDistricts ? 'All 30 districts' : area}, April 2023 to March 2024.
+              </p>
+              <DryMonthsChart
+                districts={activeDistricts}
+                getValue={(district) => district.summary.satellite_drought_months}
+                unit="dry months"
+                color={CHART_COLORS.dry}
+              />
+              <ChartInfo
+                shows="How many months had at least 20% less rain than normal in the 12 months before the April 2024 survey."
+                howToRead="A longer bar means more dry months. This comparison stays on the survey period so it can be compared with household reports."
+                sources={['rainfall', 'boundaries']}
+              />
+            </div>
+
+            <div className="panel">
+              <h3>Households that reported drought</h3>
+              <p className="muted">{householdSurveyLabel}.</p>
+              {householdChartDistricts.length ? (
+                <DryMonthsChart
+                  districts={householdChartDistricts}
+                  getValue={(district) => district.household_drought_pct}
+                  unit="% of households"
+                  color={CHART_COLORS.normal}
+                />
+              ) : (
+                <p className="muted">No household survey values are available for this view.</p>
+              )}
+              <ChartInfo
+                shows={householdSurveyNote}
+                howToRead="Each selected district is shown separately. A longer bar means more households reported drought."
+                sourceLabel={
+                  surveyView === 'imported'
+                    ? selectedImport ? `Imported source: ${selectedImport.source_name}.` : 'No imported source is selected.'
+                    : selectedImport ? `Imported source: ${selectedImport.source_name}; CFSVA 2024 is used for missing districts.` : undefined
+                }
+                sources={surveyView === 'imported' ? [] : ['cfsva']}
+              />
+            </div>
+          </div>
+
+          <div className="grid-2 even">
+            <div className="panel">
+              <h3>Drought risk over {periodLabel}</h3>
+              <p className="muted">Average dry months per year, filtered to the selected years.</p>
+              <DryMonthsChart
+                districts={filteredDistricts}
+                getValue={(district) => district.filtered_avg_dry_months}
+                unit="dry months a year"
+                color={CHART_COLORS.dry}
+              />
+              <ChartInfo
+                shows={`Average dry months per year in ${periodLabel}, calculated from rainfall at least 20% below normal.`}
+                howToRead="A longer bar means the district was dry more often during the selected years."
+                sources={['rainfall', 'boundaries']}
+              />
+            </div>
+
+            <div className="panel">
+              <h3>Poverty rate by district</h3>
+              <p className="muted">Share of people living in poverty, 2023/24.</p>
+              <DryMonthsChart
+                districts={activeDistricts}
+                getValue={(district) => district.poverty_rate}
+                unit="% in poverty"
+                color={CHART_COLORS.rain}
+              />
+              <ChartInfo
+                shows="The official poverty rate of each district, from NISR's EICV7 survey."
+                howToRead="A longer bar means more poverty. Districts with high poverty and a big mismatch need the most attention."
+                sources={['eicvPoverty']}
+              />
+            </div>
+          </div>
+        </>
+      )}
+      {noDistrictsSelected && importFormOpen && (
+        <HouseholdSurveyImportPanel districts={districts} onImported={handleSurveyImport} />
+      )}
     </>
   )
 }

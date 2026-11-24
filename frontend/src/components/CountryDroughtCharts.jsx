@@ -7,11 +7,6 @@ const COLORS = {
   noDrought: CHART_COLORS.rain,
 }
 
-const inWindow = (month, window) => {
-  const key = `${month.year}-${String(month.month).padStart(2, '0')}`
-  return key >= window.start && key <= window.end
-}
-
 function PercentagePie({ label, data }) {
   const total = data.reduce((sum, item) => sum + item.value, 0)
   const chartData = total
@@ -77,21 +72,34 @@ function PercentagePie({ label, data }) {
   )
 }
 
-export default function CountryDroughtCharts({ districts, national, window }) {
-  const satelliteMonths = national.filter((month) => inWindow(month, window) && month.judged)
+export default function CountryDroughtCharts({
+  districts,
+  series,
+  startYear,
+  endYear,
+  area,
+  isAllDistricts,
+  isSingleDistrict,
+  districtCount,
+  householdSurveyLabel,
+  householdSurveyNote,
+  householdSourceName,
+  includeCfsvaSource,
+}) {
+  const satelliteMonths = series.filter((month) => month.year >= startYear && month.year <= endYear && month.judged)
   const satelliteDrought = satelliteMonths.filter((month) => month.satellite_drought).length
   const householdValues = districts
     .map((district) => district.household_drought_pct)
     .filter((value) => value !== null && value !== undefined)
-  const averageHouseholdDrought = householdValues.length
+  const householdDrought = householdValues.length
     ? householdValues.reduce((sum, value) => sum + value, 0) / householdValues.length
     : null
 
   return (
     <div className="grid-2 even country-pies">
       <section className="panel">
-        <h3>Satellite rainfall: drought vs. not drought</h3>
-        <p className="muted">Share of assessable months for Rwanda, April 2023 to March 2024.</p>
+        <h3>Satellite rainfall: drought vs. not drought in {isAllDistricts ? 'Rwanda' : area}</h3>
+        <p className="muted">Share of assessable months, {startYear} to {endYear}.</p>
         <PercentagePie
           label="Satellite rainfall"
           data={[
@@ -100,7 +108,12 @@ export default function CountryDroughtCharts({ districts, national, window }) {
           ]}
         />
         <p className="pie-note">
-          Each month uses average rainfall across all 30 districts. Drought means at least 20% below normal; normally very dry months are excluded.
+          {isAllDistricts
+            ? 'Each month uses average rainfall across all 30 districts. '
+            : isSingleDistrict
+              ? `Uses ${area}'s monthly rainfall. `
+              : `Uses average monthly rainfall across ${districtCount} selected districts. `}
+          Drought means at least 20% below normal; normally very dry months are excluded.
         </p>
         <a className="pie-source" href={SOURCES.rainfall.url} target="_blank" rel="noreferrer">
           Source: CHIRPS v3 satellite rainfall
@@ -108,29 +121,38 @@ export default function CountryDroughtCharts({ districts, national, window }) {
       </section>
 
       <section className="panel">
-        <h3>Households reporting drought</h3>
-        <p className="muted">Average district estimate for the same comparison period.</p>
+        <h3>Households reporting drought{isAllDistricts ? '' : ` in ${area}`}</h3>
+        <p className="muted">
+          {isSingleDistrict
+            ? householdSurveyLabel
+            : `Average district estimate from ${householdSurveyLabel}.`}
+        </p>
         <PercentagePie
           label="Household drought reports"
           data={[
             {
               name: 'Reported drought',
-              value: averageHouseholdDrought ?? 0,
+              value: householdDrought ?? 0,
               color: COLORS.drought,
             },
             {
               name: 'Did not report drought',
-              value: averageHouseholdDrought === null ? 0 : 100 - averageHouseholdDrought,
+              value: householdDrought === null ? 0 : 100 - householdDrought,
               color: COLORS.noDrought,
             },
           ]}
         />
         <p className="pie-note">
-          Equal-weighted average of the 30 district percentages, not a population-weighted national estimate.
+          {isSingleDistrict
+            ? householdSurveyNote
+            : `Equal-weighted average of ${householdValues.length} available district percentages, not a population-weighted national estimate. ${householdSurveyNote}`}
         </p>
-        <a className="pie-source" href={SOURCES.cfsva.url} target="_blank" rel="noreferrer">
-          Source: NISR and WFP CFSVA 2024, Figure 8.4
-        </a>
+        {includeCfsvaSource && (
+          <a className="pie-source" href={SOURCES.cfsva.url} target="_blank" rel="noreferrer">
+            Source: NISR and WFP CFSVA 2024, Figure 8.4
+          </a>
+        )}
+        {householdSourceName && <p className="pie-source">Imported source: {householdSourceName}</p>}
       </section>
     </div>
   )

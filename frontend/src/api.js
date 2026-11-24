@@ -10,3 +10,17 @@ export const fetchOverview = () => client.get('/overview').then((res) => res.dat
 export const fetchDistricts = () => client.get('/districts').then((res) => res.data.data)
 
 export const fetchDistrict = (id) => client.get(`/districts/${id}`).then((res) => res.data.data)
+
+export const fetchHouseholdSurveyImports = () =>
+  client.get('/imports/household-drought').then((res) => res.data.data)
+
+export const importHouseholdSurvey = ({ file, surveyYear, sourceName, token }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('survey_year', surveyYear)
+  formData.append('source_name', sourceName)
+
+  return client.post('/imports/household-drought', formData, {
+    headers: { Authorization: `Bearer ${token}` },
+  }).then((res) => res.data.data)
+}

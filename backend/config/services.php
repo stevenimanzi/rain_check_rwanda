@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'imports' => [
+        'token' => env('IMPORT_TOKEN'),
+    ],
+
 ];
