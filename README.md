@@ -27,7 +27,7 @@ Insurance paid on satellite rainfall alone would have left many of those farmers
 
 | Page | What it communicates |
 | --- | --- |
-| Overview | Where satellite and households disagree, national rainfall against normal, driest years and riskiest months, and all 30 districts ranked on dry months, households reporting drought, long-term risk and poverty. |
+| Overview | Country-level satellite and household drought-share pies, where satellite and households disagree, national rainfall against normal, driest years and riskiest months, and all 30 districts ranked on dry months, household drought reports, long-term risk and poverty. |
 | Districts | A searchable, filterable table of all 30 districts. Click one for its own comparison, rainfall and history. |
 | Map | District map of long-term drought risk, recent dry months, households reporting drought, and basis risk. |
 | For institutions | Who can use the data, CSV downloads, data sources and their status, and how the measures work. |
@@ -70,6 +70,9 @@ rates are typed from the printed table in Annex B.
   August dry season) are not judged, because small changes look huge there.
 - **Comparison period:** April 2023 to March 2024, the 12 months households were asked about in CFSVA 2024
   (fieldwork April 2024).
+- **Overview pies:** the satellite share classifies Rwanda's average rainfall by month in this period, excluding
+  normally very dry months; the household share is the unweighted average of the 30 district estimates, not a
+  population-weighted national prevalence.
 - Each district is ranked 0-100 on satellite dry months and on the share of households reporting drought.
   **Basis risk** is the gap between the two ranks: below 25 points low, up to 50 medium, above that high.
 

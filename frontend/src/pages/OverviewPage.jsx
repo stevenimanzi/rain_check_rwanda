@@ -1,4 +1,5 @@
 import ChartInfo from '../components/ChartInfo'
+import CountryDroughtCharts from '../components/CountryDroughtCharts'
 import DryMonthsChart from '../components/DryMonthsChart'
 import DryPatternCharts from '../components/DryPatternCharts'
 import GapChart from '../components/GapChart'
@@ -50,6 +51,8 @@ export default function OverviewPage({ districts, overview }) {
           hint="Satellite and households disagree a lot"
         />
       </div>
+
+      <CountryDroughtCharts districts={districts} national={national} window={window} />
 
       <div className="panel">
         <h3>Where the satellite and households disagree</h3>

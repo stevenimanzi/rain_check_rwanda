@@ -531,6 +531,63 @@
   grid-template-columns: 1fr 1fr;
 }
 
+.country-pies {
+  align-items: stretch;
+}
+
+.country-pie {
+  width: 100%;
+  height: 230px;
+  margin-top: 8px;
+}
+
+.country-pie-empty {
+  display: grid;
+  height: 230px;
+  place-items: center;
+}
+
+.pie-legend {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pie-legend li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.pie-legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.pie-legend strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.pie-note {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pie-source {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
 /* National facts */
 .section-title {
   font-size: 17px;
