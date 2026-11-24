@@ -1,10 +1,10 @@
-import { Bars3Icon, CalendarDaysIcon, LanguageIcon } from '@heroicons/react/24/outline'
-import { useEffect, useState } from 'react'
+import { Bars3Icon, CalendarDaysIcon, ChevronDownIcon, LanguageIcon } from '@heroicons/react/24/outline'
+import { useEffect, useRef, useState } from 'react'
 
 const LANGUAGES = {
-  en: 'English',
-  rw: 'Kinyarwanda',
-  fr: 'French',
+  en: { label: 'English', flag: '🇬🇧' },
+  rw: { label: 'Kinyarwanda', flag: '🇷🇼' },
+  fr: { label: 'French', flag: '🇫🇷' },
 }
 
 function setGoogleTranslateLanguage(language) {
@@ -25,6 +25,8 @@ export default function TopBar({ title, onMenuClick }) {
     const cookieLanguage = document.cookie.match(/(?:^|;\s*)googtrans=\/[^/]+\/([^;]+)/)?.[1]
     return cookieLanguage && LANGUAGES[cookieLanguage] ? cookieLanguage : 'en'
   })
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false)
+  const languageMenuRef = useRef(null)
 
   useEffect(() => {
     window.googleTranslateElementInit = () => {
@@ -46,13 +48,24 @@ export default function TopBar({ title, onMenuClick }) {
       script.async = true
       document.body.appendChild(script)
     }
+
+    const closeMenu = (event) => {
+      if (!languageMenuRef.current?.contains(event.target)) {
+        setLanguageMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', closeMenu)
+    return () => document.removeEventListener('pointerdown', closeMenu)
   }, [])
 
-  const changeLanguage = (event) => {
-    const nextLanguage = event.target.value
+  const changeLanguage = (nextLanguage) => {
     setLanguage(nextLanguage)
+    setLanguageMenuOpen(false)
     setGoogleTranslateLanguage(nextLanguage)
   }
+
+  const activeLanguage = LANGUAGES[language]
 
   return (
     <header className="topbar">
@@ -68,14 +81,37 @@ export default function TopBar({ title, onMenuClick }) {
           <span>Comparison period: Apr 2023 - Mar 2024</span>
         </div>
 
-        <label className="language-switcher" aria-label="Choose language">
-          <LanguageIcon className="icon" />
-          <select value={language} onChange={changeLanguage}>
-            {Object.entries(LANGUAGES).map(([code, label]) => (
-              <option key={code} value={code}>{label}</option>
-            ))}
-          </select>
-        </label>
+        <div className="language-switcher" ref={languageMenuRef}>
+          <button
+            className="language-switcher-button"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={languageMenuOpen}
+            onClick={() => setLanguageMenuOpen((open) => !open)}
+          >
+            <LanguageIcon className="language-icon" />
+            <span className="language-current-flag" aria-hidden="true">{activeLanguage.flag}</span>
+            <span className="language-current-name">{activeLanguage.label}</span>
+            <ChevronDownIcon className={`language-chevron ${languageMenuOpen ? 'open' : ''}`} />
+          </button>
+
+          {languageMenuOpen && (
+            <div className="language-menu" role="menu" aria-label="Choose language">
+              {Object.entries(LANGUAGES).map(([code, { label, flag }]) => (
+                <button
+                  key={code}
+                  type="button"
+                  role="menuitem"
+                  className={`language-option ${language === code ? 'active' : ''}`}
+                  onClick={() => changeLanguage(code)}
+                >
+                  <span className="language-option-flag" aria-hidden="true">{flag}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div id="google_translate_element" aria-hidden="true" />
