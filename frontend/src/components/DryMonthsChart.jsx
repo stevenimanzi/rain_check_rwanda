@@ -35,8 +35,7 @@ export default function DryMonthsChart({ districts, getValue, unit, color }) {
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            label={{ value: unit, position: 'insideBottom', dy: 16, fill: '#64748b', fontSize: 12 }}
-            height={44}
+            height={30}
           />
           <YAxis
             type="category"
