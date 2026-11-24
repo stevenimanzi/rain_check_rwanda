@@ -460,29 +460,39 @@ body {
 .district-picker-search {
   display: flex;
   align-items: center;
+  width: 100%;
+  height: 46px;
   gap: 8px;
   margin-bottom: 6px;
-  padding: 7px 9px;
+  padding: 0 10px;
+  border: 0;
   border-radius: 8px;
-  background: var(--accent-soft);
+  background: #fff;
 }
 
 .district-picker-search .icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
   color: var(--accent);
 }
 
 .district-picker-search input {
   width: 100%;
+  height: 44px;
   min-width: 0;
-  padding: 4px 2px;
+  padding: 0;
   border: 0;
   outline: 0;
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
+}
+
+.district-picker-search input:focus-visible {
+  outline: 0;
+  box-shadow: none;
 }
 
 .district-picker-actions {
