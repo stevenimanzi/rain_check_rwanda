@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ArrowUpTrayIcon, ChevronDownIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { fetchDistrict, fetchHouseholdSurveyImports } from '../api'
 import ChartInfo from '../components/ChartInfo'
 import CountryDroughtCharts from '../components/CountryDroughtCharts'
@@ -86,14 +86,25 @@ const aggregateYearlyHistory = (districtDetails) => {
 }
 
 function DistrictMultiSelect({ districts, selectedIds, onChange }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const ref = useRef(null)
   const allSelected = selectedIds === null
   const summary = allSelected
     ? 'All districts'
     : selectedIds.length === 0
       ? 'No districts selected'
       : selectedIds.length === 1
-      ? districts.find((district) => district.id === selectedIds[0])?.name ?? '1 district selected'
-      : `${selectedIds.length} districts selected`
+        ? districts.find((district) => district.id === selectedIds[0])?.name ?? '1 district selected'
+        : `${selectedIds.length} districts selected`
+
+  useEffect(() => {
+    const dismiss = (event) => {
+      if (!ref.current?.contains(event.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [])
 
   const toggle = (id) => {
     const activeIds = allSelected ? districts.map((district) => district.id) : selectedIds
@@ -101,32 +112,89 @@ function DistrictMultiSelect({ districts, selectedIds, onChange }) {
     onChange(next.length === districts.length ? null : next)
   }
 
+  const visibleDistricts = districts.filter((district) =>
+    district.name.toLowerCase().includes(search.trim().toLowerCase()),
+  )
+
   return (
     <div className="filter-field district-filter">
       <span>Districts</span>
-      <details className="district-picker">
-        <summary>{summary}</summary>
-        <div className="district-picker-options" role="group" aria-label="Select districts">
-          <div className="district-picker-actions">
-            <button type="button" className="district-picker-all" onClick={() => onChange(null)}>
-              Select all
-            </button>
-            <button type="button" className="district-picker-clear" onClick={() => onChange([])}>
-              Clear
-            </button>
+      <div className="district-picker" ref={ref}>
+        <button type="button" className="district-picker-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+          <span>{summary}</span>
+          <ChevronDownIcon className={`custom-select-chevron ${open ? 'open' : ''}`} />
+        </button>
+        {open && (
+          <div className="district-picker-options" role="group" aria-label="Select districts">
+            <div className="district-picker-search">
+              <MagnifyingGlassIcon className="icon" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search districts" autoFocus />
+            </div>
+            <div className="district-picker-actions">
+              <button type="button" className="district-picker-all" onClick={() => onChange(null)}>Select all</button>
+              <button type="button" className="district-picker-clear" onClick={() => onChange([])}>Clear</button>
+            </div>
+            <div className="district-picker-list">
+              {visibleDistricts.map((district) => (
+                <label key={district.id}>
+                  <input
+                    type="checkbox"
+                    checked={allSelected || selectedIds.includes(district.id)}
+                    onChange={() => toggle(district.id)}
+                  />
+                  <span>{district.name}</span>
+                </label>
+              ))}
+              {visibleDistricts.length === 0 && <div className="district-picker-empty">No districts found</div>}
+            </div>
           </div>
-          {districts.map((district) => (
-            <label key={district.id}>
-              <input
-                type="checkbox"
-                checked={allSelected || selectedIds.includes(district.id)}
-                onChange={() => toggle(district.id)}
-              />
-              {district.name}
-            </label>
-          ))}
-        </div>
-      </details>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CustomSelect({ label, value, options, onChange, className = '' }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const active = options.find((option) => String(option.value) === String(value))
+
+  useEffect(() => {
+    const dismiss = (event) => {
+      if (!ref.current?.contains(event.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [])
+
+  return (
+    <div className={`filter-field ${className}`}>
+      <span>{label}</span>
+      <div className="custom-select" ref={ref}>
+        <button type="button" className="custom-select-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+          <span>{active?.label ?? ''}</span>
+          <ChevronDownIcon className={`custom-select-chevron ${open ? 'open' : ''}`} />
+        </button>
+        {open && (
+          <div className="custom-select-menu" role="listbox">
+            {options.map((option) => (
+              <button
+                type="button"
+                role="option"
+                aria-selected={String(option.value) === String(value)}
+                key={option.value}
+                className={`custom-select-option ${String(option.value) === String(value) ? 'active' : ''}`}
+                onClick={() => {
+                  onChange(option.value)
+                  setOpen(false)
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -296,41 +364,29 @@ export default function OverviewPage({ districts, overview }) {
 
   const filters = (
     <section className="overview-filters" aria-label="Overview filters">
-      <label className="filter-field">
-        <span>From year</span>
-        <select
-          value={startYear}
-          onChange={(event) => {
-            const year = Number(event.target.value)
-            setSelectedYears((current) => {
-              const currentEnd = current?.end ?? availableYears[availableYears.length - 1]
-              return { start: year, end: year > currentEnd ? year : currentEnd }
-            })
-          }}
-        >
-          {availableYears.map((year) => (
-            <option key={year} value={year}>{year}</option>
-          ))}
-        </select>
-      </label>
+      <CustomSelect
+        label="From year"
+        value={startYear}
+        options={availableYears.map((year) => ({ value: year, label: String(year) }))}
+        onChange={(year) => {
+          setSelectedYears((current) => {
+            const currentEnd = current?.end ?? availableYears[availableYears.length - 1]
+            return { start: Number(year), end: Number(year) > currentEnd ? Number(year) : currentEnd }
+          })
+        }}
+      />
 
-      <label className="filter-field">
-        <span>To year</span>
-        <select
-          value={endYear}
-          onChange={(event) => {
-            const year = Number(event.target.value)
-            setSelectedYears((current) => {
-              const currentStart = current?.start ?? availableYears[0]
-              return { start: year < currentStart ? year : currentStart, end: year }
-            })
-          }}
-        >
-          {availableYears.map((year) => (
-            <option key={year} value={year}>{year}</option>
-          ))}
-        </select>
-      </label>
+      <CustomSelect
+        label="To year"
+        value={endYear}
+        options={availableYears.map((year) => ({ value: year, label: String(year) }))}
+        onChange={(year) => {
+          setSelectedYears((current) => {
+            const currentStart = current?.start ?? availableYears[0]
+            return { start: Number(year) < currentStart ? Number(year) : currentStart, end: Number(year) }
+          })
+        }}
+      />
 
       <DistrictMultiSelect
         districts={districts}
