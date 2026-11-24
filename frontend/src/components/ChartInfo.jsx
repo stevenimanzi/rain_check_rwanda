@@ -15,16 +15,22 @@ export default function ChartInfo({ shows, howToRead, sources = [], sourceLabel 
         <dd>{howToRead}</dd>
         <dt>Where the data comes from</dt>
         <dd>
-          {sourceLabel}
-          {sourceLabel && sources.length > 0 && '; '}
-          {sources.map((key, index) => (
-            <span key={key}>
-              {index > 0 && '; '}
-              <a href={SOURCES[key].url} target="_blank" rel="noreferrer">
-                {SOURCES[key].label}
-              </a>
-            </span>
-          ))}
+          <ul className="chart-info-sources">
+            {sourceLabel && (
+              <li>
+                <strong>Uploaded household survey: </strong>
+                {sourceLabel}
+              </li>
+            )}
+            {sources.map((key) => (
+              <li key={key}>
+                <strong>{SOURCES[key].type}: </strong>
+                <a href={SOURCES[key].url} target="_blank" rel="noreferrer">
+                  {SOURCES[key].label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </dd>
       </dl>
     </div>

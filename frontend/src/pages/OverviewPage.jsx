@@ -667,8 +667,8 @@ export default function OverviewPage({ districts, overview }) {
                 howToRead="Each selected district is shown separately. A longer bar means more households reported drought."
                 sourceLabel={
                   surveyView === 'imported'
-                    ? selectedImport ? `Imported source: ${selectedImport.source_name}.` : 'No imported source is selected.'
-                    : selectedImport ? `Imported source: ${selectedImport.source_name}; CFSVA 2024 is used for missing districts.` : undefined
+                    ? selectedImport ? `${selectedImport.source_name} (${selectedImport.survey_year}).` : 'No imported source is selected.'
+                    : selectedImport ? `${selectedImport.source_name} (${selectedImport.survey_year}); CFSVA 2024 is used for missing districts.` : undefined
                 }
                 sources={surveyView === 'imported' ? [] : ['cfsva']}
               />

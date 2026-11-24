@@ -117,7 +117,7 @@ export default function CountryDroughtCharts({
           Drought means at least 20% below normal; normally very dry months are excluded.
         </p>
         <a className="pie-source" href={SOURCES.rainfall.url} target="_blank" rel="noreferrer">
-          Source: {SOURCES.rainfall.label}
+          Source: {SOURCES.rainfall.type}: {SOURCES.rainfall.label}
         </a>
       </section>
 
@@ -150,7 +150,7 @@ export default function CountryDroughtCharts({
         </p>
         {includeCfsvaSource && (
           <a className="pie-source" href={SOURCES.cfsva.url} target="_blank" rel="noreferrer">
-            Source: {SOURCES.cfsva.label}
+            Source: {SOURCES.cfsva.type}: {SOURCES.cfsva.label}
           </a>
         )}
         {householdSourceName && <p className="pie-source">Imported source: {householdSourceName}</p>}

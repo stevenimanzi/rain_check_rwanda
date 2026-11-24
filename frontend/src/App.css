@@ -1194,6 +1194,17 @@ body {
   line-height: 1.5;
 }
 
+.chart-info-sources {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.chart-info-sources li {
+  padding-left: 2px;
+}
+
 .chart-info a,
 .fact a {
   color: var(--accent);
