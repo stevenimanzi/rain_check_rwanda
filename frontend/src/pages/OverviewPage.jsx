@@ -410,35 +410,29 @@ export default function OverviewPage({ districts, overview }) {
         </button>
         {surveyImports.length > 0 && (
           <>
-            <label className="filter-field survey-view-filter">
-              <span>Household survey view</span>
-              <select value={surveyView} onChange={(event) => setSurveyView(event.target.value)}>
-                <option value="merged">Merge with CFSVA 2024</option>
-                <option value="imported">Imported data only</option>
-              </select>
-            </label>
-            <label className="filter-field survey-source-select">
-              <span>Survey upload</span>
-              <select
-                value={selectedImport?.id ?? ''}
-                onChange={(event) => setSelectedImportId(event.target.value)}
-              >
-                {surveyImports.map((surveyImport) => (
-                  <option key={surveyImport.id} value={surveyImport.id}>
-                    {surveyImport.source_name} ({surveyImport.survey_year})
-                  </option>
-                ))}
-              </select>
-            </label>
+            <CustomSelect
+              label="Household survey view"
+              className="survey-view-filter"
+              value={surveyView}
+              options={[
+                { value: 'merged', label: 'Merge with CFSVA 2024' },
+                { value: 'imported', label: 'Imported data only' },
+              ]}
+              onChange={setSurveyView}
+            />
+            <CustomSelect
+              label="Survey upload"
+              className="survey-source-select"
+              value={selectedImport?.id ?? ''}
+              options={surveyImports.map((surveyImport) => ({
+                value: surveyImport.id,
+                label: `${surveyImport.source_name} (${surveyImport.survey_year})`,
+              }))}
+              onChange={setSelectedImportId}
+            />
           </>
         )}
       </div>
-
-      <p className="filter-note">
-        Year range filters satellite rainfall. Select one or more districts for individual comparisons; rainfall
-        trends average the selected districts. Imported-only charts show the chosen upload. Merge mode uses that
-        upload where available and CFSVA 2024 for missing districts; mismatch comparisons always use CFSVA 2024.
-      </p>
     </section>
   )
 
