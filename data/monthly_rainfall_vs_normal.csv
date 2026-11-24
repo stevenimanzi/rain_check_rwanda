@@ -540,7 +540,7 @@ Gatsibo,2014,10,103.1,71.6,-44,yes,no
 Gatsibo,2014,11,96.1,95.5,-0.6,yes,no
 Gatsibo,2014,12,59.1,66.9,11.7,yes,no
 Gatsibo,2015,1,12.9,51,74.7,yes,yes
-Gatsibo,2015,2,41.6,62.3,33.3,yes,yes
+Gatsibo,2015,2,41.6,62.4,33.3,yes,yes
 Gatsibo,2015,3,82.7,84.9,2.7,yes,no
 Gatsibo,2015,4,155.6,99.3,-56.6,yes,no
 Gatsibo,2015,5,37.6,63.8,41,yes,yes
@@ -552,7 +552,7 @@ Gatsibo,2015,10,69.7,73.7,5.5,yes,no
 Gatsibo,2015,11,92.1,97.5,5.6,yes,no
 Gatsibo,2015,12,54.8,66.9,18.1,yes,no
 Gatsibo,2016,1,50.1,48.3,-3.8,no,no
-Gatsibo,2016,2,43.8,62.3,29.8,yes,yes
+Gatsibo,2016,2,43.8,62.4,29.8,yes,yes
 Gatsibo,2016,3,53.9,88.4,39.1,yes,yes
 Gatsibo,2016,4,110.8,99.3,-11.5,yes,no
 Gatsibo,2016,5,27.7,63.8,56.6,yes,yes
@@ -576,7 +576,7 @@ Gatsibo,2017,10,65.9,73.7,10.6,yes,no
 Gatsibo,2017,11,71.5,97.5,26.7,yes,yes
 Gatsibo,2017,12,37.5,66.9,44,yes,yes
 Gatsibo,2018,1,65.4,47.3,-38.3,no,no
-Gatsibo,2018,2,40.4,62.3,35.3,yes,yes
+Gatsibo,2018,2,40.4,62.4,35.3,yes,yes
 Gatsibo,2018,3,133.7,79.2,-68.9,yes,no
 Gatsibo,2018,4,193,99.3,-94.3,yes,no
 Gatsibo,2018,5,104.3,53.1,-96.3,yes,no
@@ -588,7 +588,7 @@ Gatsibo,2018,10,74.1,71.6,-3.5,yes,no
 Gatsibo,2018,11,65.6,97.5,32.7,yes,yes
 Gatsibo,2018,12,105.3,61.9,-70.1,yes,no
 Gatsibo,2019,1,43.9,51,14,yes,no
-Gatsibo,2019,2,47.6,62.3,23.6,yes,yes
+Gatsibo,2019,2,47.6,62.4,23.6,yes,yes
 Gatsibo,2019,3,60.5,88.4,31.6,yes,yes
 Gatsibo,2019,4,92.9,108.2,14.2,yes,no
 Gatsibo,2019,5,95.7,53.1,-80.2,yes,no
@@ -636,7 +636,7 @@ Gatsibo,2022,10,52.2,73.7,29.3,yes,yes
 Gatsibo,2022,11,99,94.1,-5.2,yes,no
 Gatsibo,2022,12,64.7,64.1,-1,yes,no
 Gatsibo,2023,1,44.6,51,12.7,yes,no
-Gatsibo,2023,2,32.7,62.3,47.6,yes,yes
+Gatsibo,2023,2,32.7,62.4,47.6,yes,yes
 Gatsibo,2023,3,110.3,79.2,-39.3,yes,no
 Gatsibo,2023,4,105.6,101.9,-3.6,yes,no
 Gatsibo,2023,5,67.3,53.1,-26.8,yes,no
@@ -1738,7 +1738,7 @@ Muhanga,2015,8,2.3,29.4,92.2,no,no
 Muhanga,2015,9,67,78.3,14.5,yes,no
 Muhanga,2015,10,104.2,94.8,-9.9,yes,no
 Muhanga,2015,11,146.8,134.8,-8.9,yes,no
-Muhanga,2015,12,100.2,108.4,7.6,yes,no
+Muhanga,2015,12,100.2,108.5,7.6,yes,no
 Muhanga,2016,1,102.9,94.3,-9.1,yes,no
 Muhanga,2016,2,60.2,86.8,30.7,yes,yes
 Muhanga,2016,3,111,104.4,-6.4,yes,no
@@ -1750,7 +1750,7 @@ Muhanga,2016,8,8.4,29.4,71.6,no,no
 Muhanga,2016,9,90.3,76.3,-18.4,yes,no
 Muhanga,2016,10,121.6,94.8,-28.3,yes,no
 Muhanga,2016,11,151.2,134.8,-12.2,yes,no
-Muhanga,2016,12,44,108.4,59.4,yes,yes
+Muhanga,2016,12,44,108.5,59.4,yes,yes
 Muhanga,2017,1,48.3,106.1,54.4,yes,yes
 Muhanga,2017,2,99.2,71,-39.7,yes,no
 Muhanga,2017,3,106.3,106.7,0.4,yes,no
@@ -1762,7 +1762,7 @@ Muhanga,2017,8,34.3,21.6,-59.2,no,no
 Muhanga,2017,9,77.6,77,-0.8,yes,no
 Muhanga,2017,10,77.3,100.8,23.4,yes,yes
 Muhanga,2017,11,98.9,144.5,31.6,yes,yes
-Muhanga,2017,12,62.7,108.4,42.2,yes,yes
+Muhanga,2017,12,62.7,108.5,42.2,yes,yes
 Muhanga,2018,1,109.3,91.1,-20,yes,no
 Muhanga,2018,2,65.2,86.8,24.9,yes,yes
 Muhanga,2018,3,156.8,104.4,-50.2,yes,no
@@ -1798,7 +1798,7 @@ Muhanga,2020,8,13.7,29.4,53.3,no,no
 Muhanga,2020,9,53.2,78.3,32,yes,yes
 Muhanga,2020,10,108,94.8,-13.9,yes,no
 Muhanga,2020,11,127.3,144.5,11.9,yes,no
-Muhanga,2020,12,99.6,108.4,8.2,yes,no
+Muhanga,2020,12,99.6,108.5,8.2,yes,no
 Muhanga,2021,1,118.7,91.1,-30.3,yes,no
 Muhanga,2021,2,121.7,71,-71.3,yes,no
 Muhanga,2021,3,95.2,108.7,12.4,yes,no
@@ -1846,7 +1846,7 @@ Muhanga,2024,8,17.4,29.4,40.8,no,no
 Muhanga,2024,9,55.4,78.3,29.2,yes,yes
 Muhanga,2024,10,92.2,100.8,8.6,yes,no
 Muhanga,2024,11,237.3,134.8,-76.1,yes,no
-Muhanga,2024,12,84.7,108.4,21.9,yes,yes
+Muhanga,2024,12,84.7,108.5,21.9,yes,yes
 Musanze,2014,1,67.8,87.4,22.5,yes,yes
 Musanze,2014,2,122.7,105.9,-15.8,yes,no
 Musanze,2014,3,183.1,140.6,-30.2,yes,no
@@ -2658,7 +2658,7 @@ Nyamasheke,2015,4,135.5,163.9,17.3,yes,no
 Nyamasheke,2015,5,109,86.9,-25.4,yes,no
 Nyamasheke,2015,6,89.5,23.6,-279.5,no,no
 Nyamasheke,2015,7,4.4,9,51.2,no,no
-Nyamasheke,2015,8,18.4,26.5,30.9,no,no
+Nyamasheke,2015,8,18.4,26.6,30.9,no,no
 Nyamasheke,2015,9,112.5,89.4,-25.8,yes,no
 Nyamasheke,2015,10,165.2,107,-54.3,yes,no
 Nyamasheke,2015,11,165.9,139.9,-18.5,yes,no
@@ -2682,7 +2682,7 @@ Nyamasheke,2017,4,85.6,163.9,47.8,yes,yes
 Nyamasheke,2017,5,48.8,99.9,51.2,yes,yes
 Nyamasheke,2017,6,8.5,25.8,67.3,no,no
 Nyamasheke,2017,7,5.8,9,35.8,no,no
-Nyamasheke,2017,8,25.2,26.5,5.2,no,no
+Nyamasheke,2017,8,25.2,26.6,5.2,no,no
 Nyamasheke,2017,9,92.4,89.4,-3.4,yes,no
 Nyamasheke,2017,10,79.4,115.4,31.2,yes,yes
 Nyamasheke,2017,11,134.7,152.1,11.4,yes,no
@@ -2706,7 +2706,7 @@ Nyamasheke,2019,4,161.9,154.7,-4.7,yes,no
 Nyamasheke,2019,5,102.2,86.9,-17.6,yes,no
 Nyamasheke,2019,6,82.7,23.6,-250.7,no,no
 Nyamasheke,2019,7,22.1,8.5,-160.6,no,no
-Nyamasheke,2019,8,18.2,26.5,31.5,no,no
+Nyamasheke,2019,8,18.2,26.6,31.5,no,no
 Nyamasheke,2019,9,85.4,92,7.2,yes,no
 Nyamasheke,2019,10,123.5,107,-15.3,yes,no
 Nyamasheke,2019,11,159.2,139.9,-13.8,yes,no
@@ -2754,7 +2754,7 @@ Nyamasheke,2023,4,191.2,152.8,-25.2,yes,no
 Nyamasheke,2023,5,166.6,86.9,-91.6,yes,no
 Nyamasheke,2023,6,10.4,25.8,59.9,no,no
 Nyamasheke,2023,7,9,8.5,-6.6,no,no
-Nyamasheke,2023,8,13.5,26.5,49.2,no,no
+Nyamasheke,2023,8,13.5,26.6,49.2,no,no
 Nyamasheke,2023,9,87.2,92,5.2,yes,no
 Nyamasheke,2023,10,85.6,115.4,25.8,yes,yes
 Nyamasheke,2023,11,159.6,139.9,-14.1,yes,no
@@ -2766,7 +2766,7 @@ Nyamasheke,2024,4,165.8,152.8,-8.5,yes,no
 Nyamasheke,2024,5,32.8,99.9,67.2,yes,yes
 Nyamasheke,2024,6,5.8,25.8,77.7,no,no
 Nyamasheke,2024,7,7.9,9,12.2,no,no
-Nyamasheke,2024,8,19.8,26.5,25.5,no,no
+Nyamasheke,2024,8,19.8,26.6,25.5,no,no
 Nyamasheke,2024,9,65.1,92,29.3,yes,yes
 Nyamasheke,2024,10,104.7,115.4,9.3,yes,no
 Nyamasheke,2024,11,261.1,139.9,-86.6,yes,no
@@ -2932,7 +2932,7 @@ Nyarugenge,2016,2,76.1,93.8,18.9,yes,no
 Nyarugenge,2016,3,123.4,123,-0.3,yes,no
 Nyarugenge,2016,4,185.9,177.4,-4.8,yes,no
 Nyarugenge,2016,5,38.9,106.6,63.5,yes,yes
-Nyarugenge,2016,6,5.1,7.4,31.9,no,no
+Nyarugenge,2016,6,5.1,7.5,31.9,no,no
 Nyarugenge,2016,7,9.4,1.4,-559.9,no,no
 Nyarugenge,2016,8,8.2,35,76.5,no,no
 Nyarugenge,2016,9,93.6,71.3,-31.2,yes,no
@@ -2944,7 +2944,7 @@ Nyarugenge,2017,2,95.5,84.1,-13.6,yes,no
 Nyarugenge,2017,3,136.6,117.2,-16.5,yes,no
 Nyarugenge,2017,4,109.1,186.3,41.5,yes,yes
 Nyarugenge,2017,5,106,95.7,-10.8,yes,no
-Nyarugenge,2017,6,5.5,7.4,25.8,no,no
+Nyarugenge,2017,6,5.5,7.5,25.8,no,no
 Nyarugenge,2017,7,2,1.9,-5.4,no,no
 Nyarugenge,2017,8,37.8,28.9,-30.9,no,no
 Nyarugenge,2017,9,72.6,72.7,0.2,yes,no
@@ -2992,7 +2992,7 @@ Nyarugenge,2021,2,124,84.1,-47.5,yes,no
 Nyarugenge,2021,3,108.1,129.2,16.3,yes,no
 Nyarugenge,2021,4,116,186.3,37.8,yes,yes
 Nyarugenge,2021,5,165.5,95.2,-73.9,yes,no
-Nyarugenge,2021,6,4.8,7.4,35.3,no,no
+Nyarugenge,2021,6,4.8,7.5,35.3,no,no
 Nyarugenge,2021,7,0.9,2.4,62.6,no,no
 Nyarugenge,2021,8,25.4,35,27.4,no,no
 Nyarugenge,2021,9,98.6,71.3,-38.3,yes,no
@@ -3016,7 +3016,7 @@ Nyarugenge,2023,2,48.9,93.8,47.9,yes,yes
 Nyarugenge,2023,3,194.6,117.2,-66.1,yes,no
 Nyarugenge,2023,4,216.2,176.9,-22.2,yes,no
 Nyarugenge,2023,5,160.8,95.2,-69,yes,no
-Nyarugenge,2023,6,3.4,7.4,54.9,no,no
+Nyarugenge,2023,6,3.4,7.5,54.9,no,no
 Nyarugenge,2023,7,0.2,2.4,92.9,no,no
 Nyarugenge,2023,8,0,35,100,no,no
 Nyarugenge,2023,9,82.8,71.3,-16.1,yes,no
@@ -3028,7 +3028,7 @@ Nyarugenge,2024,2,38.7,93.8,58.7,yes,yes
 Nyarugenge,2024,3,80,129.2,38.1,yes,yes
 Nyarugenge,2024,4,239.9,176.9,-35.6,yes,no
 Nyarugenge,2024,5,57.9,106.6,45.7,yes,yes
-Nyarugenge,2024,6,3.5,7.4,53.3,no,no
+Nyarugenge,2024,6,3.5,7.5,53.3,no,no
 Nyarugenge,2024,7,3.6,1.4,-155.6,no,no
 Nyarugenge,2024,8,32.3,31.6,-2.2,no,no
 Nyarugenge,2024,9,66,74,10.8,yes,no

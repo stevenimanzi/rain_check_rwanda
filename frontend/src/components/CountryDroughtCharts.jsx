@@ -87,6 +87,7 @@ export default function CountryDroughtCharts({
   includeCfsvaSource,
 }) {
   const satelliteMonths = series.filter((month) => month.year >= startYear && month.year <= endYear && month.judged)
+  const periodLabel = startYear === endYear ? String(startYear) : `${startYear} to ${endYear}`
   const satelliteDrought = satelliteMonths.filter((month) => month.satellite_drought).length
   const householdValues = districts
     .map((district) => district.household_drought_pct)
@@ -99,7 +100,7 @@ export default function CountryDroughtCharts({
     <div className="grid-2 even country-pies">
       <section className="panel">
         <h3>Satellite rainfall: drought vs. not drought in {isAllDistricts ? 'Rwanda' : area}</h3>
-        <p className="muted">Share of assessable months, {startYear} to {endYear}.</p>
+        <p className="muted">Share of assessable months, {periodLabel}.</p>
         <PercentagePie
           label="Satellite rainfall"
           data={[

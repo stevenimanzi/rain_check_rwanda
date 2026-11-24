@@ -3,86 +3,128 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 import { GRID_LINE, linesBetweenColumns } from '../chartGrid'
-import { CHART_COLORS, longMonth, shortMonth } from '../utils'
+import ChartLegend from './ChartLegend'
+import { CHART_COLORS, longMonth, MONTH_NAMES, monthShort } from '../utils'
 
-const DRY_LINE = -20
 const MONTHS_SHOWN = 36
-const AXIS_LIMIT = 100 // swings beyond this are drawn at the edge so one odd month does not flatten the chart
-
-const barColor = (point) => {
-  if (!point.judged) return CHART_COLORS.skipped
-  return point.dry ? CHART_COLORS.dry : CHART_COLORS.wet
-}
+const LEGEND_ITEMS = [
+  { color: CHART_COLORS.wet, label: 'Rainfall (not marked as drought)' },
+  { color: CHART_COLORS.normal, label: 'Normal monthly rainfall' },
+  { color: CHART_COLORS.dry, label: 'Rainfall at least 20% below normal' },
+  { color: CHART_COLORS.skipped, label: 'Normally very dry; not assessed' },
+]
 
 function ChartTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const point = payload[0].payload
-  const direction = point.change >= 0 ? 'above' : 'below'
 
   return (
     <div className="chart-tooltip">
       <strong>{point.fullLabel}</strong>
-      <div>
-        {Math.abs(point.change)}% {direction} normal rain
-      </div>
-      <div className="muted">
-        {point.rainfall} mm of rain fell. A normal month has {point.normal} mm.
-      </div>
-      {point.dry && <div className="tooltip-dry">Dry month</div>}
-      {!point.judged && <div className="muted">This month is normally very dry, so we do not judge it</div>}
+      <div>{point.isAverage ? 'Average rainfall' : 'Rainfall'}: {Number(point.rainfall).toFixed(1)} mm</div>
+      <div>{point.isAverage ? 'Average normal' : 'Normal'}: {Number(point.normal).toFixed(1)} mm</div>
+      {point.judged && (
+        <div>
+          {Math.abs(point.change).toFixed(1)}% {point.change >= 0 ? 'above' : 'below'} normal
+        </div>
+      )}
+      {point.dry && (
+        <div className="tooltip-dry">
+          {point.isAverage ? 'Monthly average is at least 20% below normal' : 'Drought month'}
+        </div>
+      )}
+      {!point.judged && <div className="muted">Normally very dry; not assessed</div>}
     </div>
   )
 }
 
 /**
- * Bars show how much more (blue) or less (red) rain fell than normal each month.
- * Bars that cross the dashed line are "dry months".
+ * Paired bars compare monthly rainfall with normal, averaging by calendar month for multi-year ranges.
  */
 export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN }) {
-  const data = series.slice(-maxMonths).map((m) => ({
-    label: shortMonth(m),
-    fullLabel: longMonth(m),
-    change: -m.rainfall_deficit_pct,
-    barHeight: Math.max(-AXIS_LIMIT, Math.min(AXIS_LIMIT, -m.rainfall_deficit_pct)),
-    judged: m.judged,
-    rainfall: m.rainfall_mm,
-    normal: m.normal_mm,
-    dry: m.satellite_drought,
-  }))
+  const months = maxMonths > 0 ? series.slice(-maxMonths) : []
+  const groupedByMonth = new Map()
+
+  months.forEach((month) => {
+    const group = groupedByMonth.get(month.month) ?? { months: [], years: new Set() }
+    group.months.push(month)
+    group.years.add(Number(month.year))
+    groupedByMonth.set(month.month, group)
+  })
+
+  const data = [...groupedByMonth.entries()]
+    .sort(([monthA], [monthB]) => monthA - monthB)
+    .map(([monthNumber, group]) => {
+      const sampleYears = [...group.years].sort((a, b) => a - b)
+      const isAverage = sampleYears.length > 1
+      const rainfall = group.months.reduce((sum, month) => sum + Number(month.rainfall_mm), 0) / group.months.length
+      const normal = group.months.reduce((sum, month) => sum + Number(month.normal_mm), 0) / group.months.length
+      const judged = group.months.every((month) => month.judged)
+      const change = normal > 0 ? ((rainfall - normal) / normal) * 100 : 0
+
+      return {
+        label: monthShort(monthNumber),
+        fullLabel: isAverage
+          ? `${MONTH_NAMES[monthNumber - 1]} average, ${sampleYears[0]} to ${sampleYears[sampleYears.length - 1]}`
+          : longMonth(group.months[0]),
+        rainfall,
+        normal,
+        change,
+        judged,
+        dry: judged && change <= -20,
+        isAverage,
+      }
+    })
+
+  if (data.length === 0) {
+    return (
+      <>
+        <p className="muted">No rainfall data is available for this year selection.</p>
+        <ChartLegend items={LEGEND_ITEMS} />
+      </>
+    )
+  }
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-        <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(data.length)} />
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" minTickGap={24} />
-        <YAxis
-          domain={[-AXIS_LIMIT, AXIS_LIMIT]}
-          ticks={[-100, -50, 0, 50, 100]}
-          tickFormatter={(v) => `${v}%`}
-          tick={{ fontSize: 11 }}
-          width={48}
-        />
-        <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-        <ReferenceLine y={0} stroke="#94a3b8" />
-        <ReferenceLine
-          y={DRY_LINE}
-          stroke={CHART_COLORS.dry}
-          strokeDasharray="5 4"
-          label={{ value: 'Dry month line (-20%)', position: 'insideBottomLeft', fontSize: 11, fill: CHART_COLORS.dry }}
-        />
-        <Bar dataKey="barHeight" radius={[3, 3, 0, 0]}>
-          {data.map((point) => (
-            <Cell key={point.fullLabel} fill={barColor(point)} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data} margin={{ top: 10, right: 12, left: 4, bottom: 0 }} barGap={3}>
+          <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(data.length)} />
+          <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" minTickGap={24} />
+          <YAxis
+            domain={[0, 'auto']}
+            tickFormatter={(value) => `${value} mm`}
+            tick={{ fontSize: 11 }}
+            width={56}
+          />
+          <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+          <Bar dataKey="rainfall" name="Monthly rainfall" maxBarSize={28} radius={[3, 3, 0, 0]}>
+            {data.map((point) => {
+              const color = !point.judged
+                ? CHART_COLORS.skipped
+                : point.dry
+                  ? CHART_COLORS.dry
+                  : CHART_COLORS.wet
+
+              return <Cell key={point.fullLabel} fill={color} />
+            })}
+          </Bar>
+          <Bar
+            dataKey="normal"
+            name="Normal monthly rainfall"
+            fill={CHART_COLORS.normal}
+            maxBarSize={28}
+            radius={[3, 3, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+      <ChartLegend items={LEGEND_ITEMS} />
+    </>
   )
 }

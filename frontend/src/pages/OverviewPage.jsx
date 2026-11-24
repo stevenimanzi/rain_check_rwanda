@@ -140,13 +140,15 @@ export default function OverviewPage({ districts, overview }) {
   const [importFormOpen, setImportFormOpen] = useState(false)
   const [importAccessToken, setImportAccessToken] = useState('')
   const importDialogRef = useRef(null)
+  const rainfallYears = [...new Set(national.map((month) => month.year))].sort((a, b) => a - b)
   const availableYears = [...new Set([
     ...national.map((month) => month.year),
     ...surveyImports.map((surveyImport) => Number(surveyImport.survey_year)),
   ])].sort((a, b) => a - b)
   const [selectedYears, setSelectedYears] = useState(null)
-  const startYear = selectedYears?.start ?? availableYears[0]
-  const endYear = selectedYears?.end ?? availableYears[availableYears.length - 1]
+  const defaultYear = rainfallYears[rainfallYears.length - 1] ?? availableYears[0]
+  const startYear = selectedYears?.start ?? defaultYear
+  const endYear = selectedYears?.end ?? defaultYear
   const [selectedDistrictIds, setSelectedDistrictIds] = useState(null)
   const [districtDetails, setDistrictDetails] = useState({})
   const [districtError, setDistrictError] = useState(null)
@@ -235,7 +237,7 @@ export default function OverviewPage({ districts, overview }) {
   const byMonth = calendarMonthShares(filteredSeries)
   const driestYear = [...byYear].sort((a, b) => b.dry_months - a.dry_months)[0]
   const highRisk = activeDistricts.filter((district) => district.summary.risk_level === 'high').length
-  const periodLabel = `${startYear} to ${endYear}`
+  const periodLabel = startYear === endYear ? String(startYear) : `${startYear} to ${endYear}`
   const mismatchValue = isSingleDistrict
     ? RISK_LABELS[singleDistrict.summary.risk_level] ?? 'No survey data'
     : `${highRisk} of ${districtCount}`
@@ -303,7 +305,7 @@ export default function OverviewPage({ districts, overview }) {
           onChange={(event) => {
             const year = Number(event.target.value)
             setSelectedYears((current) => {
-              const currentEnd = current?.end ?? availableYears[availableYears.length - 1]
+              const currentEnd = current?.end ?? endYear
               return { start: year, end: year > currentEnd ? year : currentEnd }
             })
           }}
@@ -321,7 +323,7 @@ export default function OverviewPage({ districts, overview }) {
           onChange={(event) => {
             const year = Number(event.target.value)
             setSelectedYears((current) => {
-              const currentStart = current?.start ?? availableYears[0]
+              const currentStart = current?.start ?? startYear
               return { start: year < currentStart ? year : currentStart, end: year }
             })
           }}
@@ -379,7 +381,8 @@ export default function OverviewPage({ districts, overview }) {
       </div>
 
       <p className="filter-note">
-        Year range filters satellite rainfall. Select one or more districts for individual comparisons; rainfall
+        The year filters default to the latest rainfall year; choose the same year twice for one year or a range.
+        Select one or more districts for individual comparisons; rainfall
         trends average the selected districts. Imported-only charts show the chosen upload. Merge mode uses that
         upload where available and CFSVA 2024 for missing districts; mismatch comparisons always use CFSVA 2024.
       </p>
@@ -512,13 +515,14 @@ export default function OverviewPage({ districts, overview }) {
             <h3>Was each month wetter or drier than normal?</h3>
             <p className="muted">
               {isSingleDistrict
-                ? `${area} rainfall`
-                : `Average rainfall across ${districtCount} ${isAllDistricts ? 'districts' : 'selected districts'}`}, {periodLabel}.
+                ? area
+                : `Average rainfall across ${districtCount} ${isAllDistricts ? 'districts' : 'selected districts'}`}, {periodLabel}
+              {startYear === endYear ? '.' : '; monthly averages grouped by calendar month.'}
             </p>
             <RainDeviationChart series={filteredSeries} maxMonths={filteredSeries.length} />
             <ChartInfo
-              shows={`How much more or less rain ${isSingleDistrict ? `${area} had` : `averaged across ${districtCount} districts`} each month compared with normal, ${periodLabel}.`}
-              howToRead="Blue bar: more rain than normal. Red bar: a dry month, at least 20% less rain than normal (below the red dashed line). Grey bar: normally very dry months, which are not judged."
+              shows={`Monthly rainfall compared with normal rainfall for ${isSingleDistrict ? area : `${districtCount} districts`}, ${periodLabel}.`}
+              howToRead="Each month has two bars: rainfall and the normal amount. For a multi-year range, each bar is the average for that calendar month. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
               sources={['rainfall', 'boundaries']}
             />
           </div>
@@ -613,9 +617,6 @@ export default function OverviewPage({ districts, overview }) {
             </div>
           </div>
         </>
-      )}
-      {noDistrictsSelected && importFormOpen && (
-        <HouseholdSurveyImportPanel districts={districts} onImported={handleSurveyImport} />
       )}
     </>
   )

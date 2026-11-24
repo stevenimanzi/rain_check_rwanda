@@ -26,15 +26,16 @@ export default function DryPatternCharts({
     fullLabel: MONTH_NAMES[row.month - 1],
     value: row.dry_pct,
   }))
+  const periodLabel = startYear === endYear ? String(startYear) : `${startYear} to ${endYear}`
 
   return (
     <div className="grid-2 even">
       <div className="panel">
         <h3>Which years were driest in {area}?</h3>
         <p className="muted">
-          {isAverage ? 'Average number of dry months per district each year' : 'Number of dry months'} in {startYear} to {endYear}.
+          {isAverage ? 'Average number of dry months per district each year' : 'Number of dry months'} in {periodLabel}.
         </p>
-        <SimpleBarChart data={yearData} color={CHART_COLORS.dry} />
+        <SimpleBarChart data={yearData} color={CHART_COLORS.dry} legendLabel="Dry months" />
         <ChartInfo
           shows={`How many months each year had at least 20% less rain than normal${
             isAverage ? `, averaged across ${averageScope}` : ''
@@ -50,11 +51,16 @@ export default function DryPatternCharts({
           {isAverage
             ? `Share of assessed years when average rainfall across ${averageScope} was dry in each month`
             : 'Share of assessed years when this district was dry in each month'}
-          , {startYear} to {endYear}.
+          , {periodLabel}.
         </p>
-        <SimpleBarChart data={monthData} color={CHART_COLORS.normal} unit="%" />
+        <SimpleBarChart
+          data={monthData}
+          color={CHART_COLORS.normal}
+          unit="%"
+          legendLabel="Share of assessed years with dry months"
+        />
         <ChartInfo
-          shows={`For each month of the year, the share of years (${startYear} to ${endYear}) when rain was at least 20% below normal${
+          shows={`For each month of the year, the share of years (${periodLabel}) when rain was at least 20% below normal${
             isAverage ? ` using average rainfall across ${averageScope}` : ''
           }.`}
           howToRead="A tall bar is a risky month. Grey 'n/a' bars are June to August, which we do not judge. Use this to plan when to sell insurance and run savings campaigns."

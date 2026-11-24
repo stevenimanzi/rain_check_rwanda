@@ -1,5 +1,6 @@
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { GRID_LINE, linesBetweenRows } from '../chartGrid'
+import ChartLegend from './ChartLegend'
 import { CHART_COLORS } from '../utils'
 
 /**
@@ -32,19 +33,28 @@ export default function GapChart({ districts }) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={data.length * 24 + 40}>
-      <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
-        <CartesianGrid {...GRID_LINE} horizontalCoordinatesGenerator={linesBetweenRows(data.length)} />
-        <XAxis type="number" domain={[-100, 100]} ticks={[-100, -50, 0, 50, 100]} tick={{ fontSize: 11 }} />
-        <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} interval={0} />
-        <Tooltip content={tooltip} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-        <ReferenceLine x={0} stroke="#64748b" />
-        <Bar dataKey="gap" barSize={14}>
-          {data.map((row) => (
-            <Cell key={row.name} fill={row.gap >= 0 ? CHART_COLORS.dry : CHART_COLORS.wet} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <>
+      <ResponsiveContainer width="100%" height={data.length * 24 + 40}>
+        <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+          <CartesianGrid {...GRID_LINE} horizontalCoordinatesGenerator={linesBetweenRows(data.length)} />
+          <XAxis type="number" domain={[-100, 100]} ticks={[-100, -50, 0, 50, 100]} tick={{ fontSize: 11 }} />
+          <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} interval={0} />
+          <Tooltip content={tooltip} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+          <ReferenceLine x={0} stroke="#64748b" strokeDasharray="4 4" />
+          <Bar dataKey="gap" barSize={14}>
+            {data.map((row) => (
+              <Cell key={row.name} fill={row.gap >= 0 ? CHART_COLORS.dry : CHART_COLORS.wet} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <ChartLegend
+        items={[
+          { color: CHART_COLORS.dry, label: 'Households reported more drought' },
+          { color: CHART_COLORS.wet, label: 'Satellite indicated more drought' },
+          { color: '#64748b', label: 'Same rank (0)', line: 'dashed' },
+        ]}
+      />
+    </>
   )
 }

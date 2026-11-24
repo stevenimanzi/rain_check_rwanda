@@ -31,7 +31,7 @@ class DroughtMatchService
                     'year' => $record->year,
                     'month' => $record->month,
                     'rainfall_mm' => round($record->rainfall_mm, 1),
-                    'normal_mm' => round($normal, 1),
+                    'normal_mm' => $this->roundToTenth($normal),
                     'rainfall_deficit_pct' => round($deficit, 1),
                     'judged' => $normal >= config('raincheck.minimum_normal_mm'),
                     'satellite_drought' => $this->isDrought($deficit, $normal),
@@ -70,6 +70,12 @@ class DroughtMatchService
                 'dry_months' => $dry->where('year', $year)->count(),
             ])->values(),
         ];
+    }
+
+    private function roundToTenth(float $value): float
+    {
+        // Avoid binary floating-point error rounding exact half-tenths down.
+        return round($value + 1e-12, 1, PHP_ROUND_HALF_UP);
     }
 
     /**

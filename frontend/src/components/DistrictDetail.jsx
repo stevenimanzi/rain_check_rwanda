@@ -68,8 +68,8 @@ export default function DistrictDetail({ districtId }) {
         <h3>Rain compared to normal</h3>
         <RainDeviationChart series={district.rainfall} />
         <ChartInfo
-          shows={`How much more or less rain ${district.name} had each month compared with a normal month, last 3 years.`}
-          howToRead="Blue bar: more rain than normal. Red bar: a dry month, at least 20% less rain than normal. Grey bar: June to August, when it is normally very dry, so we do not judge it."
+          shows={`Monthly rainfall in ${district.name} compared with normal rainfall, last 3 years.`}
+          howToRead="Each month has two bars: rainfall and the normal amount, averaged by calendar month over the last 3 years. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
           sources={['rainfall', 'boundaries']}
         />
       </div>

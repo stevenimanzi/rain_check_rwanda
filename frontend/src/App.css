@@ -824,6 +824,19 @@ body {
   margin-right: 4px;
 }
 
+.legend i.legend-line {
+  width: 20px;
+  height: 0;
+  border-top: 2px solid;
+  border-radius: 0;
+  margin-bottom: 3px;
+  background: transparent;
+}
+
+.legend i.legend-line.dashed {
+  border-top-style: dashed;
+}
+
 /* Text pages */
 .prose p,
 .prose li {
@@ -977,19 +990,19 @@ body {
 }
 
 .pie-legend {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .pie-legend li {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pie-legend-swatch {

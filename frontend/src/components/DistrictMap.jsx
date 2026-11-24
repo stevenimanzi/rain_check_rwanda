@@ -26,13 +26,16 @@ const UNIT = {
  * otherwise the districts are split into four equal groups so the colours always show differences.
  */
 function buildSteps(districts, metric) {
-  const values = districts.map(VALUE_OF[metric])
+  const values = districts
+    .map(VALUE_OF[metric])
+    .filter((value) => value !== null && value !== undefined && Number.isFinite(Number(value)))
+    .map(Number)
   const distinct = [...new Set(values)].sort((a, b) => a - b)
 
   if (distinct.length <= SCALE_COLORS.length) {
     const colors = distinct.map((_, i) => SCALE_COLORS[Math.round((i * (SCALE_COLORS.length - 1)) / Math.max(distinct.length - 1, 1))])
     return {
-      colorFor: (value) => colors[distinct.indexOf(value)],
+      colorFor: (value) => colors[distinct.indexOf(Number(value))] ?? RISK_COLORS.no_data,
       legend: distinct.map((value, i) => ({ color: colors[i], label: String(value) })),
     }
   }
@@ -61,9 +64,18 @@ export default function DistrictMap({ districts, metric, onSelect }) {
   const byName = Object.fromEntries(districts.map((d) => [d.name, d]))
   const steps = metric === 'risk' ? null : buildSteps(districts, metric)
 
+  const hasNoData = metric === 'risk'
+    ? districts.some((district) => district.summary.risk_level === 'no_data')
+    : districts.some((district) => {
+        const value = VALUE_OF[metric](district)
+        return value === null || value === undefined || !Number.isFinite(Number(value))
+      })
+
   const colorOf = (district) => {
     if (!district) return RISK_COLORS.no_data
-    return metric === 'risk' ? RISK_COLORS[district.summary.risk_level] : steps.colorFor(VALUE_OF[metric](district))
+    if (metric === 'risk') return RISK_COLORS[district.summary.risk_level] ?? RISK_COLORS.no_data
+
+    return steps.colorFor(VALUE_OF[metric](district))
   }
 
   const tooltipOf = (district) =>
@@ -75,6 +87,7 @@ export default function DistrictMap({ districts, metric, onSelect }) {
     metric === 'risk'
       ? ['low', 'medium', 'high'].map((level) => ({ color: RISK_COLORS[level], label: `${RISK_LABELS[level]} mismatch risk` }))
       : steps.legend
+  const legendItems = hasNoData ? [...legend, { color: RISK_COLORS.no_data, label: 'No data' }] : legend
 
   const style = (feature) => ({
     fillColor: colorOf(byName[feature.properties.shapeName]),
@@ -104,7 +117,7 @@ export default function DistrictMap({ districts, metric, onSelect }) {
 
       <div className="legend">
         {metric !== 'risk' && <strong>{UNIT[metric]}:</strong>}
-        {legend.map(({ color, label }) => (
+        {legendItems.map(({ color, label }) => (
           <span key={label}>
             <i style={{ background: color }} /> {label}
           </span>
