@@ -76,11 +76,6 @@ export default function DistrictDetail({ district }) {
             hint={`Apr 2023 to Mar 2024. Score ${Math.round(summary.satellite_rank_pct)} out of 100`}
           />
           <StatCard
-            label="Poverty rate"
-            value={formatPercent(districtDetails.poverty_rate)}
-            hint="EICV7 survey, 2023/24"
-          />
-          <StatCard
             label="Dry months each year"
             value={summary.avg_dry_months_per_year}
             hint="Average, 2014 to 2024"
@@ -90,7 +85,7 @@ export default function DistrictDetail({ district }) {
         <ChartInfo
           shows="Two ways of measuring drought for the same 12 months: the share of households that reported drought, and the dry months the satellite saw."
           howToRead={`Each one gets a score from 0 (lowest) to 100 (highest) compared with the other 29 districts. The gap between the two scores is ${summary.basis_risk_pct} points. Under 25 is low mismatch risk, 25 to 50 is medium, and over 50 is high.`}
-          sources={['rainfall', 'cfsva', 'eicvPoverty']}
+          sources={['rainfall', 'cfsva']}
         />
 
         <h3>Rain compared to normal</h3>

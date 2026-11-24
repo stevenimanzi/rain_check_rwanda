@@ -1,5 +1,4 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { GRID_LINE, linesBetweenRows } from '../chartGrid'
 import ChartLegend from './ChartLegend'
 import { CHART_COLORS } from '../utils'
 
@@ -14,7 +13,7 @@ export default function DryMonthsChart({ districts, getValue, unit, color }) {
       return {
         name: district.name,
         value,
-        label: value === null || value === undefined ? 'n/a' : value,
+        label: value === null || value === undefined ? 'n/a' : Number(value).toFixed(1),
       }
     })
     .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity))
@@ -22,20 +21,37 @@ export default function DryMonthsChart({ districts, getValue, unit, color }) {
 
   return (
     <>
-      <ResponsiveContainer width="100%" height={data.length * 26 + 30}>
-        <BarChart data={data} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
-          <CartesianGrid {...GRID_LINE} horizontalCoordinatesGenerator={linesBetweenRows(data.length)} />
-          <XAxis type="number" tick={{ fontSize: 11 }} />
-          <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} interval={0} />
+      <ResponsiveContainer width="100%" height={data.length * 26 + 56}>
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 48, left: 4, bottom: 8 }}>
+          <CartesianGrid vertical stroke="#dbe4ee" strokeDasharray="3 3" />
+          <XAxis
+            type="number"
+            tick={{ fontSize: 12, fill: '#64748b' }}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            label={{ value: unit, position: 'insideBottom', dy: 16, fill: '#64748b', fontSize: 12 }}
+            height={44}
+          />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={96}
+            tick={{ fontSize: 12, fill: '#334155' }}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            interval={0}
+          />
           <Tooltip
-            formatter={(value) => [value === null || value === undefined ? 'No data' : `${value} ${unit}`, '']}
-            cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+            formatter={(value) => [value === null || value === undefined ? 'No data' : `${Number(value).toFixed(1)} ${unit}`, '']}
+            cursor={{ fill: 'rgba(29, 79, 145, 0.06)' }}
           />
           <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} barSize={16}>
             {data.map((row) => (
               <Cell key={row.name} fill={row.value === null || row.value === undefined ? CHART_COLORS.skipped : color} />
             ))}
-            <LabelList dataKey="label" position="right" fontSize={11} />
+            <LabelList dataKey="label" position="right" fontSize={12} fontWeight={600} fill="#334155" />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

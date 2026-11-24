@@ -40,15 +40,22 @@ class DistrictRainfallTest extends TestCase
             ->assertJsonPath('data.0.rainfall.2.year', 2016);
     }
 
-    public function test_overview_response_includes_district_summaries(): void
+    public function test_overview_hides_the_removed_indicator_without_deleting_stored_data(): void
     {
-        District::create([
+        $district = District::create([
             'name' => 'Test District',
             'province' => 'Eastern',
+            'poverty_rate' => 22.5,
         ]);
 
         $this->getJson('/api/overview')
             ->assertOk()
-            ->assertJsonPath('districts.0.name', 'Test District');
+            ->assertJsonPath('districts.0.name', 'Test District')
+            ->assertJsonMissingPath('districts.0.poverty_rate');
+
+        $this->assertDatabaseHas('districts', [
+            'id' => $district->id,
+            'poverty_rate' => 22.5,
+        ]);
     }
 }

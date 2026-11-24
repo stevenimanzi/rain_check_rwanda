@@ -675,38 +675,22 @@ export default function OverviewPage({ districts, overview }) {
             </div>
           </div>
 
-          <div className="grid-2 even">
-            <div className="panel">
-              <h3>Drought risk over {periodLabel}</h3>
-              <p className="muted">Average dry months per year, filtered to the selected years.</p>
-              <DryMonthsChart
-                districts={filteredDistricts}
-                getValue={(district) => district.filtered_avg_dry_months}
-                unit="dry months a year"
-                color={CHART_COLORS.dry}
-              />
-              <ChartInfo
-                shows={`Average dry months per year in ${periodLabel}, calculated from rainfall at least 20% below normal.`}
-                howToRead="A longer bar means the district was dry more often during the selected years."
-                sources={['rainfall', 'boundaries']}
-              />
-            </div>
-
-            <div className="panel">
-              <h3>Poverty rate by district</h3>
-              <p className="muted">Share of people living in poverty, 2023/24.</p>
-              <DryMonthsChart
-                districts={activeDistricts}
-                getValue={(district) => district.poverty_rate}
-                unit="% in poverty"
-                color={CHART_COLORS.rain}
-              />
-              <ChartInfo
-                shows="The official poverty rate of each district, from NISR's EICV7 survey."
-                howToRead="A longer bar means more poverty. Districts with high poverty and a big mismatch need the most attention."
-                sources={['eicvPoverty']}
-              />
-            </div>
+          <div className="panel">
+            <h3>Average dry months per year</h3>
+            <p className="muted">
+              Districts ranked from most to fewest for {periodLabel}. Longer bars mean more dry months.
+            </p>
+            <DryMonthsChart
+              districts={filteredDistricts}
+              getValue={(district) => district.filtered_avg_dry_months}
+              unit="months per year"
+              color={CHART_COLORS.rain}
+            />
+            <ChartInfo
+              shows={`Average dry months per year in ${periodLabel}, calculated from rainfall at least 20% below normal.`}
+              howToRead="A longer bar means the district was dry more often during the selected years."
+              sources={['rainfall', 'boundaries']}
+            />
           </div>
         </>
       )}

@@ -9,7 +9,7 @@ compares, for all 30 districts, how many dry months the satellite saw with the s
 reported drought in NISR's 2024 survey, so insurers, ministries and lenders can see where satellite
 insurance can be trusted and where it cannot.
 
-Built for the NISR 2026 Big Data Hackathon, Track 2 (Financial Inclusion & Poverty Reduction).
+Built for the NISR 2026 Big Data Hackathon, Track 2.
 
 - **Live app:** https://raincheckrwandaweb.onrender.com/
 - **Live API:** https://raincheck-api-7nk6.onrender.com/api/districts (free hosting: the first visit after a quiet period can take up to a minute)
@@ -64,23 +64,21 @@ On phones the sidebar becomes a menu opened with the button in the top bar.
 | Monthly rainfall, 2014-2024 | [CHIRPS v3 monthly Africa GeoTIFFs](https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/africa/tifs/), Climate Hazards Center, UC Santa Barbara | Dry months, drought years, risky months | `data/rainfall.csv` (averaged per district) |
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) Rwanda ADM2 | Maps and district averages | `frontend/public/rwanda-districts.geojson` |
 | Households reporting drought, by district | [NISR Statistics Portal and WFP, Rwanda CFSVA 2024](https://statistics.gov.rw/sites/default/files/documents/2025-07/Rwanda%20CFSVA%202024.pdf), Figure 8.4 | Comparing satellite with what households experienced | `data/household_drought_cfsva_2024.csv` |
-| Poverty rate by district | [NISR Statistics Portal, EICV7 Poverty Profile 2023/24](https://statistics.gov.rw/sites/default/files/documents/2025-07/EICV7_Poverty%20Profile.pdf), Annex B | Showing where drought and poverty overlap | `data/poverty_eicv7_2024.csv` |
 
-The NISR-derived household and poverty values link to official publications hosted on the NISR Statistics
-Portal. CHIRPS is a satellite-and-gauge rainfall dataset produced by the Climate Hazards Center at UC Santa
+The NISR-derived household values link to official publications hosted on the NISR Statistics Portal. CHIRPS is
+a satellite-and-gauge rainfall dataset produced by the Climate Hazards Center at UC Santa
 Barbara, not by NISR. District boundaries come from geoBoundaries. Uploaded surveys show the source name entered
 by the uploader and are not independently verified by NISR.
 
 Derived files, ready to use:
 
 - `data/monthly_rainfall_vs_normal.csv` - rainfall, normal rainfall and dry-month flag per district and month
-- `data/district_summary.csv` - poverty, households reporting drought, satellite history and basis risk per district
+- `data/district_summary.csv` - household reports, satellite history and basis risk per district
 
 **How the household figures were obtained.** The CFSVA report publishes the district drought shares only as a
 stacked bar chart with no printed values. The drought segment of each of the 30 bars was measured from the
 chart image against its axis, and cross-checked against the figures quoted in the report text (for example
-Gisagara 39%, measured 38.4%). Values are rounded and accurate to about one percentage point. The poverty
-rates are typed from the printed table in Annex B.
+Gisagara 39%, measured 38.4%). Values are rounded and accurate to about one percentage point.
 
 ## Method
 
@@ -99,8 +97,7 @@ All thresholds are in `backend/config/raincheck.php`.
 
 **Limits:** satellite rainfall is an estimate on a 5 km grid, not a farm measurement; household answers are
 self-reported; dry spells shorter than a month are not visible in monthly rainfall; the household figures were
-read from a chart. A natural next step is to repeat the comparison month by month with the EICV7 microdata,
-available from the [NISR Microdata Portal](https://microdata.statistics.gov.rw/index.php/catalog).
+read from a chart.
 
 ## Stack and layout
 
@@ -123,7 +120,6 @@ php artisan key:generate
 # Set private IMPORT_EMAIL and IMPORT_PASSWORD values in .env before enabling survey uploads.
 php artisan migrate --seed
 php artisan raincheck:import rainfall ../data/rainfall.csv
-php artisan raincheck:import poverty ../data/poverty_eicv7_2024.csv
 php artisan raincheck:import household-drought ../data/household_drought_cfsva_2024.csv
 php artisan serve             # API on http://127.0.0.1:8000
 
@@ -163,6 +159,6 @@ hackathon rules. The authors remain fully responsible for the work.
 ## Declaration and acknowledgements
 
 We declare that this submission is our own work and that all sources of reference are acknowledged in full:
-CHIRPS (Climate Hazards Center), geoBoundaries, NISR (EICV7 Poverty Profile), NISR and WFP (CFSVA 2024), and
+CHIRPS (Climate Hazards Center), geoBoundaries, NISR and WFP (CFSVA 2024), and
 the open-source libraries in `package.json` and `composer.json`. As the competition rules state, intellectual
 property rights in this submission are assigned to the National Institute of Statistics of Rwanda.

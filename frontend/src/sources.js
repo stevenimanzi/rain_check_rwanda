@@ -12,8 +12,4 @@ export const SOURCES = {
     label: 'NISR Statistics Portal and WFP, Rwanda CFSVA 2024, Figure 8.4 (households affected by drought, by district)',
     url: 'https://statistics.gov.rw/sites/default/files/documents/2025-07/Rwanda%20CFSVA%202024.pdf',
   },
-  eicvPoverty: {
-    label: 'NISR Statistics Portal, EICV7 Poverty Profile 2023/24, Annex B (poverty rate by district)',
-    url: 'https://statistics.gov.rw/sites/default/files/documents/2025-07/EICV7_Poverty%20Profile.pdf',
-  },
 }

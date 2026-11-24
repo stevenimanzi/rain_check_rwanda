@@ -47,7 +47,6 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
             <tr>
               <th>District</th>
               <th>Province</th>
-              <th>Poverty rate</th>
               <th>Households that reported drought</th>
               <th>Dry months each year</th>
               <th>Dry months, Apr 2023 to Mar 2024</th>
@@ -64,7 +63,6 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
               >
                 <td>{district.name}</td>
                 <td>{district.province}</td>
-                <td>{formatPercent(district.poverty_rate)}</td>
                 <td>{formatPercent(district.household_drought_pct)}</td>
                 <td>{district.summary.avg_dry_months_per_year}</td>
                 <td>{district.summary.satellite_drought_months}</td>
@@ -76,7 +74,7 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
             ))}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={8}>No districts match.</td>
+                <td colSpan={7}>No districts match.</td>
               </tr>
             )}
           </tbody>
@@ -84,9 +82,9 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
       </div>
 
       <ChartInfo
-        shows="One row for each district: poverty rate, households that reported drought, dry months seen by the satellite, and the gap between the satellite and households."
+        shows="One row for each district: households that reported drought, dry months seen by the satellite, and the gap between the satellite and households."
         howToRead="Click a district to see its charts. The gap is the difference between two scores from 0 to 100: one for the satellite's dry months and one for households that reported drought. Under 25 is low mismatch risk, 25 to 50 is medium, and over 50 is high."
-        sources={['rainfall', 'cfsva', 'eicvPoverty']}
+        sources={['rainfall', 'cfsva']}
       />
     </div>
   )

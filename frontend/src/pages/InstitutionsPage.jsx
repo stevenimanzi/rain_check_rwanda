@@ -20,7 +20,7 @@ const USERS = [
   {
     who: 'National Bank of Rwanda and MINECOFIN (Financial Inclusion Roadmap 2025-2030)',
     decision: 'Where to focus farm insurance and financial health policies.',
-    gets: 'A national map of drought and poverty for all 30 districts.',
+    gets: 'A national map of drought risk across all 30 districts.',
     page: 'map',
     pageLabel: 'Map',
   },
@@ -33,7 +33,7 @@ const USERS = [
   },
   {
     who: 'NISR',
-    decision: 'How household surveys (EICV7, CFSVA) can be used together with satellite data.',
+    decision: 'How CFSVA household survey results can be used together with satellite data.',
     gets: 'A working method that compares household drought reports with satellite rain, district by district.',
     page: 'overview',
     pageLabel: 'Overview',
@@ -45,7 +45,6 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
   const years = overview.by_year
 
   const hasHouseholds = districts.every((d) => d.household_drought_pct !== null)
-  const hasPoverty = districts.every((d) => d.poverty_rate !== null)
 
   const datasets = [
     {
@@ -68,13 +67,6 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
       source: 'cfsva',
       status: hasHouseholds ? 'Loaded: 30 districts (measured from a chart, can be off by about 1 point)' : 'Not loaded yet',
       loaded: hasHouseholds,
-    },
-    {
-      name: 'Poverty rate by district',
-      use: 'Showing where drought and poverty meet',
-      source: 'eicvPoverty',
-      status: hasPoverty ? 'Loaded: 30 districts' : 'Not loaded yet',
-      loaded: hasPoverty,
     },
   ]
 
@@ -122,7 +114,7 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
             <ArrowDownTrayIcon className="icon" />
             <span>
               <strong>District summary</strong>
-              <small>Drought, poverty and mismatch risk for all 30 districts</small>
+              <small>Drought, household reports and mismatch risk for all 30 districts</small>
             </span>
           </a>
           <a className="download" href={`${API_BASE}/export/rainfall`} download>
@@ -138,8 +130,8 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
       <div className="panel">
         <h3>The data we use and where it comes from</h3>
         <p className="muted">
-          Household and poverty figures link to NISR publications on the NISR Statistics Portal. Rainfall is CHIRPS
-          v3 satellite data from the Climate Hazards Center at UC Santa Barbara, not an NISR product. District
+          Household figures link to NISR publications on the NISR Statistics Portal. Rainfall is CHIRPS v3 satellite
+          data from the Climate Hazards Center at UC Santa Barbara, not an NISR product. District
           boundaries come from geoBoundaries; uploaded surveys retain the source name entered by the uploader and
           are not independently verified by NISR.
         </p>

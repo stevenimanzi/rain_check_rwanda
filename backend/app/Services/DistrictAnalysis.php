@@ -24,7 +24,6 @@ class DistrictAnalysis
                 'id' => $district->id,
                 'name' => $district->name,
                 'province' => $district->province,
-                'poverty_rate' => $this->number($district->poverty_rate),
                 'household_drought_pct' => $this->number($district->household_drought_pct),
                 'rainfall' => $series,
                 'history' => $history,

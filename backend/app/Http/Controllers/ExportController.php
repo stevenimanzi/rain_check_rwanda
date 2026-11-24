@@ -12,20 +12,19 @@ class ExportController extends Controller
     }
 
     /**
-     * One row per district: poverty, households reporting drought, satellite drought history and basis risk.
+     * One row per district: households reporting drought, satellite drought history and basis risk.
      */
     public function districts(): StreamedResponse
     {
         $header = [
-            'district', 'province', 'poverty_rate_pct', 'households_reporting_drought_pct',
-            'avg_dry_months_per_year', 'dry_share_pct', 'satellite_dry_months_in_window',
+            'district', 'province', 'households_reporting_drought_pct', 'avg_dry_months_per_year',
+            'dry_share_pct', 'satellite_dry_months_in_window',
             'satellite_rank_pct', 'household_rank_pct', 'basis_risk_points', 'basis_risk_level', 'direction',
         ];
 
         $rows = $this->analysis->all()->map(fn (array $d) => [
             $d['name'],
             $d['province'],
-            $d['poverty_rate'],
             $d['household_drought_pct'],
             $d['summary']['avg_dry_months_per_year'],
             $d['history']['dry_share_pct'],
