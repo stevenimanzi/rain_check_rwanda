@@ -114,8 +114,8 @@
   align-items: center;
   gap: 14px;
   padding: 14px 28px;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .topbar h1 {
