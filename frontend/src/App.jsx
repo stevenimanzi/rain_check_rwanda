@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchDistricts, fetchOverview } from './api'
+import { fetchOverview } from './api'
 import Notice from './components/Notice'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
@@ -19,9 +19,9 @@ export default function App() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    Promise.all([fetchDistricts(), fetchOverview()])
-      .then(([districtList, overviewData]) => {
-        setDistricts(districtList)
+    fetchOverview()
+      .then((overviewData) => {
+        setDistricts(overviewData.districts)
         setOverview(overviewData)
       })
       .catch(() => setError(true))

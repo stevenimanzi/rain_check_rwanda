@@ -38,6 +38,17 @@ class DistrictAnalysis
         return $this->addBasisRisk($rows);
     }
 
+    public function rainfall(array $districtIds): Collection
+    {
+        return District::with('rainfallRecords')
+            ->whereKey($districtIds)
+            ->get()
+            ->map(fn (District $district) => [
+                'id' => $district->id,
+                'rainfall' => $this->satellite->rainfallSeries($district->rainfallRecords),
+            ]);
+    }
+
     /**
      * Rank correlation between the satellite ranking and the household ranking across districts:
      * 1 means they rank districts identically, 0 means no relationship.

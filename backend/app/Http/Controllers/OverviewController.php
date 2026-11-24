@@ -21,6 +21,7 @@ class OverviewController extends Controller
         $histories = $districts->pluck('history');
 
         return response()->json([
+            'districts' => $districts->map(fn (array $district) => collect($district)->except('rainfall')->all())->values(),
             'national' => $matcher->rainfallSeries($monthly),
             'by_year' => $this->averageByYear($histories),
             'by_calendar_month' => $this->averageByCalendarMonth($histories),

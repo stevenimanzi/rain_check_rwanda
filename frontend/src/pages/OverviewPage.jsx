@@ -6,7 +6,7 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { fetchDistrict, fetchHouseholdSurveyImports } from '../api'
+import { fetchDistrictRainfall, fetchHouseholdSurveyImports } from '../api'
 import ChartInfo from '../components/ChartInfo'
 import CountryDroughtCharts from '../components/CountryDroughtCharts'
 import DryMonthsChart from '../components/DryMonthsChart'
@@ -231,7 +231,7 @@ export default function OverviewPage({ districts, overview }) {
   const startYear = selectedYears?.start ?? defaultStartYear
   const endYear = selectedYears?.end ?? defaultEndYear
   const [selectedDistrictIds, setSelectedDistrictIds] = useState(null)
-  const [districtDetails, setDistrictDetails] = useState({})
+  const [districtRainfall, setDistrictRainfall] = useState({})
   const [districtError, setDistrictError] = useState(null)
 
   useEffect(() => {
@@ -253,23 +253,31 @@ export default function OverviewPage({ districts, overview }) {
     if (selectedDistrictIds === null || selectedDistrictIds.length === 0) return undefined
 
     let active = true
-    Promise.all(selectedDistrictIds.map((id) => fetchDistrict(id)))
-      .then((details) => {
-        if (active) {
-          setDistrictDetails((current) => ({
-            ...current,
-            ...Object.fromEntries(details.map((district) => [district.id, district])),
-          }))
-        }
-      })
-      .catch((error) => {
-        if (active) setDistrictError(error.message || 'The selected district data could not be loaded.')
-      })
+    const controller = new AbortController()
+    const missingIds = selectedDistrictIds.filter((id) => districtRainfall[id] === undefined)
+    if (missingIds.length === 0) return undefined
+
+    const timer = setTimeout(() => {
+      fetchDistrictRainfall(missingIds, controller.signal)
+        .then((details) => {
+          if (active) {
+            setDistrictRainfall((current) => ({
+              ...current,
+              ...Object.fromEntries(details.map(({ id, rainfall }) => [id, rainfall])),
+            }))
+          }
+        })
+        .catch((error) => {
+          if (active) setDistrictError(error.message || 'The selected district data could not be loaded.')
+        })
+    }, 150)
 
     return () => {
       active = false
+      clearTimeout(timer)
+      controller.abort()
     }
-  }, [selectedDistrictIds])
+  }, [selectedDistrictIds, districtRainfall])
 
   useEffect(() => {
     const dialog = importDialogRef.current
@@ -284,8 +292,13 @@ export default function OverviewPage({ districts, overview }) {
     ? districts.filter((district) => selectedIds.has(district.id))
     : districts
   const selectedDistrictDetails = selectedDistrictIdList
-    .map((id) => districtDetails[id])
-    .filter(Boolean)
+    .map((id) => {
+      const district = districts.find((item) => item.id === id)
+      const rainfall = districtRainfall[id]
+
+      return district && rainfall ? { ...district, rainfall } : null
+    })
+    .filter((district) => district !== null)
   const selectedDistrictReady =
     selectedDistrictIds === null ||
     (selectedDistrictIdList.length > 0 && selectedDistrictDetails.length === selectedDistrictIdList.length)

@@ -5,11 +5,25 @@ export const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
 const client = axios.create({ baseURL: API_BASE })
 
-export const fetchOverview = () => client.get('/overview').then((res) => res.data)
+let overviewRequest
+export const fetchOverview = () => {
+  if (!overviewRequest) {
+    overviewRequest = client.get('/overview')
+      .then((res) => res.data)
+      .finally(() => {
+        overviewRequest = null
+      })
+  }
+
+  return overviewRequest
+}
 
 export const fetchDistricts = () => client.get('/districts').then((res) => res.data.data)
 
 export const fetchDistrict = (id) => client.get(`/districts/${id}`).then((res) => res.data.data)
+
+export const fetchDistrictRainfall = (ids, signal) =>
+  client.get('/districts/rainfall', { params: { ids }, signal }).then((res) => res.data.data)
 
 export const fetchHouseholdSurveyImports = () =>
   client.get('/imports/household-drought').then((res) => res.data.data)

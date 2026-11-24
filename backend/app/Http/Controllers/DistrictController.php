@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\District;
 use App\Services\DistrictAnalysis;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DistrictController extends Controller
 {
@@ -20,6 +21,16 @@ class DistrictController extends Controller
         $districts = $this->analysis->all()->map(fn (array $district) => collect($district)->except('rainfall')->all());
 
         return response()->json(['data' => $districts]);
+    }
+
+    public function rainfall(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'distinct', 'exists:districts,id'],
+        ]);
+
+        return response()->json(['data' => $this->analysis->rainfall($validated['ids'])]);
     }
 
     public function show(District $district): JsonResponse
