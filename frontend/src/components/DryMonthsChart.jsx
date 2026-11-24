@@ -2,6 +2,11 @@ import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Too
 import ChartLegend from './ChartLegend'
 import { CHART_COLORS } from '../utils'
 
+const formatValue = (value) => {
+  const number = Number(value)
+  return Number.isInteger(number) ? String(number) : number.toFixed(1)
+}
+
 /**
  * Every district, from the highest value to the lowest. getValue picks the number to rank by.
  */
@@ -13,7 +18,7 @@ export default function DryMonthsChart({ districts, getValue, unit, color }) {
       return {
         name: district.name,
         value,
-        label: value === null || value === undefined ? 'n/a' : Number(value).toFixed(1),
+        label: value === null || value === undefined ? 'n/a' : formatValue(value),
       }
     })
     .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity))
@@ -44,7 +49,7 @@ export default function DryMonthsChart({ districts, getValue, unit, color }) {
             interval={0}
           />
           <Tooltip
-            formatter={(value) => [value === null || value === undefined ? 'No data' : `${Number(value).toFixed(1)} ${unit}`, '']}
+            formatter={(value) => [value === null || value === undefined ? 'No data' : `${formatValue(value)} ${unit}`, '']}
             cursor={{ fill: 'rgba(29, 79, 145, 0.06)' }}
           />
           <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} barSize={16}>
