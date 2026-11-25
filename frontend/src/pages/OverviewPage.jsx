@@ -491,8 +491,10 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
     <>
       {!lockedDistrictId && (
         <p className="intro">
-          A dry month is a month with at least 20% less rain than normal. This page compares satellite rainfall with what
-          households told NISR about drought.
+          A satellite measures how much rain falls in each district. Rwandan families also told the national statistics
+          office (NISR) whether drought hurt them. This page checks if the two tell the same story. A dry month is a
+          month with much less rain than usual: at least 20% less. If the satellite and families disagree, insurance
+          that pays out on satellite rain could pay the wrong people.
         </p>
       )}
 
