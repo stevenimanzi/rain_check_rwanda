@@ -48,6 +48,7 @@ export default function SimpleBarChart({ data, color, unit = '', height = 240, l
 
   return (
     <>
+      {onBarClick && <ChartClickHint>{clickHint}</ChartClickHint>}
       <div className={onBarClick ? 'clickable-chart' : undefined}>
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={rows} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
@@ -74,7 +75,6 @@ export default function SimpleBarChart({ data, color, unit = '', height = 240, l
       </ResponsiveContainer>
       </div>
       <ChartLegend items={legendItems} />
-      {onBarClick && <ChartClickHint>{clickHint}</ChartClickHint>}
     </>
   )
 }

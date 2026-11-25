@@ -66,7 +66,7 @@ On phones the sidebar becomes a menu opened with the button in the top bar.
 
 | Data | Source | Used for | In this repo |
 | --- | --- | --- | --- |
-| Monthly rainfall, 2014-2024 | [CHIRPS v3 monthly Africa GeoTIFFs](https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/africa/tifs/), Climate Hazards Center, UC Santa Barbara | Dry months, drought years, risky months | `data/rainfall.csv` (averaged per district) |
+| Monthly rainfall, April 2023 to March 2024 (the household window; each month also stores its normal, from 2014-2024) | [CHIRPS v3 monthly Africa GeoTIFFs](https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/africa/tifs/), Climate Hazards Center, UC Santa Barbara | Dry months, drought years, risky months | `data/rainfall.csv` (averaged per district) |
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) Rwanda ADM2 | Maps and district averages | `frontend/public/rwanda-districts.geojson` |
 | Households reporting drought, by district | [NISR Statistics Portal and WFP, Rwanda CFSVA 2024](https://statistics.gov.rw/sites/default/files/documents/2025-07/Rwanda%20CFSVA%202024.pdf), Figure 8.4 | Comparing satellite with what households experienced | `data/household_drought_cfsva_2024.csv` |
 

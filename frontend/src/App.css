@@ -2361,7 +2361,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin: 12px 0 0;
+  margin: 0 0 14px;
   padding: 7px 14px 7px 10px;
   border-radius: 999px;
   background: var(--accent-soft);
@@ -2775,8 +2775,417 @@ body {
 
 /* Measurement unit shown under a chart */
 .chart-unit {
-  margin: 10px 0 0;
+  margin: 10px 0 14px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
+}
+
+/* "Data from" line under an assistant answer */
+.md-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+}
+
+.md-sources-title {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.md-source-link {
+  padding: 3px 10px;
+  border: 1px solid var(--secondary);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.md-source-link:hover:not(:disabled) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.md-source-link:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.md-sources-error {
+  color: #991b1b;
+}
+
+/* Assistant in full screen */
+.assistant-expand,
+.assistant-panel header .assistant-expand {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.assistant-panel header .assistant-expand:hover {
+  background: var(--accent-soft);
+  color: var(--primary);
+}
+
+.assistant-widget.expanded {
+  inset: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 80;
+  gap: 0;
+  align-items: stretch;
+}
+
+.assistant-widget.expanded .assistant-fab {
+  display: none;
+}
+
+.assistant-widget.expanded .assistant-panel {
+  width: 100%;
+  height: 100%;
+  padding: 0 clamp(16px, 4vw, 48px) 16px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.assistant-widget.expanded .assistant-chat {
+  width: 100%;
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+.assistant-widget.expanded .assistant-messages {
+  padding: 16px 4px;
+}
+
+.assistant-widget.expanded .assistant-message {
+  font-size: 15px;
+}
+
+.assistant-widget.expanded .assistant-message.assistant {
+  max-width: 100%;
+}
+
+.assistant-widget.expanded .assistant-message.user {
+  max-width: 75%;
+}
+
+/* Predict Future */
+
+.predict-page {
+  --verdict-good: #16a34a;
+  --verdict-marginal: #f59e0b;
+  --verdict-poor: #dc2626;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.predict-intro h2 {
+  margin: 0 0 6px;
+}
+
+.predict-intro p {
+  margin: 0 0 12px;
+  line-height: 1.55;
+}
+
+.predict-honest {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.predict-honest li {
+  background: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.predict-honest strong {
+  color: var(--text);
+}
+
+.predict-chat .assistant-chat {
+  height: 520px;
+}
+
+/* No borders on any container of this page, including the shared panel, chat and chart blocks. */
+
+.predict-page .panel,
+.predict-page .assistant-form input,
+.predict-page .md-chart,
+.predict-page .md-table-wrap,
+.predict-page .md-source-link,
+.predict-page .md-sources {
+  border: 0;
+}
+
+.predict-page .md-source-link {
+  background: var(--accent-soft);
+}
+
+.predict-page .assistant-form input {
+  box-shadow: 0 1px 4px rgba(24, 50, 71, 0.12);
+}
+
+/* Breathing room on the Predict Future page. */
+
+.predict-page {
+  gap: 28px;
+  padding-bottom: 24px;
+}
+
+.predict-page .panel {
+  padding: 28px;
+}
+
+.predict-intro h2 {
+  margin-bottom: 10px;
+}
+
+.predict-intro p {
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+
+.predict-honest {
+  gap: 16px;
+}
+
+.predict-honest li {
+  padding: 16px 18px;
+  line-height: 1.65;
+}
+
+.predict-chat .assistant-page-header {
+  margin-bottom: 4px;
+}
+
+.predict-chat .muted {
+  margin: 4px 0 16px;
+}
+
+.predict-chat .assistant-messages {
+  gap: 16px;
+  padding: 16px 8px;
+}
+
+.predict-chat .assistant-suggestions {
+  gap: 12px;
+}
+
+.predict-chat .assistant-suggestions button {
+  padding: 14px 16px;
+}
+
+.predict-chat .assistant-message {
+  padding: 14px 18px;
+}
+
+.predict-chat .assistant-form {
+  margin-top: 16px;
+}
+
+.predict-chat .assistant-footer {
+  margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+  .predict-page {
+    gap: 20px;
+  }
+
+  .predict-page .panel {
+    padding: 18px;
+  }
+}
+
+
+.predict-page [hidden] {
+  display: none;
+}
+
+/* Room between the parts of a prediction answer: heading, chart, list, takeaway and sources. */
+.predict-chat .md-body {
+  line-height: 1.7;
+}
+
+.predict-chat .md-body > * + * {
+  margin-top: 18px;
+}
+
+.predict-chat .md-body h1,
+.predict-chat .md-body h2,
+.predict-chat .md-body h3 {
+  margin-bottom: 4px;
+}
+
+.predict-chat .md-body p {
+  margin: 0;
+}
+
+.predict-chat .md-body ul,
+.predict-chat .md-body ol {
+  padding-left: 22px;
+}
+
+.predict-chat .md-body li {
+  margin: 0 0 14px;
+  line-height: 1.7;
+}
+
+.predict-chat .md-body li:last-child {
+  margin-bottom: 0;
+}
+
+/* A confidence badge that follows a sentence sits on its own line instead of squeezing against the text. */
+.predict-chat .md-body li .md-badge {
+  margin: 4px 8px 0 0;
+}
+
+.predict-chat .md-chart {
+  padding: 18px 20px;
+}
+
+.predict-chat .md-chart figcaption {
+  margin-bottom: 14px;
+}
+
+.predict-chat .md-bar-row {
+  margin: 0 0 12px;
+}
+
+.predict-chat .md-bar-row:last-child {
+  margin-bottom: 0;
+}
+
+.predict-chat .md-body hr {
+  margin: 22px 0;
+}
+
+.predict-chat .md-body blockquote {
+  padding: 14px 18px;
+}
+
+.predict-chat .md-table-wrap td,
+.predict-chat .md-table-wrap th {
+  padding: 10px 14px;
+}
+
+.predict-chat .md-sources {
+  margin-top: 22px;
+  gap: 10px;
+}
+
+.predict-chat .assistant-message.assistant {
+  padding: 20px 22px;
+}
+
+/* Scroll bars in the dashboard's colours: slim, rounded, light blue that turns darker on hover */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #a9cbe9 transparent;
+}
+
+/* Chrome, Edge and Safari take their look from these rules; Firefox uses the two lines above. */
+
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    min-width: 40px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-color: #a9cbe9;
+    background-clip: padding-box;
+    transition: background-color 0.15s ease;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--secondary);
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background-color: var(--primary);
+  }
+
+  /* On the dark blue sidebar the thumb is a soft white */
+  .sidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
+
+  .sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* Predict page: the question box stays at the bottom of the screen while the page scrolls */
+
+.predict-composer-slot {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  margin: 0 -8px -52px;
+  padding: 14px 28px 12px;
+  border-radius: 18px 18px 0 0;
+  background: var(--card);
+  box-shadow: 0 -8px 22px rgba(29, 79, 145, 0.12);
+}
+
+.predict-composer-slot .assistant-form {
+  margin-top: 0;
+}
+
+.predict-composer-slot .assistant-footer {
+  margin-top: 8px;
 }

@@ -12,7 +12,7 @@ class OverviewController extends Controller
     public function __invoke(DroughtMatchService $matcher, DistrictAnalysis $analysis): JsonResponse
     {
         // Rainfall for the whole country: the average of all districts, month by month.
-        $monthly = RainfallRecord::selectRaw('year, month, AVG(rainfall_mm) AS rainfall_mm')
+        $monthly = RainfallRecord::selectRaw('year, month, AVG(rainfall_mm) AS rainfall_mm, AVG(normal_mm) AS normal_mm')
             ->groupBy('year', 'month')
             ->get();
 

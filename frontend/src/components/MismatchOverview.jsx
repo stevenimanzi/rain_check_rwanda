@@ -32,6 +32,7 @@ function MismatchBreakdown({ compared, period, noData }) {
 
   return (
     <>
+      <ChartClickHint>Click a slice or a row to see which districts are in that group.</ChartClickHint>
       <div className="mismatch-overview clickable-chart">
         <div
           className="mismatch-donut"
@@ -100,7 +101,6 @@ function MismatchBreakdown({ compared, period, noData }) {
         </div>
       </div>
       <p className="chart-unit">Unit: number of districts, with their share of all compared districts (%)</p>
-      <ChartClickHint>Click a slice or a row to see which districts are in that group.</ChartClickHint>
 
       {level && (
         <ChartDetailsDialog

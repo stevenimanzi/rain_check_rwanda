@@ -74,7 +74,10 @@ class ImportData extends Command
         match ($type) {
             'poverty' => District::whereKey($districtId)->update(['poverty_rate' => $row['poverty_rate']]),
             'household-drought' => District::whereKey($districtId)->update(['household_drought_pct' => $row['household_drought_pct']]),
-            'rainfall' => RainfallRecord::updateOrCreate($key, ['rainfall_mm' => $row['rainfall_mm']]),
+            'rainfall' => RainfallRecord::updateOrCreate($key, array_filter(
+                ['rainfall_mm' => $row['rainfall_mm'], 'normal_mm' => $row['normal_mm'] ?? null],
+                fn ($value) => $value !== null && $value !== '',
+            )),
         };
     }
 }

@@ -102,4 +102,30 @@ class AssistantTest extends TestCase
             $this->assertFalse($detector->isKinyarwanda($text), $text);
         }
     }
+
+    public function test_prompt_asks_for_a_clickable_sources_block(): void
+    {
+        [$prompt] = $this->ask('Tell me about Huye');
+
+        $this->assertStringContainsString('```sources', $prompt);
+        $this->assertStringContainsString('Amakuru yakuwe kuri', $prompt);
+    }
+
+    public function test_sources_endpoint_returns_details_and_database_rows(): void
+    {
+        $huye = District::create(['name' => 'Huye', 'province' => 'Southern Province', 'poverty_rate' => 24.2, 'household_drought_pct' => 31]);
+        District::create(['name' => 'Gasabo', 'province' => 'Kigali City', 'household_drought_pct' => 8]);
+        RainfallRecord::create(['district_id' => $huye->id, 'year' => 2023, 'month' => 4, 'rainfall_mm' => 100]);
+
+        $response = $this->getJson('/api/assistant/sources')->assertOk();
+
+        $response->assertJsonPath('data.rainfall.title', 'Satellite rainfall (CHIRPS v3)')
+            ->assertJsonCount(2, 'data.rainfall.rows')
+            ->assertJsonPath('data.household.rows.0.cells.name', 'Gasabo')
+            ->assertJsonPath('data.household.rows.0.cells.household', '8%')
+            ->assertJsonPath('data.poverty.rows.1.cells.poverty', '24.2%')
+            ->assertJsonMissingPath('data.surveys');
+
+        $this->assertSame('Published by', $response->json('data.household.about.0.0'));
+    }
 }

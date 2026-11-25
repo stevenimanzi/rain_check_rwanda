@@ -19,7 +19,10 @@ class DroughtMatchService
         return $rainfall
             ->sortBy(fn ($record) => $record->year * 100 + $record->month)
             ->map(function ($record) use ($valuesByMonth) {
-                $normal = $this->normalRainfall($valuesByMonth, $record->month, $record->rainfall_mm);
+                // A stored normal is used when the older years are no longer in the database.
+                $normal = ($record->normal_mm ?? null) !== null
+                    ? (float) $record->normal_mm
+                    : $this->normalRainfall($valuesByMonth, $record->month, $record->rainfall_mm);
 
                 if (! $normal) {
                     return null;

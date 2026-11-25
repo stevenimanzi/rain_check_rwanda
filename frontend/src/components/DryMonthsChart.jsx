@@ -51,6 +51,7 @@ export default function DryMonthsChart({ districts, getValue, unit, color, perio
 
   return (
     <>
+      <ChartClickHint>Click a bar to see that district and a table of all districts.</ChartClickHint>
       <div className="clickable-chart">
       <ResponsiveContainer width="100%" height={data.length * 26 + 76}>
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 48, left: 4, bottom: 8 }}>
@@ -99,7 +100,6 @@ export default function DryMonthsChart({ districts, getValue, unit, color, perio
           ...(hasMissingValues ? [{ color: CHART_COLORS.skipped, label: 'No data' }] : []),
         ]}
       />
-      <ChartClickHint>Click a bar to see that district and a table of all districts.</ChartClickHint>
 
       {selected && (
         <ChartDetailsDialog

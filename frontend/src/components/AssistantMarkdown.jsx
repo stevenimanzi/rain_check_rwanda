@@ -1,8 +1,12 @@
+import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { fetchAssistantSources } from '../api'
+import SourceDialog from './SourceDialog'
 
 const PALETTE = ['#1d4f91', '#40a6df', '#f59e0b', '#16a34a', '#8b5cf6']
-const RISK_COLORS = { low: '#16a34a', medium: '#d97706', high: '#dc2626' }
+// low, medium and high are mismatch risk; good, fair and poor are the confidence of a prediction.
+const RISK_COLORS = { low: '#16a34a', medium: '#d97706', high: '#dc2626', good: '#16a34a', fair: '#d97706', poor: '#dc2626' }
 
 /**
  * The model writes a chart as a fenced block:
@@ -54,7 +58,7 @@ function Bars({ chart }) {
           </span>
           <span className="md-bar-value">
             {row.value}
-            {chart.unit}
+            {/^[a-z]/i.test(chart.unit) ? ` ${chart.unit}` : chart.unit}
           </span>
         </div>
       ))}
@@ -81,6 +85,73 @@ function Columns({ chart }) {
   )
 }
 
+/**
+ * The closing "Data from" line. The model writes it as a fenced block:
+ *
+ *   ```sources
+ *   title: Data from
+ *   rainfall | Satellite rainfall (CHIRPS v3)
+ *   ```
+ */
+function parseSources(source) {
+  const list = { title: '', items: [] }
+
+  for (const line of source.split('\n')) {
+    const text = line.trim()
+    const title = text.match(/^title\s*:\s*(.*)$/i)
+
+    if (title) {
+      list.title = title[1].trim()
+      continue
+    }
+
+    const [id, label] = text.split('|').map((part) => part.trim())
+    if (id && label) list.items.push({ id: id.toLowerCase(), label })
+  }
+
+  return list
+}
+
+/** Clickable sources: a click loads the full details of that source and shows them in a dialog. */
+function Sources({ list }) {
+  const [active, setActive] = useState(null)
+  const [busy, setBusy] = useState('')
+  const [failed, setFailed] = useState(false)
+
+  // Start loading the details now (the request is slow); a click then opens the dialog at once.
+  useEffect(() => {
+    fetchAssistantSources().catch(() => {})
+  }, [])
+
+  const open = async (id) => {
+    setBusy(id)
+    setFailed(false)
+
+    try {
+      const all = await fetchAssistantSources()
+      if (all[id]) setActive(all[id])
+      else setFailed(true)
+    } catch {
+      setFailed(true)
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <div className="md-sources">
+      <span className="md-sources-title">{list.title || 'Data from'}:</span>
+      {list.items.map((item) => (
+        <button key={item.id} type="button" className="md-source-link" disabled={busy === item.id} onClick={() => open(item.id)}>
+          {busy === item.id ? '...' : item.label}
+        </button>
+      ))}
+      {failed && <span className="md-sources-error">Could not load the source details.</span>}
+      {active && <SourceDialog source={active} onClose={() => setActive(null)} />}
+    </div>
+  )
+}
+
 /** `risk:high|High mismatch risk` becomes a colored badge. */
 function Badge({ text }) {
   const [kind, label] = text.slice(5).split('|')
@@ -101,7 +172,9 @@ function normalizeMarkdown(source) {
   const out = []
   let inFence = false
 
-  for (const line of source.replace(/\r\n/g, '\n').split('\n')) {
+  for (const rawLine of source.replace(/\r\n/g, '\n').split('\n')) {
+    // A doubled marker such as "## ## Title" would show the second pair of hashes as text.
+    const line = rawLine.replace(/^(\s*#{1,6})\s+#{1,6}\s+/, '$1 ')
     const text = line.trim()
     const previous = out.length ? out[out.length - 1].trim() : ''
     const isFence = text.startsWith('```')
@@ -138,6 +211,11 @@ const components = {
       const chart = parseChart(text)
       if (chart.rows.length === 0) return null
       return language === 'bars' ? <Bars chart={chart} /> : <Columns chart={chart} />
+    }
+
+    if (language === 'sources') {
+      const list = parseSources(text)
+      return list.items.length ? <Sources list={list} /> : null
     }
 
     if (!language && text.startsWith('risk:')) return <Badge text={text} />
