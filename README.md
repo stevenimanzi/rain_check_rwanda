@@ -77,7 +77,7 @@ by the uploader and are not independently verified by NISR.
 
 Derived files, ready to use:
 
-- `data/monthly_rainfall_vs_normal.csv` - rainfall, normal rainfall and dry-month flag per district and month
+- `data/rainfall.csv` - rainfall and normal rainfall per district and month for the household window
 - `data/district_summary.csv` - household reports, satellite history and basis risk per district
 
 **How the household figures were obtained.** The CFSVA report publishes the district drought shares only as a

@@ -161,25 +161,7 @@ class AssistantKnowledge
             .$top('Most satellite dry months in the comparison year', $districts->sortByDesc('summary.satellite_drought_months'), fn ($d) => $d['summary']['satellite_drought_months'].' months')."\n"
             .$top('Fewest satellite dry months in the comparison year', $districts->sortBy('summary.satellite_drought_months'), fn ($d) => $d['summary']['satellite_drought_months'].' months')."\n"
             .$top('Biggest mismatch', $compared->sortByDesc('summary.basis_risk_pct'), fn ($d) => $d['summary']['basis_risk_pct'].' points, '.$this->directionText($d['summary']['direction']))."\n"
-            .$top('Smallest mismatch', $compared->sortBy('summary.basis_risk_pct'), fn ($d) => $d['summary']['basis_risk_pct'].' points')
-            .$this->povertyRankings($districts);
-    }
-
-    private function povertyRankings(Collection $districts): string
-    {
-        $rated = $districts->filter(fn (array $d) => $this->poverty->has($d['id']));
-
-        if ($rated->isEmpty()) {
-            return '';
-        }
-
-        $rate = fn (array $d) => round((float) $this->poverty[$d['id']], 1);
-        $top = fn (string $label, Collection $sorted) => "
-- {$label}: "
-            .$sorted->take(5)->map(fn (array $d) => $d['name'].' ('.$rate($d).'%)')->implode(', ');
-
-        return $top('Highest poverty rate', $rated->sortByDesc(fn ($d) => $rate($d)))
-            .$top('Lowest poverty rate', $rated->sortBy(fn ($d) => $rate($d)));
+            .$top('Smallest mismatch', $compared->sortBy('summary.basis_risk_pct'), fn ($d) => $d['summary']['basis_risk_pct'].' points');
     }
 
     private function districtTable(Collection $districts): string

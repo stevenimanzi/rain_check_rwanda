@@ -18,7 +18,7 @@ export default function DryPatternCharts({
   isAverage,
   averageDistrictCount,
   isAllDistricts,
-  startYear = 2023,
+  startYear = 2014,
   endYear = 2024,
   districts = [],
   series = [],

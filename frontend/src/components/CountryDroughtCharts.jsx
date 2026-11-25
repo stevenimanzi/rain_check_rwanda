@@ -23,10 +23,6 @@ function PercentagePie({ label, unit, data, buildDetails }) {
 
   return (
     <>
-      {chartData.length > 0 && buildDetails && (
-        <ChartClickHint>Click a slice or a label to see the districts and months behind it.</ChartClickHint>
-      )}
-
       {chartData.length ? (
         <div
           className="country-pie clickable-chart"
@@ -86,6 +82,10 @@ function PercentagePie({ label, unit, data, buildDetails }) {
           </li>
         ))}
       </ul>
+
+      {chartData.length > 0 && buildDetails && (
+        <ChartClickHint>Click a slice or a label to see the districts and months behind it.</ChartClickHint>
+      )}
 
       {selected && buildDetails && <ChartDetailsDialog {...buildDetails(selected)} onClose={() => setSelected(null)} />}
     </>
