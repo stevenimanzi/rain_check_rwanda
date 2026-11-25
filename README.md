@@ -2,14 +2,15 @@
 
 **Does satellite rainfall match the droughts Rwandan households report?**
 
-Index-based crop insurance pays farmers when satellite rainfall falls below a set level, not when a farm
-actually loses its crop. If the satellite and the farmers disagree, a farmer can lose a harvest and get
-nothing, or the insurer pays when nothing happened. This gap is called *basis risk*. RainCheck Rwanda
-compares, for all 30 districts, how many dry months the satellite saw with the share of households that
-reported drought in NISR's 2024 survey, so insurers, ministries and lenders can see where satellite
-insurance can be trusted and where it cannot.
+Weather-index crop insurance uses rainfall measurements as a proxy for farm losses. When satellite
+rainfall indicators do not align with households' reported drought, this mismatch—known as *basis risk*—
+can make a rainfall trigger an imperfect reflection of farmers' experience. RainCheck Rwanda compares,
+for all 30 districts, dry months derived from satellite rainfall with households' drought reports in
+NISR's 2024 survey. It helps identify where rainfall-based indicators may need further local validation.
 
-Built for the NISR 2026 Big Data Hackathon, Track 2.
+**NISR 2026 Big Data Hackathon: Track 3 — Open Innovation.** The project applies NISR household survey
+data and public satellite rainfall data to agricultural climate-risk analysis, supporting evidence-based
+review of rainfall-index insurance.
 
 - **Live app:** https://raincheckrwandaweb.onrender.com/
 - **Live API:** https://raincheck-api-7nk6.onrender.com/api/districts (free hosting: the first visit after a quiet period can take up to a minute)
@@ -21,7 +22,11 @@ Built for the NISR 2026 Big Data Hackathon, Track 2.
 Across the 30 districts, satellite dry months and households reporting drought agree only weakly
 (rank correlation about 0.06). Six districts have high basis risk. In Gatsibo, 58% of households reported
 drought in the year to March 2024, yet the satellite saw one dry month and rainfall was above normal.
-Insurance paid on satellite rainfall alone would have left many of those farmers unpaid.
+This difference highlights where a rainfall indicator may not reflect reported household experience.
+
+**Scope:** RainCheck is a historical comparison and decision-support tool. It does not observe crop
+losses, insurance enrollment, claims or payouts, and it does not forecast future drought. Its findings
+can guide further investigation; they are not insurance payout determinations.
 
 ## What the dashboard shows
 
