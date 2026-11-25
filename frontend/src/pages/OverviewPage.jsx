@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowUpTrayIcon,
+  CalendarDaysIcon,
   ChevronDownIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
@@ -418,49 +419,20 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
     <section className="overview-filters" aria-label="Overview filters">
       <div className="overview-filter-heading">
         <div>
-          <h2>{lockedDistrictId ? 'Years and household survey' : 'Explore by year and district'}</h2>
+          <h2>{lockedDistrictId ? 'Household survey' : 'Explore by district'}</h2>
           <p>
             {lockedDistrictId
-              ? 'Choose the years and the household survey the charts for this district use.'
-              : 'Choose a period and districts to update the dashboard. Only years with data are listed.'}
+              ? `Satellite rainfall and household reports use the same 12-month period (${surveyPeriod}).`
+              : 'Choose districts and a household survey. Satellite rainfall is always matched to that survey period.'}
           </p>
         </div>
         <div className="overview-filter-range">
           <CalendarDaysIcon className="icon" aria-hidden="true" />
-          <span>Showing {startYear === endYear ? startYear : `${startYear} - ${endYear}`}</span>
+          <span>Showing {surveyPeriod}</span>
         </div>
       </div>
 
       <div className="overview-filter-controls">
-        <div className="overview-filter-years" role="group" aria-label="Rainfall year range">
-          <CustomSelect
-            label="From year"
-            value={startYear}
-            className="overview-year-filter"
-            options={yearOptions.map((year) => ({ value: year, label: String(year) }))}
-            onChange={(year) => {
-              setSelectedYears((current) => {
-                const currentEnd = current?.end ?? defaultEndYear
-                return { start: Number(year), end: Number(year) > currentEnd ? Number(year) : currentEnd }
-              })
-            }}
-          />
-
-          <CustomSelect
-            label="To year"
-            value={endYear}
-            className="overview-year-filter"
-            options={yearOptions.map((year) => ({ value: year, label: String(year) }))}
-            onChange={(year) => {
-              setSelectedYears((current) => {
-                const currentStart = current?.start ?? defaultStartYear
-                return { start: Number(year) < currentStart ? Number(year) : currentStart, end: Number(year) }
-              })
-            }}
-          />
-        </div>
-
-
         {!lockedDistrictId && (
           <DistrictMultiSelect
             districts={districts}

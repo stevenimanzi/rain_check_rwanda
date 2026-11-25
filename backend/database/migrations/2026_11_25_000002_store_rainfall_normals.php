@@ -4,12 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Keeps only the satellite rainfall inside the household survey window (config raincheck.comparison_start
- * to comparison_end) and removes every other month, so the dashboard shows only data that can be compared
- * with what households reported.
- *
- * "Normal" rainfall is the median of the same month in the other years. Before the other years are removed,
- * that normal is stored on each month that stays, so dry months are judged exactly as before.
+ * Stores the matched-period monthly normals before they are served by the dashboard.
+ * Historical rainfall rows remain available as a baseline for other survey periods.
  */
 return new class extends Migration
 {
@@ -40,14 +36,10 @@ return new class extends Migration
                 DB::table('rainfall_records')->where('id', $record->id)->update(['normal_mm' => round($median, 2)]);
             }
         }
-
-        DB::table('rainfall_records')
-            ->whereRaw('(year * 100 + month) < ? OR (year * 100 + month) > ?', [$start, $end])
-            ->delete();
     }
 
     public function down(): void
     {
-        // The removed rainfall is not stored anywhere else. Re-import the full data/rainfall.csv from git history to restore it.
+        // The stored normal values can be recalculated from the retained rainfall history.
     }
 };
