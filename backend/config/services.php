@@ -37,7 +37,9 @@ return [
 
     'google' => [
         'key' => env('GOOGLE_API_KEY'),
-        'model' => env('GOOGLE_AI_MODEL', 'gemini-2.5-flash'),
+        'model' => env('GOOGLE_AI_MODEL', 'gemini-3.5-flash'),
+        // Optional path to a CA bundle (cacert.pem) for PHP installs that cannot verify HTTPS certificates.
+        'ca_bundle' => env('GOOGLE_CA_BUNDLE'),
     ],
 
     'imports' => [

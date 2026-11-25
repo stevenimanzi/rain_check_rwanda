@@ -16,6 +16,9 @@ class AssistantController extends Controller
 {
     public function __invoke(Request $request, DistrictAnalysis $analysis): JsonResponse
     {
+        // Retries and a slow model can pass PHP's default 30 second limit.
+        set_time_limit(120);
+
         $key = config('services.google.key');
 
         if (! $key) {
@@ -40,7 +43,10 @@ class AssistantController extends Controller
         try {
             $model = config('services.google.model');
             $response = Http::withHeaders(['x-goog-api-key' => $key])
+                ->withOptions(['verify' => config('services.google.ca_bundle') ?: true])
                 ->timeout(60)
+                // Google answers 429/503 when busy; a short retry usually succeeds.
+                ->retry(3, 1500, fn ($e) => in_array($e->response?->status(), [429, 500, 503], true), throw: false)
                 ->post(
                     "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent",
                     [
