@@ -13,7 +13,7 @@ class GeminiClient
 {
     /**
      * @param  array<int, array{role: string, content: string}>  $messages
-     * @return array{text: ?string, finish_reason: ?string, status: int}  text is null when every model failed
+     * @return array{text: ?string, finish_reason: ?string, status: int} text is null when every model failed
      */
     public function generate(string $system, array $messages, float $temperature = 0.2, int $maxTokens = 3000): array
     {

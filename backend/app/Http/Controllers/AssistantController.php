@@ -9,10 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-/**
- * Chat assistant that answers questions about the RainCheck Rwanda results.
- * The API key stays on the server; the browser only ever talks to this endpoint.
- */
+/** Handles assistant requests and keeps the Google API key server-side. */
 class AssistantController extends Controller
 {
     public function __invoke(Request $request, AssistantKnowledge $knowledge, LanguageDetector $language): JsonResponse
@@ -30,7 +27,7 @@ class AssistantController extends Controller
             'messages' => ['required', 'array', 'min:1', 'max:20'],
             'messages.*.role' => ['required', 'in:user,assistant'],
             'messages.*.content' => ['required', 'string', 'max:2000'],
-            // The language picked in the page menu. It only decides the reply when the question itself is unclear.
+            // Use this only when the user's message has no clear language.
             'page_language' => ['nullable', 'in:en,rw,fr'],
         ]);
 
@@ -64,18 +61,16 @@ class AssistantController extends Controller
             ],
         ];
 
-        // A CA bundle path copied from another machine must not break HTTPS on this one.
+        // Ignore a CA bundle path that does not exist on this machine.
         $caBundle = config('services.google.ca_bundle');
         $verify = $caBundle && is_file($caBundle) ? $caBundle : true;
 
         $payload = null;
         $lastStatus = 0;
 
-        // The configured model first; when Google has retired it or it is busy, try the next one.
         $startedAt = microtime(true);
 
         foreach ($this->models() as $model) {
-            // Stay inside the host's request time limit.
             if (microtime(true) - $startedAt > 70) {
                 break;
             }
@@ -84,7 +79,6 @@ class AssistantController extends Controller
                 $response = Http::withHeaders(['x-goog-api-key' => $key])
                     ->withOptions(['verify' => $verify])
                     ->timeout(60)
-                    // Google answers 429/503 when busy; a short retry usually succeeds.
                     ->retry(2, 1000, fn ($e) => in_array($e->response?->status(), [429, 500, 503], true), throw: false)
                     ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", $body);
             } catch (Throwable $e) {
@@ -102,7 +96,7 @@ class AssistantController extends Controller
             $lastStatus = $response->status();
             report(new \RuntimeException("Google AI request failed for {$model}: {$lastStatus} ".$response->body()));
 
-            // A rejected key or a malformed request will not improve with another model.
+            // Authentication and request errors will not improve with another model.
             if (in_array($lastStatus, [400, 401, 403], true)) {
                 break;
             }
@@ -111,7 +105,7 @@ class AssistantController extends Controller
         if ($payload === null) {
             return response()->json([
                 'message' => 'The assistant could not answer right now. Please try again.',
-                // Only the HTTP status from Google, so a failure can be diagnosed without reading the server log.
+                // Include the status for troubleshooting without exposing the upstream response.
                 'upstream_status' => $lastStatus,
             ], 502);
         }
@@ -134,12 +128,11 @@ class AssistantController extends Controller
             : 'I could not find an answer. Please rephrase your question.')]);
     }
 
-    /** The configured model, then fallbacks, so one retired or overloaded model does not take the assistant down. */
+    /** Return the configured model followed by fallback models. */
     private function models(): array
     {
         return array_values(array_unique(array_filter([
             config('services.google.model'),
-            // The lite models are the steadiest on a free key; the others are tried last.
             'gemini-3.5-flash-lite',
             'gemini-flash-lite-latest',
             'gemini-3.1-flash-lite',
@@ -148,10 +141,7 @@ class AssistantController extends Controller
         ])));
     }
 
-    /**
-     * Everything the assistant knows: the method, the limits, the rules and the database contents.
-     * It is built from the database on each request, so it always matches the dashboard.
-     */
+    /** Build the assistant prompt with current data, rules, and limitations. */
     private function systemPrompt(AssistantKnowledge $knowledge, array $messages, bool $kinyarwanda, string $pageLanguage): string
     {
         $data = $knowledge->build($messages);

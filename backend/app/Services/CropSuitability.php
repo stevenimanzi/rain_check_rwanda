@@ -28,9 +28,7 @@ class CropSuitability
 
     private const SEVERITY = ['good' => 0, 'marginal' => 1, 'poor' => 2];
 
-    public function __construct(private DistrictAnalysis $analysis)
-    {
-    }
+    public function __construct(private DistrictAnalysis $analysis) {}
 
     /** @return array<string, array<string, mixed>> crop id => profile (with the id added) */
     public function crops(): array

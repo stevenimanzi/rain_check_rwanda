@@ -13,9 +13,7 @@ use Illuminate\Support\Collection;
  */
 class AssistantSources
 {
-    public function __construct(private DistrictAnalysis $analysis)
-    {
-    }
+    public function __construct(private DistrictAnalysis $analysis) {}
 
     /**
      * @return array<string, array<string, mixed>> keyed by source id: rainfall, household, poverty, surveys

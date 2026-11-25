@@ -26,11 +26,13 @@ class ImportData extends Command
 
         if (! isset(self::COLUMNS[$type])) {
             $this->error('Type must be poverty, household-drought or rainfall.');
+
             return self::FAILURE;
         }
 
         if (! is_readable($file)) {
             $this->error("Cannot read file: {$file}");
+
             return self::FAILURE;
         }
 
@@ -40,6 +42,7 @@ class ImportData extends Command
 
         if ($missing) {
             $this->error('Missing columns: '.implode(', ', $missing));
+
             return self::FAILURE;
         }
 
@@ -54,6 +57,7 @@ class ImportData extends Command
             if ($districtId === null) {
                 $this->warn("Unknown district: {$row['district']}");
                 $skipped++;
+
                 continue;
             }
 

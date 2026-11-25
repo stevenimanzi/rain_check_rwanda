@@ -13,9 +13,7 @@ class PredictionKnowledge
     /** Districts mentioned in the chat get their month-by-month detail, up to this many. */
     private const MAX_DETAILED_DISTRICTS = 3;
 
-    public function __construct(private DistrictAnalysis $analysis, private CropSuitability $crops)
-    {
-    }
+    public function __construct(private DistrictAnalysis $analysis, private CropSuitability $crops) {}
 
     /**
      * @param  array<int, array{role: string, content: string}>  $messages
