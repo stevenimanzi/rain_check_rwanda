@@ -14,22 +14,41 @@ class DistrictAnalysis
     {
     }
 
-    public function all(): Collection
+    /**
+     * @param  array<int, float>|null  $surveyValues  household drought % by district id from another survey.
+     *                                                 They replace the stored (CFSVA 2024) values where present.
+     * @param  bool  $importedOnly  with $surveyValues, districts missing from the survey get no household value
+     *                              instead of falling back to the stored value.
+     * @param  array{start: string, end: string}|null  $window  the 12 months (YYYY-MM) households were asked about;
+     *                                                          defaults to the CFSVA 2024 window.
+     */
+    public function all(?array $surveyValues = null, bool $importedOnly = false, ?array $window = null): Collection
     {
-        $rows = District::with('rainfallRecords')->orderBy('name')->get()->map(function (District $district) {
+        $start = $window['start'] ?? null;
+        $end = $window['end'] ?? null;
+
+        $rows = District::with('rainfallRecords')->orderBy('name')->get()->map(function (District $district) use ($surveyValues, $importedOnly, $start, $end) {
             $series = $this->satellite->rainfallSeries($district->rainfallRecords);
             $history = $this->satellite->history($series);
+            $household = $this->number($district->household_drought_pct);
+
+            if ($surveyValues !== null) {
+                $household = array_key_exists($district->id, $surveyValues)
+                    ? $this->number($surveyValues[$district->id])
+                    : ($importedOnly ? null : $household);
+            }
 
             return [
                 'id' => $district->id,
                 'name' => $district->name,
                 'province' => $district->province,
-                'household_drought_pct' => $this->number($district->household_drought_pct),
+                'household_drought_pct' => $household,
                 'rainfall' => $series,
                 'history' => $history,
                 'summary' => [
                     'avg_dry_months_per_year' => $history['avg_dry_months_per_year'],
-                    'satellite_drought_months' => $this->satellite->dryMonthsInWindow($series),
+                    'satellite_drought_months' => $this->satellite->dryMonthsInWindow($series, $start, $end),
+                    'satellite_window_months' => $this->satellite->monthsAvailableInWindow($series, $start, $end),
                 ],
             ];
         });

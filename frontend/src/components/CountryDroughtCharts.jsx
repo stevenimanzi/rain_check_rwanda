@@ -99,8 +99,10 @@ export default function CountryDroughtCharts({
   return (
     <div className="grid-2 even country-pies">
       <section className="panel">
-        <h3>Satellite rainfall: drought vs. not drought in {isAllDistricts ? 'Rwanda' : area}</h3>
-        <p className="muted">Share of assessable months, {periodLabel}.</p>
+        <h3>How many months did the satellite see drought in {isAllDistricts ? 'Rwanda' : area}?</h3>
+        <p className="muted">
+          {satelliteDrought} of {satelliteMonths.length} months judged were drought months, {periodLabel}.
+        </p>
         <PercentagePie
           label="Satellite rainfall"
           data={[
@@ -122,11 +124,13 @@ export default function CountryDroughtCharts({
       </section>
 
       <section className="panel">
-        <h3>Households reporting drought{isAllDistricts ? '' : ` in ${area}`}</h3>
+        <h3>How many households said drought hurt them{isAllDistricts ? '' : ` in ${area}`}?</h3>
         <p className="muted">
-          {isSingleDistrict
-            ? householdSurveyLabel
-            : `Average district estimate from ${householdSurveyLabel}.`}
+          {householdDrought === null
+            ? 'No household survey data is available.'
+            : `${householdDrought.toFixed(1)}% of households ${
+                isSingleDistrict ? '' : 'in the average district '
+              }reported drought. Source: ${householdSurveyLabel}.`}
         </p>
         <PercentagePie
           label="Household drought reports"

@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'aiprovider' => [
+        'key' => env('AI_PROVIDER_API_KEY'),
+        'model' => env('AI_PROVIDER_MODEL', 'assistant-model'),
+    ],
+
     'imports' => [
         'email' => env('IMPORT_EMAIL'),
         'password' => env('IMPORT_PASSWORD'),

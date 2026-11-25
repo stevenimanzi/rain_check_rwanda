@@ -6,13 +6,15 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { fetchDistrictRainfall, fetchHouseholdSurveyImports } from '../api'
+import { fetchDistrictRainfall, fetchHouseholdSurveyImports, fetchSurveyComparison, importHouseholdSurvey } from '../api'
 import ChartInfo from '../components/ChartInfo'
+import ChartSection from '../components/ChartSection'
 import CountryDroughtCharts from '../components/CountryDroughtCharts'
 import DryMonthsChart from '../components/DryMonthsChart'
 import DryPatternCharts from '../components/DryPatternCharts'
 import GapChart from '../components/GapChart'
 import HouseholdSurveyImportPanel from '../components/HouseholdSurveyImportPanel'
+import MismatchOverview from '../components/MismatchOverview'
 import Notice from '../components/Notice'
 import RainDeviationChart from '../components/RainDeviationChart'
 import StatCard from '../components/StatCard'
@@ -22,6 +24,13 @@ const matchText = (value) => {
   if (value === null) return ''
   const strength = Math.abs(value) < 0.3 ? 'only a little' : Math.abs(value) < 0.6 ? 'fairly well' : 'very well'
   return `Overall, the satellite and households match ${strength} (match score ${value}, where 1 is a perfect match and 0 is no match).`
+}
+
+// "2025-04" -> "Apr 2025" (or "April 2025")
+const monthYear = (key, month = 'short') => {
+  const [year, number] = key.split('-').map(Number)
+
+  return new Date(year, number - 1).toLocaleString('en', { month, year: 'numeric' })
 }
 
 const average = (values) => (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null)
@@ -218,6 +227,12 @@ export default function OverviewPage({ districts, overview }) {
   const [surveyView, setSurveyView] = useState('merged')
   const [importFormOpen, setImportFormOpen] = useState(false)
   const [importAccessToken, setImportAccessToken] = useState('')
+  // A preview is a survey that was checked but not saved; it only lives in this page's memory.
+  const [previewImport, setPreviewImport] = useState(null)
+  const [previewFile, setPreviewFile] = useState(null)
+  const [previewSaving, setPreviewSaving] = useState(false)
+  const [previewMessage, setPreviewMessage] = useState(null)
+  const [comparison, setComparison] = useState(null)
   const importDialogRef = useRef(null)
   const rainfallYears = [...new Set(national.map((month) => month.year))].sort((a, b) => a - b)
   const availableYears = [...new Set([
@@ -284,13 +299,51 @@ export default function OverviewPage({ districts, overview }) {
     if (importFormOpen && dialog && !dialog.open) dialog.showModal()
   }, [importFormOpen])
 
-  const selectedImport =
-    surveyImports.find((surveyImport) => String(surveyImport.id) === selectedImportId) ?? surveyImports[0] ?? null
+  // 'baseline' = the original CFSVA 2024 values only; 'preview' = the unsaved preview; otherwise a saved import.
+  const selectedImport = selectedImportId === 'baseline'
+    ? null
+    : selectedImportId === 'preview' && previewImport
+      ? previewImport
+      : surveyImports.find((surveyImport) => String(surveyImport.id) === selectedImportId) ?? surveyImports[0] ?? null
+  const comparisonKey = selectedImport
+    ? `${selectedImport.id ?? 'preview'}:${selectedImport.survey_year}:${surveyView}:${selectedImport.observations.length}`
+    : null
+
+  useEffect(() => {
+    if (!selectedImport) return undefined
+
+    let active = true
+    const controller = new AbortController()
+
+    fetchSurveyComparison(
+      { surveyYear: selectedImport.survey_year, view: surveyView, observations: selectedImport.observations },
+      controller.signal,
+    )
+      .then((result) => {
+        if (active) setComparison({ key: comparisonKey, ...result })
+      })
+      .catch((error) => {
+        if (active && error.name !== 'CanceledError') setComparison({ key: comparisonKey, failed: true })
+      })
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+    // selectedImport is identified by comparisonKey; its values do not change without the key changing.
+  }, [comparisonKey])
+
+  // The comparison replaces the original one only once it matches the chosen survey and has satellite rainfall
+  // for the survey's period; otherwise the dashboards keep using CFSVA 2024 for the mismatch charts.
+  const surveyComparison = comparisonKey && comparison?.key === comparisonKey && !comparison.failed ? comparison : null
+  const comparisonActive = Boolean(surveyComparison?.window.complete)
+  const comparisonUnavailable = Boolean(selectedImport) && Boolean(surveyComparison) && !surveyComparison.window.complete
+  const comparisonDistricts = comparisonActive ? surveyComparison.districts : districts
   const selectedDistrictIdList = selectedDistrictIds ?? []
   const selectedIds = new Set(selectedDistrictIdList)
   const activeDistricts = selectedDistrictIds !== null
-    ? districts.filter((district) => selectedIds.has(district.id))
-    : districts
+    ? comparisonDistricts.filter((district) => selectedIds.has(district.id))
+    : comparisonDistricts
   const selectedDistrictDetails = selectedDistrictIdList
     .map((id) => {
       const district = districts.find((item) => item.id === id)
@@ -335,7 +388,18 @@ export default function OverviewPage({ districts, overview }) {
   const mismatchValue = isSingleDistrict
     ? RISK_LABELS[singleDistrict.summary.risk_level] ?? 'No survey data'
     : `${highRisk} of ${districtCount}`
-  const mismatchLabel = isSingleDistrict ? 'Mismatch risk (2024 survey)' : 'High-mismatch districts'
+  const combinedTag = isSingleDistrict ? area : 'All selected districts combined'
+  const surveyPeriod = comparisonActive
+    ? `${monthYear(surveyComparison.window.start)} to ${monthYear(surveyComparison.window.end)}`
+    : 'Apr 2023 to Mar 2024'
+  const surveyPeriodLong = comparisonActive
+    ? `${monthYear(surveyComparison.window.start, 'long')} to ${monthYear(surveyComparison.window.end, 'long')}`
+    : 'April 2023 to March 2024'
+  const surveyTitle = comparisonActive && selectedImport
+    ? `${selectedImport.source_name} (${selectedImport.survey_year})`
+    : '2024 survey'
+  const activeMatchScore = comparisonActive ? surveyComparison.rank_correlation : matchScore
+  const mismatchLabel = isSingleDistrict ? `Mismatch risk (${surveyTitle})` : 'High-mismatch districts'
   const filteredDistricts = activeDistricts.map((district) => {
     const years = district.history.by_year.filter((row) => row.year >= startYear && row.year <= endYear)
 
@@ -381,13 +445,66 @@ export default function OverviewPage({ districts, overview }) {
       ? isSingleDistrict
         ? `Selected district value source: ${householdChartDistricts[0]?.household_source ?? 'no value available'}.`
         : `${selectedImport.source_name} (${selectedImport.survey_year}) values are used where available; missing districts use CFSVA 2024. The summary is an unweighted district average across the available values, not a single-survey national estimate.`
-      : 'Household reports cover April 2023 to March 2024.'
+      : `Household reports cover ${surveyPeriodLong}.`
   const includeCfsvaSource = surveyView === 'merged'
 
   const handleSurveyImport = (imported) => {
     setSurveyImports((current) => [imported, ...current.filter((item) => item.id !== imported.id)])
     setSelectedImportId(String(imported.id))
     setSurveyImportsError(null)
+  }
+
+  // View only: show the survey on its own, without saving it. It is dropped when the preview is closed.
+  const handlePreview = (preview, file) => {
+    setPreviewImport(preview)
+    setPreviewFile(file)
+    setPreviewMessage(null)
+    setSelectedImportId('preview')
+    setSurveyView('imported')
+    setImportFormOpen(false)
+  }
+
+  const closePreview = () => {
+    setPreviewImport(null)
+    setPreviewFile(null)
+    setPreviewMessage(null)
+    setComparison(null)
+    setSelectedImportId('')
+    setSurveyView('merged')
+  }
+
+  // Turns the previewed file into a permanent, merged import.
+  const savePreview = async () => {
+    if (!previewImport || !previewFile) return
+
+    if (!importAccessToken) {
+      setPreviewMessage('Sign in to save this survey.')
+      setImportFormOpen(true)
+      return
+    }
+
+    setPreviewSaving(true)
+    setPreviewMessage(null)
+
+    try {
+      const saved = await importHouseholdSurvey({
+        file: previewFile,
+        surveyYear: previewImport.survey_year,
+        sourceName: previewImport.source_name,
+        token: importAccessToken,
+        mode: 'save',
+      })
+
+      setPreviewImport(null)
+      setPreviewFile(null)
+      handleSurveyImport(saved)
+      setSurveyView('merged')
+    } catch (error) {
+      if (error.response?.status === 401) setImportAccessToken('')
+      setPreviewMessage(error.response?.data?.message || 'The survey could not be saved. Try again.')
+    } finally {
+      setPreviewSaving(false)
+    }
   }
 
   const filters = (
@@ -452,7 +569,7 @@ export default function OverviewPage({ districts, overview }) {
             <ArrowUpTrayIcon className="icon" />
             Import survey data
           </button>
-          {surveyImports.length > 0 && (
+          {(surveyImports.length > 0 || previewImport) && (
             <>
               <CustomSelect
                 label="Household survey view"
@@ -467,12 +584,18 @@ export default function OverviewPage({ districts, overview }) {
               <CustomSelect
                 label="Survey upload"
                 className="survey-source-select"
-                value={selectedImport?.id ?? ''}
-                options={surveyImports.map((surveyImport) => ({
-                  value: surveyImport.id,
-                  label: `${surveyImport.source_name} (${surveyImport.survey_year})`,
-                }))}
-                onChange={setSelectedImportId}
+                value={selectedImport ? (selectedImport.id === null ? 'preview' : selectedImport.id) : 'baseline'}
+                options={[
+                  { value: 'baseline', label: 'CFSVA 2024 only (original)' },
+                  ...(previewImport
+                    ? [{ value: 'preview', label: `Preview: ${previewImport.source_name} (${previewImport.survey_year}), not saved` }]
+                    : []),
+                  ...surveyImports.map((surveyImport) => ({
+                    value: surveyImport.id,
+                    label: `${surveyImport.source_name} (${surveyImport.survey_year})`,
+                  })),
+                ]}
+                onChange={(value) => setSelectedImportId(String(value))}
               />
             </>
           )}
@@ -518,12 +641,37 @@ export default function OverviewPage({ districts, overview }) {
             districts={districts}
             accessToken={importAccessToken}
             onImported={handleSurveyImport}
+            onPreview={handlePreview}
             onLogin={setImportAccessToken}
             onLogout={() => setImportAccessToken('')}
           />
         </dialog>
       )}
 
+      {previewImport && (
+        <div className="survey-preview-banner" role="status">
+          <div>
+            <strong>Preview, not saved.</strong> You are viewing {previewImport.source_name} ({previewImport.survey_year}){' '}
+            on its own. It is not stored and disappears when you close the preview or reload the page.
+            {previewMessage && <span className="survey-preview-error"> {previewMessage}</span>}
+          </div>
+          <div className="survey-preview-actions">
+            <button type="button" className="primary-button" onClick={savePreview} disabled={previewSaving}>
+              {previewSaving ? 'Saving...' : 'Save and merge'}
+            </button>
+            <button type="button" className="survey-preview-close" onClick={closePreview} disabled={previewSaving}>
+              Close preview
+            </button>
+          </div>
+        </div>
+      )}
+      {comparisonUnavailable && (
+        <Notice title="No satellite rainfall for this survey's period yet">
+          Satellite rainfall is missing for {monthYear(surveyComparison.window.start, 'long')} to{' '}
+          {monthYear(surveyComparison.window.end, 'long')}, so the mismatch charts still compare against CFSVA 2024.
+          The household charts show the selected survey.
+        </Notice>
+      )}
       {surveyImportsError && (
         <Notice title="Could not load imported survey data">
           {surveyImportsError} Existing CFSVA comparisons remain available; uploaded survey choices may be incomplete.
@@ -565,8 +713,16 @@ export default function OverviewPage({ districts, overview }) {
                   : 'No rainfall data for this period'
               }
             />
-            <StatCard label={mismatchLabel} value={mismatchValue} hint="Household survey comparison: Apr 2023 to Mar 2024" />
+            <StatCard label={mismatchLabel} value={mismatchValue} hint={`Household survey comparison: ${surveyPeriod}`} />
           </div>
+
+          <ChartSection
+            number={1}
+            title="The big picture"
+            tag={combinedTag}
+            description="How closely satellite rainfall and household reports agree overall."
+          >
+          {!isSingleDistrict && <MismatchOverview districts={activeDistricts} period={surveyPeriod} />}
 
           <CountryDroughtCharts
             districts={householdChartDistricts}
@@ -582,20 +738,27 @@ export default function OverviewPage({ districts, overview }) {
             householdSourceName={selectedImport?.source_name}
             includeCfsvaSource={includeCfsvaSource}
           />
+          </ChartSection>
 
+          <ChartSection
+            number={2}
+            title="District by district"
+            tag={isSingleDistrict ? area : 'One bar per district'}
+            description="Which districts are driest, report the most drought, or show the biggest gap."
+          >
           <div className="panel">
             <h3>{isAllDistricts ? 'Where the satellite and households disagree' : `Satellite and households in ${area}`}</h3>
             <p className="muted">
-              This comparison uses the 2024 household survey period, regardless of the selected satellite years.
+              This comparison uses the household survey period ({surveyPeriod}), regardless of the selected satellite years.
               Red: households reported more drought; blue: satellite rainfall indicated more drought.
             </p>
             <GapChart districts={activeDistricts} />
             <ChartInfo
-              shows={`Each district is ranked on satellite dry months and households reporting drought for Apr 2023 to Mar 2024. The bar is the difference between those ranks. ${
+              shows={`Each district is ranked on satellite dry months and households reporting drought for ${surveyPeriod}. The bar is the difference between those ranks. ${
                 isSingleDistrict
                   ? `The selected district's mismatch risk is ${mismatchValue}.`
                   : isAllDistricts
-                    ? matchText(matchScore)
+                    ? matchText(activeMatchScore)
                     : `The ${districtCount} selected districts are shown separately. ${highRisk} have high mismatch risk.`
               }`}
               howToRead="A short bar means the two agree. A long red bar means households reported drought that the satellite missed; a long blue bar means satellite rainfall indicated drought that fewer households reported."
@@ -603,38 +766,11 @@ export default function OverviewPage({ districts, overview }) {
             />
           </div>
 
-          <div className="panel">
-            <h3>Was each month wetter or drier than normal?</h3>
-            <p className="muted">
-              {isSingleDistrict
-                ? area
-                : `Average rainfall across ${districtCount} ${isAllDistricts ? 'districts' : 'selected districts'}`}, {periodLabel}
-              {startYear === endYear ? '.' : '; monthly averages grouped by calendar month.'}
-            </p>
-            <RainDeviationChart series={filteredSeries} maxMonths={filteredSeries.length} />
-            <ChartInfo
-              shows={`Monthly rainfall compared with normal rainfall for ${isSingleDistrict ? area : `${districtCount} districts`}, ${periodLabel}.`}
-              howToRead="Each month has two bars: rainfall and the normal amount. For a multi-year range, each bar is the average for that calendar month. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
-              sources={['rainfall', 'boundaries']}
-            />
-          </div>
-
-          <DryPatternCharts
-            byYear={byYear}
-            byMonth={byMonth}
-            area={area}
-            isAverage={!isSingleDistrict}
-            averageDistrictCount={districtCount}
-            isAllDistricts={isAllDistricts}
-            startYear={startYear}
-            endYear={endYear}
-          />
-
           <div className="grid-2 even">
             <div className="panel">
               <h3>Dry months seen by the satellite</h3>
               <p className="muted">
-                {isAllDistricts ? 'All 30 districts' : area}, April 2023 to March 2024.
+                {isAllDistricts ? 'All 30 districts' : area}, {surveyPeriodLong}.
               </p>
               <DryMonthsChart
                 districts={activeDistricts}
@@ -643,7 +779,7 @@ export default function OverviewPage({ districts, overview }) {
                 color={CHART_COLORS.dry}
               />
               <ChartInfo
-                shows="How many months had at least 20% less rain than normal in the 12 months before the April 2024 survey."
+                shows={`How many months had at least 20% less rain than normal in the 12 months households were asked about (${surveyPeriod}).`}
                 howToRead="A longer bar means more dry months. This comparison stays on the survey period so it can be compared with household reports."
                 sources={['rainfall', 'boundaries']}
               />
@@ -692,6 +828,41 @@ export default function OverviewPage({ districts, overview }) {
               sources={['rainfall', 'boundaries']}
             />
           </div>
+          </ChartSection>
+
+          <ChartSection
+            number={3}
+            title="Rainfall over time"
+            tag={combinedTag}
+            description="Whether each month, year and season was wetter or drier than normal."
+          >
+          <div className="panel">
+            <h3>Was each month wetter or drier than normal?</h3>
+            <p className="muted">
+              {isSingleDistrict
+                ? area
+                : `Average rainfall across ${districtCount} ${isAllDistricts ? 'districts' : 'selected districts'}`}, {periodLabel}
+              {startYear === endYear ? '.' : '; monthly averages grouped by calendar month.'}
+            </p>
+            <RainDeviationChart series={filteredSeries} maxMonths={filteredSeries.length} />
+            <ChartInfo
+              shows={`Monthly rainfall compared with normal rainfall for ${isSingleDistrict ? area : `${districtCount} districts`}, ${periodLabel}.`}
+              howToRead="Each month has two bars: rainfall and the normal amount. For a multi-year range, each bar is the average for that calendar month. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
+              sources={['rainfall', 'boundaries']}
+            />
+          </div>
+
+          <DryPatternCharts
+            byYear={byYear}
+            byMonth={byMonth}
+            area={area}
+            isAverage={!isSingleDistrict}
+            averageDistrictCount={districtCount}
+            isAllDistricts={isAllDistricts}
+            startYear={startYear}
+            endYear={endYear}
+          />
+          </ChartSection>
         </>
       )}
     </>

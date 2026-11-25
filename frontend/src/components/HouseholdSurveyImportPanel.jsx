@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { importHouseholdSurvey, loginHouseholdSurveyImporter, logoutHouseholdSurveyImporter } from '../api'
 
-export default function HouseholdSurveyImportPanel({ districts, accessToken, onImported, onLogin, onLogout }) {
+export default function HouseholdSurveyImportPanel({ districts, accessToken, onImported, onPreview, onLogin, onLogout }) {
+  // "save": kept permanently and merged into the dashboards. "preview": shown only until it is closed.
+  const [mode, setMode] = useState('save')
   const [surveyYear, setSurveyYear] = useState('')
   const [sourceName, setSourceName] = useState('')
   const [email, setEmail] = useState('')
@@ -43,12 +45,22 @@ export default function HouseholdSurveyImportPanel({ districts, accessToken, onI
     setFeedback(null)
 
     try {
-      const imported = await importHouseholdSurvey({ file, surveyYear, sourceName, token: accessToken })
-      setFeedback({
-        type: 'success',
-        text: `Imported ${imported.observations.length} district values from ${imported.source_name} (${imported.survey_year}).`,
-      })
-      onImported?.(imported)
+      const imported = await importHouseholdSurvey({ file, surveyYear, sourceName, token: accessToken, mode })
+
+      if (mode === 'preview') {
+        setFeedback({
+          type: 'success',
+          text: `Previewing ${imported.observations.length} district values from ${imported.source_name} (${imported.survey_year}). Nothing was saved.`,
+        })
+        onPreview?.(imported, file)
+      } else {
+        setFeedback({
+          type: 'success',
+          text: `Saved ${imported.observations.length} district values from ${imported.source_name} (${imported.survey_year}).`,
+        })
+        onImported?.(imported)
+      }
+
       setFile(null)
       form.reset()
       setSurveyYear('')
@@ -151,8 +163,26 @@ export default function HouseholdSurveyImportPanel({ districts, accessToken, onI
               />
             </label>
 
+            <fieldset className="survey-mode">
+              <legend>What should happen to this data?</legend>
+              <label className={mode === 'save' ? 'survey-mode-option active' : 'survey-mode-option'}>
+                <input type="radio" name="survey-mode" value="save" checked={mode === 'save'} onChange={() => setMode('save')} />
+                <span>
+                  <strong>Save and merge</strong>
+                  <small>Keep it permanently and show it with the existing data on the dashboards.</small>
+                </span>
+              </label>
+              <label className={mode === 'preview' ? 'survey-mode-option active' : 'survey-mode-option'}>
+                <input type="radio" name="survey-mode" value="preview" checked={mode === 'preview'} onChange={() => setMode('preview')} />
+                <span>
+                  <strong>View only, don't save</strong>
+                  <small>Look at this report alone. It disappears when you close the preview or reload the page.</small>
+                </span>
+              </label>
+            </fieldset>
+
             <button className="primary-button" type="submit" disabled={busy || !file}>
-              {busy ? 'Importing...' : 'Import survey'}
+              {busy ? 'Working...' : mode === 'preview' ? 'Preview survey' : 'Save survey'}
             </button>
           </form>
         </>

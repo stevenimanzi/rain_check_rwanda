@@ -32,10 +32,19 @@ class HouseholdSurveyImportController extends Controller
             'survey_year' => ['required', 'integer', 'between:1900,2100'],
             'source_name' => ['required', 'string', 'max:120'],
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:1024'],
+            // "save" stores the survey permanently; "preview" only checks and returns it, nothing is stored.
+            'mode' => ['nullable', 'in:save,preview'],
         ]);
 
         $file = $validated['file'];
         $observations = $this->parseCsv($file);
+        $sourceName = trim($validated['source_name']);
+        $surveyYear = (int) $validated['survey_year'];
+
+        if (($validated['mode'] ?? 'save') === 'preview') {
+            return response()->json(['data' => $this->formatPreview($file, $observations, $sourceName, $surveyYear)]);
+        }
+
         $fileHash = hash_file('sha256', $file->getRealPath());
 
         if ($fileHash === false) {
@@ -43,9 +52,6 @@ class HouseholdSurveyImportController extends Controller
                 'file' => 'The uploaded CSV could not be read.',
             ]);
         }
-
-        $sourceName = trim($validated['source_name']);
-        $surveyYear = (int) $validated['survey_year'];
 
         if (HouseholdSurveyImport::query()
             ->where('survey_year', $surveyYear)
@@ -174,6 +180,31 @@ class HouseholdSurveyImportController extends Controller
         } finally {
             fclose($handle);
         }
+    }
+
+    /**
+     * The same shape as a saved import, but with no id: it exists only in the response.
+     *
+     * @param  array<int, array{district_id: int, household_drought_pct: float}>  $observations
+     * @return array<string, mixed>
+     */
+    private function formatPreview(UploadedFile $file, array $observations, string $sourceName, int $surveyYear): array
+    {
+        $names = District::query()->pluck('name', 'id');
+
+        return [
+            'id' => null,
+            'preview' => true,
+            'survey_year' => $surveyYear,
+            'source_name' => $sourceName,
+            'original_filename' => Str::limit($file->getClientOriginalName(), 255, ''),
+            'created_at' => null,
+            'observations' => collect($observations)->map(fn (array $observation) => [
+                'district_id' => $observation['district_id'],
+                'district_name' => $names[$observation['district_id']] ?? '',
+                'household_drought_pct' => $observation['household_drought_pct'],
+            ])->values(),
+        ];
     }
 
     /**

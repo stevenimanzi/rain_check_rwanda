@@ -86,6 +86,99 @@ class HouseholdSurveyImportTest extends TestCase
             ->assertJsonPath('data.0.source_name', 'Future survey');
     }
 
+    public function test_preview_returns_the_survey_without_saving_it(): void
+    {
+        District::create([
+            'name' => 'Gatsibo',
+            'province' => 'Eastern',
+            'household_drought_pct' => 58.0,
+        ]);
+
+        $response = $this->withToken($this->loginToken())->post('/api/imports/household-drought', [
+            'survey_year' => 2026,
+            'source_name' => 'Preview survey',
+            'mode' => 'preview',
+            'file' => UploadedFile::fake()->createWithContent(
+                'survey.csv',
+                "district,household_drought_pct\nGatsibo,42.5\n",
+            ),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', null)
+            ->assertJsonPath('data.preview', true)
+            ->assertJsonPath('data.survey_year', 2026)
+            ->assertJsonPath('data.observations.0.district_name', 'Gatsibo')
+            ->assertJsonPath('data.observations.0.household_drought_pct', 42.5);
+        $this->assertDatabaseCount('household_survey_imports', 0);
+        $this->assertDatabaseCount('household_drought_observations', 0);
+    }
+
+    public function test_preview_still_rejects_invalid_files(): void
+    {
+        District::create([
+            'name' => 'Gatsibo',
+            'province' => 'Eastern',
+            'household_drought_pct' => 58.0,
+        ]);
+
+        $this->withToken($this->loginToken())->post('/api/imports/household-drought', [
+            'survey_year' => 2026,
+            'source_name' => 'Bad preview',
+            'mode' => 'preview',
+            'file' => UploadedFile::fake()->createWithContent(
+                'survey.csv',
+                "district,household_drought_pct\nNowhere,42.5\n",
+            ),
+        ])->assertUnprocessable()->assertJsonValidationErrors('file');
+    }
+
+    public function test_survey_comparison_uses_the_given_values_and_reports_missing_rainfall(): void
+    {
+        $district = District::create([
+            'name' => 'Gatsibo',
+            'province' => 'Eastern',
+            'household_drought_pct' => 58.0,
+        ]);
+        $other = District::create([
+            'name' => 'Huye',
+            'province' => 'Southern',
+            'household_drought_pct' => 31.0,
+        ]);
+
+        $merged = $this->postJson('/api/survey-comparison', [
+            'survey_year' => 2026,
+            'view' => 'merged',
+            'observations' => [['district_id' => $district->id, 'household_drought_pct' => 12.5]],
+        ])->assertOk()
+            ->assertJsonPath('data.window.start', '2025-04')
+            ->assertJsonPath('data.window.end', '2026-03')
+            ->assertJsonPath('data.window.complete', false);
+
+        $byId = collect($merged->json('data.districts'))->keyBy('id');
+        $this->assertEquals(12.5, $byId[$district->id]['household_drought_pct']);
+        $this->assertEquals(31.0, $byId[$other->id]['household_drought_pct']);
+
+        $imported = $this->postJson('/api/survey-comparison', [
+            'survey_year' => 2026,
+            'view' => 'imported',
+            'observations' => [['district_id' => $district->id, 'household_drought_pct' => 12.5]],
+        ])->assertOk();
+
+        $byId = collect($imported->json('data.districts'))->keyBy('id');
+        $this->assertEquals(12.5, $byId[$district->id]['household_drought_pct']);
+        $this->assertNull($byId[$other->id]['household_drought_pct']);
+    }
+
+    public function test_survey_comparison_rejects_unknown_districts_and_bad_percentages(): void
+    {
+        $this->postJson('/api/survey-comparison', [
+            'survey_year' => 2026,
+            'view' => 'merged',
+            'observations' => [['district_id' => 999, 'household_drought_pct' => 150]],
+        ])->assertUnprocessable();
+    }
+
     public function test_signing_out_invalidates_the_importer_access_token(): void
     {
         $token = $this->loginToken();

@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { fetchOverview } from './api'
+import AssistantWidget from './components/AssistantWidget'
 import Notice from './components/Notice'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
+import useAssistantChat from './components/useAssistantChat'
 import { PAGES } from './navigation'
+import AssistantPage from './pages/AssistantPage'
 import DistrictsPage from './pages/DistrictsPage'
 import InstitutionsPage from './pages/InstitutionsPage'
 import MapPage from './pages/MapPage'
@@ -17,6 +20,7 @@ export default function App() {
   const [overview, setOverview] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [error, setError] = useState(false)
+  const chat = useAssistantChat()
 
   useEffect(() => {
     fetchOverview()
@@ -35,6 +39,9 @@ export default function App() {
 
 
   const renderPage = () => {
+    if (page === 'assistant') {
+      return <AssistantPage chat={chat} />
+    }
     if (error) {
       return <Notice title="Could not load the data">The server did not answer. Please refresh the page in a minute.</Notice>
     }
@@ -61,6 +68,8 @@ export default function App() {
         <TopBar title={title} onMenuClick={() => setMenuOpen(true)} />
         <main className="content">{renderPage()}</main>
       </div>
+
+      {page !== 'assistant' && <AssistantWidget chat={chat} />}
     </div>
   )
 }

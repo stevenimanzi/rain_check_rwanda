@@ -18,6 +18,9 @@ export const fetchOverview = () => {
   return overviewRequest
 }
 
+export const sendAssistantMessages = (messages) =>
+  client.post('/assistant', { messages }).then((res) => res.data.reply)
+
 export const fetchDistricts = () => client.get('/districts').then((res) => res.data.data)
 
 export const fetchDistrict = (id) => client.get(`/districts/${id}`).then((res) => res.data.data)
@@ -36,13 +39,29 @@ export const logoutHouseholdSurveyImporter = (token) =>
     headers: { Authorization: `Bearer ${token}` },
   })
 
-export const importHouseholdSurvey = ({ file, surveyYear, sourceName, token }) => {
+// mode "save" stores the survey permanently; "preview" validates it and returns it without storing anything.
+export const importHouseholdSurvey = ({ file, surveyYear, sourceName, token, mode = 'save' }) => {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('survey_year', surveyYear)
   formData.append('source_name', sourceName)
+  formData.append('mode', mode)
 
   return client.post('/imports/household-drought', formData, {
     headers: { Authorization: `Bearer ${token}` },
   }).then((res) => res.data.data)
 }
+
+// Re-runs the satellite vs household comparison with a survey's values (saved or previewed). Nothing is stored.
+export const fetchSurveyComparison = ({ surveyYear, view, observations }, signal) =>
+  client
+    .post(
+      '/survey-comparison',
+      {
+        survey_year: surveyYear,
+        view,
+        observations: observations.map(({ district_id, household_drought_pct }) => ({ district_id, household_drought_pct })),
+      },
+      { signal },
+    )
+    .then((res) => res.data.data)

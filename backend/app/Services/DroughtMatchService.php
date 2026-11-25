@@ -81,18 +81,31 @@ class DroughtMatchService
     /**
      * Number of dry months inside the comparison window (the 12 months households were asked about).
      */
-    public function dryMonthsInWindow(Collection $series): int
+    public function dryMonthsInWindow(Collection $series, ?string $start = null, ?string $end = null): int
     {
-        $start = config('raincheck.comparison_start');
-        $end = config('raincheck.comparison_end');
-
-        return $series
-            ->filter(function (array $month) use ($start, $end) {
-                $key = sprintf('%04d-%02d', $month['year'], $month['month']);
-
-                return $key >= $start && $key <= $end && $month['satellite_drought'];
-            })
+        return $this->monthsInWindow($series, $start, $end)
+            ->filter(fn (array $month) => $month['satellite_drought'])
             ->count();
+    }
+
+    /**
+     * How many months of satellite rainfall exist inside the window (12 when the window is fully covered).
+     */
+    public function monthsAvailableInWindow(Collection $series, ?string $start = null, ?string $end = null): int
+    {
+        return $this->monthsInWindow($series, $start, $end)->count();
+    }
+
+    private function monthsInWindow(Collection $series, ?string $start, ?string $end): Collection
+    {
+        $start ??= config('raincheck.comparison_start');
+        $end ??= config('raincheck.comparison_end');
+
+        return $series->filter(function (array $month) use ($start, $end) {
+            $key = sprintf('%04d-%02d', $month['year'], $month['month']);
+
+            return $key >= $start && $key <= $end;
+        });
     }
 
     /**
