@@ -2622,6 +2622,9 @@ body {
 .district-hero {
   display: grid;
   gap: 16px;
+  background: linear-gradient(135deg, var(--card), #f4f8fc);
+  border-color: #dce7f1;
+  box-shadow: 0 12px 30px rgba(15, 42, 70, 0.06);
 }
 
 .district-back {
@@ -2661,6 +2664,7 @@ body {
 .district-hero-title h2 {
   margin: 0;
   font-size: 26px;
+  color: var(--primary);
 }
 
 .district-hero-title .muted {
@@ -2671,14 +2675,30 @@ body {
   margin: 0;
 }
 
+.district-hero .district-summary-heading {
+  margin: 0;
+  color: var(--primary);
+  font-size: 16px;
+}
+
 .district-hero .verdict {
+  display: grid;
+  gap: 4px;
   margin: 0;
   padding: 14px 16px;
   border-radius: 12px;
   background: var(--accent-soft);
   color: var(--primary);
-  font-weight: 600;
   line-height: 1.55;
+}
+
+.district-hero .verdict strong {
+  font-size: 14px;
+}
+
+.district-hero .verdict p {
+  margin: 0;
+  font-weight: 500;
 }
 
 .district-hero + * {
@@ -2686,8 +2706,42 @@ body {
 }
 
 .district-hero .stat-card {
+  display: flex;
+  min-height: 132px;
+  flex-direction: column;
+  justify-content: space-between;
   background: #fff;
+  border-color: #dce7f1;
   border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(15, 42, 70, 0.05);
+}
+
+.district-hero .stat-label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.district-hero .stat-value {
+  color: var(--primary);
+  font-size: clamp(22px, 2.4vw, 32px);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.district-hero .stat-hint {
+  line-height: 1.45;
+}
+
+.district-hero .badge {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.district-hero .chart-info {
+  margin-top: 0;
 }
 
 /* Assistant replies written in Markdown */
