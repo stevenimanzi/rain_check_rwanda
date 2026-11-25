@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchDistrictRainfall } from '../api'
 import { formatPercent } from '../utils'
 import ChartInfo from './ChartInfo'
+import ExpandableChart from './ExpandableChart'
 import DryPatternCharts from './DryPatternCharts'
 import RainDeviationChart from './RainDeviationChart'
 import RiskBadge from './RiskBadge'
@@ -88,13 +89,15 @@ export default function DistrictDetail({ district }) {
           sources={['rainfall', 'cfsva']}
         />
 
-        <h3>Rain compared to normal</h3>
-        <RainDeviationChart series={districtDetails.rainfall} />
-        <ChartInfo
-          shows={`Monthly rainfall in ${districtDetails.name} compared with normal rainfall, last 3 years.`}
-          howToRead="Each month has two bars: rainfall and the normal amount, averaged by calendar month over the last 3 years. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
-          sources={['rainfall', 'boundaries']}
-        />
+        <ExpandableChart className="chart-block">
+          <h3>Rain compared to normal</h3>
+          <RainDeviationChart series={districtDetails.rainfall} />
+          <ChartInfo
+            shows={`Monthly rainfall in ${districtDetails.name} compared with normal rainfall, last 3 years.`}
+            howToRead="Each month has two bars: rainfall and the normal amount, averaged by calendar month over the last 3 years. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
+            sources={['rainfall', 'boundaries']}
+          />
+        </ExpandableChart>
       </div>
 
       <DryPatternCharts
@@ -102,6 +105,8 @@ export default function DistrictDetail({ district }) {
         byMonth={history.by_calendar_month}
         area={districtDetails.name}
         isAverage={false}
+        districts={[districtDetails]}
+        series={districtDetails.rainfall}
       />
     </>
   )

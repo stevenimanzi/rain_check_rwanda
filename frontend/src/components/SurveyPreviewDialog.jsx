@@ -4,6 +4,7 @@ import { fetchSurveyComparison } from '../api'
 import { CHART_COLORS, monthYear } from '../utils'
 import DistrictMultiSelect from './DistrictMultiSelect'
 import DryMonthsChart from './DryMonthsChart'
+import ExpandableChart from './ExpandableChart'
 import MismatchOverview from './MismatchOverview'
 import Notice from './Notice'
 import RiskBadge from './RiskBadge'
@@ -154,7 +155,7 @@ export default function SurveyPreviewDialog({ preview, districts, saving, messag
         )}
 
         <div className="grid-2 even survey-preview-grid">
-          <div className="panel">
+          <ExpandableChart>
             <h3>Households that reported drought</h3>
             <p className="muted">
               {preview.source_name} ({preview.survey_year}), every district in the file.
@@ -165,7 +166,7 @@ export default function SurveyPreviewDialog({ preview, districts, saving, messag
               unit="% of households"
               color={CHART_COLORS.normal}
             />
-          </div>
+          </ExpandableChart>
 
           <div className="panel">
             <h3>Uploaded values</h3>

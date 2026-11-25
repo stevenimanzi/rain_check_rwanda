@@ -10,7 +10,11 @@ import {
 } from 'recharts'
 import { GRID_LINE, linesBetweenColumns } from '../chartGrid'
 import ChartLegend from './ChartLegend'
+import { useChartHeight } from './ExpandableChart'
+import { useState } from 'react'
 import { CHART_COLORS, longMonth, MONTH_NAMES, monthShort } from '../utils'
+import ChartDetailsDialog from './ChartDetailsDialog'
+import { monthColumns } from './chartDetails'
 
 const MONTHS_SHOWN = 36
 const LEGEND_ITEMS = [
@@ -19,6 +23,12 @@ const LEGEND_ITEMS = [
   { color: CHART_COLORS.dry, label: 'Rainfall at least 20% below normal' },
   { color: CHART_COLORS.skipped, label: 'Normally very dry; not assessed' },
 ]
+
+const describeChange = (point) =>
+  point.judged ? `${Math.abs(point.change).toFixed(1)}% ${point.change >= 0 ? 'above' : 'below'} normal` : '-'
+
+const describeStatus = (point) =>
+  !point.judged ? 'Not assessed (normally very dry)' : point.dry ? 'Drought month' : 'Not drought'
 
 function ChartTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
@@ -48,6 +58,9 @@ function ChartTooltip({ active, payload }) {
  * Paired bars compare monthly rainfall with normal, averaging by calendar month for multi-year ranges.
  */
 export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN }) {
+  const chartHeight = useChartHeight(300, 520)
+  const [selectedLabel, setSelectedLabel] = useState(null)
+
   const months = maxMonths > 0 ? series.slice(-maxMonths) : []
   const groupedByMonth = new Map()
 
@@ -82,6 +95,8 @@ export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN })
       }
     })
 
+  const selectedPoint = data.find((point) => point.fullLabel === selectedLabel)
+
   if (data.length === 0) {
     return (
       <>
@@ -93,7 +108,8 @@ export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN })
 
   return (
     <>
-      <ResponsiveContainer width="100%" height={300}>
+      <div className="clickable-chart">
+      <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={data} margin={{ top: 10, right: 12, left: 4, bottom: 0 }} barGap={3}>
           <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(data.length)} />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" minTickGap={24} />
@@ -104,7 +120,13 @@ export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN })
             width={56}
           />
           <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-          <Bar dataKey="rainfall" name="Monthly rainfall" maxBarSize={28} radius={[3, 3, 0, 0]}>
+          <Bar
+            dataKey="rainfall"
+            name="Monthly rainfall"
+            maxBarSize={28}
+            radius={[3, 3, 0, 0]}
+            onClick={(point) => setSelectedLabel(point.fullLabel)}
+          >
             {data.map((point) => {
               const color = !point.judged
                 ? CHART_COLORS.skipped
@@ -121,10 +143,44 @@ export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN })
             fill={CHART_COLORS.normal}
             maxBarSize={28}
             radius={[3, 3, 0, 0]}
+            onClick={(point) => setSelectedLabel(point.fullLabel)}
           />
         </BarChart>
       </ResponsiveContainer>
+      </div>
       <ChartLegend items={LEGEND_ITEMS} />
+
+      {selectedPoint && (
+        <ChartDetailsDialog
+          title={selectedPoint.fullLabel}
+          subtitle="Rainfall compared with normal. All months in this chart are listed below."
+          summary={[
+            { label: selectedPoint.isAverage ? 'Average rainfall' : 'Rainfall', value: `${selectedPoint.rainfall.toFixed(1)} mm` },
+            { label: selectedPoint.isAverage ? 'Average normal' : 'Normal', value: `${selectedPoint.normal.toFixed(1)} mm` },
+            { label: 'Compared with normal', value: describeChange(selectedPoint) },
+            { label: 'Status', value: describeStatus(selectedPoint) },
+          ]}
+          tabs={[
+            {
+              id: 'all',
+              label: 'All months',
+              columns: monthColumns(),
+              rows: data.map((point) => ({
+                id: point.fullLabel,
+                highlight: point.fullLabel === selectedPoint.fullLabel,
+                cells: {
+                  label: point.fullLabel,
+                  rainfall: `${point.rainfall.toFixed(1)} mm`,
+                  normal: `${point.normal.toFixed(1)} mm`,
+                  change: describeChange(point),
+                  status: describeStatus(point),
+                },
+              })),
+            },
+          ]}
+          onClose={() => setSelectedLabel(null)}
+        />
+      )}
     </>
   )
 }

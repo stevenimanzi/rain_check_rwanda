@@ -1,13 +1,20 @@
+import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import ChartInfo from './ChartInfo'
-import { CHART_COLORS } from '../utils'
+import ExpandableChart, { useChartHeight } from './ExpandableChart'
+import { CHART_COLORS, formatPercent } from '../utils'
+import ChartDetailsDialog from './ChartDetailsDialog'
+import { districtRow, monthColumns, monthRow } from './chartDetails'
 
 const COLORS = {
   drought: CHART_COLORS.dry,
   noDrought: CHART_COLORS.rain,
 }
 
-function PercentagePie({ label, data }) {
+// `buildDetails(sliceName)` returns the props of the table dialog shown when a slice (or legend row) is clicked.
+function PercentagePie({ label, data, buildDetails }) {
+  const height = useChartHeight(230)
+  const [selected, setSelected] = useState(null)
   const total = data.reduce((sum, item) => sum + item.value, 0)
   const chartData = total
     ? data.map((item) => ({ ...item, value: (item.value / total) * 100 }))
@@ -17,11 +24,12 @@ function PercentagePie({ label, data }) {
     <>
       {chartData.length ? (
         <div
-          className="country-pie"
+          className="country-pie clickable-chart"
+          style={{ height }}
           role="img"
           aria-label={`${label}: ${chartData.map(({ name, value }) => `${name} ${value.toFixed(1)}%`).join(', ')}`}
         >
-          <ResponsiveContainer width="100%" height={230}>
+          <ResponsiveContainer width="100%" height={height}>
             <PieChart>
               <Pie
                 data={chartData}
@@ -29,8 +37,9 @@ function PercentagePie({ label, data }) {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={88}
+                outerRadius="76.5%"
                 labelLine={false}
+                onClick={(_, index) => setSelected(chartData[index]?.name ?? null)}
                 stroke="var(--card)"
                 strokeWidth={3}
                 label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
@@ -62,12 +71,16 @@ function PercentagePie({ label, data }) {
       <ul className="pie-legend" aria-label={`${label} legend`}>
         {data.map(({ name, color, value }) => (
           <li key={name}>
-            <span className="pie-legend-swatch" style={{ backgroundColor: color }} />
-            <span>{name}</span>
-            <strong>{total ? `${((value / total) * 100).toFixed(1)}%` : '—'}</strong>
+            <button type="button" className="legend-button" onClick={() => setSelected(name)}>
+              <span className="pie-legend-swatch" style={{ backgroundColor: color }} />
+              <span>{name}</span>
+              <strong>{total ? `${((value / total) * 100).toFixed(1)}%` : '—'}</strong>
+            </button>
           </li>
         ))}
       </ul>
+
+      {selected && buildDetails && <ChartDetailsDialog {...buildDetails(selected)} onClose={() => setSelected(null)} />}
     </>
   )
 }
@@ -96,15 +109,85 @@ export default function CountryDroughtCharts({
     ? householdValues.reduce((sum, value) => sum + value, 0) / householdValues.length
     : null
 
+  // Satellite pie: the months behind the slice, then every judged month.
+  const satelliteDetails = (name) => {
+    const wantDrought = name === 'Drought'
+    const columns = monthColumns()
+    const matches = (month) => Boolean(month.satellite_drought) === wantDrought
+    const focus = satelliteMonths.filter(matches)
+
+    return {
+      title: `${name} months: ${isAllDistricts ? 'Rwanda' : area}`,
+      subtitle: `${focus.length} of ${satelliteMonths.length} judged months, ${periodLabel}`,
+      summary: [
+        { label: 'Months in this group', value: `${focus.length} of ${satelliteMonths.length}` },
+        { label: 'Share of judged months', value: `${satelliteMonths.length ? ((focus.length / satelliteMonths.length) * 100).toFixed(1) : 0}%` },
+      ],
+      tabs: [
+        { id: 'focus', label: `${name} months`, columns, rows: focus.map((month) => monthRow(month, { highlight: true })) },
+        {
+          id: 'all',
+          label: 'All judged months',
+          columns,
+          rows: satelliteMonths.map((month) => monthRow(month, { highlight: matches(month) })),
+        },
+      ],
+    }
+  }
+
+  // Household pie: every district's value, with the clicked side first.
+  const householdDetails = (name) => {
+    const reported = name === 'Reported drought'
+    const columns = [
+      { key: 'name', label: 'District' },
+      { key: 'province', label: 'Province' },
+      { key: 'reported', label: 'Reported drought' },
+      { key: 'not', label: 'Did not report drought' },
+      { key: 'source', label: 'Source' },
+    ]
+    const rowFor = (district) => ({
+      ...districtRow(district),
+      cells: {
+        name: district.name,
+        province: district.province ?? '-',
+        reported: formatPercent(district.household_drought_pct),
+        not: formatPercent(Math.round((100 - district.household_drought_pct) * 10) / 10),
+        source: district.household_source ?? '-',
+      },
+    })
+    const ranked = [...districts].sort((a, b) =>
+      reported ? b.household_drought_pct - a.household_drought_pct : a.household_drought_pct - b.household_drought_pct,
+    )
+
+    return {
+      title: `${name}: households by district`,
+      subtitle: `${districts.length} districts. ${reported ? 'Highest first' : 'Most households without drought first'}.`,
+      summary: [
+        { label: 'Average across districts', value: householdDrought === null ? '-' : `${(reported ? householdDrought : 100 - householdDrought).toFixed(1)}%` },
+        { label: 'Districts with a value', value: String(districts.length) },
+      ],
+      tabs: [
+        { id: 'ranked', label: reported ? 'Highest to lowest' : 'Lowest drought first', columns, rows: ranked.map(rowFor) },
+        {
+          id: 'alpha',
+          label: 'A to Z',
+          columns,
+          rows: [...districts].sort((a, b) => a.name.localeCompare(b.name)).map(rowFor),
+        },
+      ],
+    }
+  }
+
   return (
     <div className="grid-2 even country-pies">
-      <section className="panel">
+      <ExpandableChart as="section">
         <h3>How many months did the satellite see drought in {isAllDistricts ? 'Rwanda' : area}?</h3>
         <p className="muted">
           {satelliteDrought} of {satelliteMonths.length} months judged were drought months, {periodLabel}.
         </p>
         <PercentagePie
           label="Satellite rainfall"
+          buildDetails={satelliteDetails}
           data={[
             { name: 'Drought', value: satelliteDrought, color: COLORS.drought },
             { name: 'Not drought', value: satelliteMonths.length - satelliteDrought, color: COLORS.noDrought },
@@ -121,9 +204,9 @@ export default function CountryDroughtCharts({
           howToRead="Red is drought months, blue is months that were not drought. Drought means at least 20% less rain than normal; months that are normally very dry (June to August) are not judged."
           sources={['rainfall']}
         />
-      </section>
+      </ExpandableChart>
 
-      <section className="panel">
+      <ExpandableChart as="section">
         <h3>How many households said drought hurt them{isAllDistricts ? '' : ` in ${area}`}?</h3>
         <p className="muted">
           {householdDrought === null
@@ -134,6 +217,7 @@ export default function CountryDroughtCharts({
         </p>
         <PercentagePie
           label="Household drought reports"
+          buildDetails={householdDetails}
           data={[
             {
               name: 'Reported drought',
@@ -157,7 +241,7 @@ export default function CountryDroughtCharts({
           sourceLabel={householdSourceName}
           sources={includeCfsvaSource ? ['cfsva'] : []}
         />
-      </section>
+      </ExpandableChart>
     </div>
   )
 }

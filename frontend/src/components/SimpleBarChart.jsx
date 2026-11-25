@@ -2,11 +2,14 @@ import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Too
 import { GRID_LINE, linesBetweenColumns } from '../chartGrid'
 import { CHART_COLORS } from '../utils'
 import ChartLegend from './ChartLegend'
+import { useChartHeight } from './ExpandableChart'
 
 /**
  * Plain bar chart. Each item is { label, fullLabel, value } where a null value means "not judged".
  */
-export default function SimpleBarChart({ data, color, unit = '', height = 240, legendLabel = 'Value' }) {
+export default function SimpleBarChart({ data, color, unit = '', height = 240, legendLabel = 'Value', onBarClick }) {
+  const chartHeight = useChartHeight(height, 520)
+
   const rows = data.map((item) => ({
     ...item,
     shown: item.value ?? 0,
@@ -43,13 +46,14 @@ export default function SimpleBarChart({ data, color, unit = '', height = 240, l
 
   return (
     <>
-      <ResponsiveContainer width="100%" height={height}>
+      <div className={onBarClick ? 'clickable-chart' : undefined}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={rows} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(rows.length)} />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
           <YAxis tick={{ fontSize: 11 }} width={36} allowDecimals={false} />
           <Tooltip content={tooltip} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-          <Bar dataKey="shown" radius={[3, 3, 0, 0]}>
+          <Bar dataKey="shown" radius={[3, 3, 0, 0]} onClick={onBarClick}>
             {rows.map((row) => (
               <Cell
                 key={row.label}
@@ -60,6 +64,7 @@ export default function SimpleBarChart({ data, color, unit = '', height = 240, l
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      </div>
       <ChartLegend items={legendItems} />
     </>
   )

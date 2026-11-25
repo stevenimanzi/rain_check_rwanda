@@ -12,6 +12,7 @@ import CountryDroughtCharts from '../components/CountryDroughtCharts'
 import DistrictMultiSelect from '../components/DistrictMultiSelect'
 import DryMonthsChart from '../components/DryMonthsChart'
 import DryPatternCharts from '../components/DryPatternCharts'
+import ExpandableChart from '../components/ExpandableChart'
 import GapChart from '../components/GapChart'
 import HouseholdSurveyImportPanel from '../components/HouseholdSurveyImportPanel'
 import MismatchOverview from '../components/MismatchOverview'
@@ -658,13 +659,13 @@ export default function OverviewPage({ districts, overview }) {
             tag={isSingleDistrict ? area : 'One bar per district'}
             description="Which districts are driest, report the most drought, or show the biggest gap."
           >
-          <div className="panel">
+          <ExpandableChart>
             <h3>{isAllDistricts ? 'Where the satellite and households disagree' : `Satellite and households in ${area}`}</h3>
             <p className="muted">
               This comparison uses the household survey period ({surveyPeriod}), regardless of the selected satellite years.
               Red: households reported more drought; blue: satellite rainfall indicated more drought.
             </p>
-            <GapChart districts={activeDistricts} />
+            <GapChart districts={activeDistricts} period={surveyPeriod} />
             <ChartInfo
               shows={`Each district is ranked on satellite dry months and households reporting drought for ${surveyPeriod}. The bar is the difference between those ranks. ${
                 isSingleDistrict
@@ -676,16 +677,17 @@ export default function OverviewPage({ districts, overview }) {
               howToRead="A short bar means the two agree. A long red bar means households reported drought that the satellite missed; a long blue bar means satellite rainfall indicated drought that fewer households reported."
               sources={['rainfall', 'cfsva']}
             />
-          </div>
+          </ExpandableChart>
 
           <div className="grid-2 even">
-            <div className="panel">
+            <ExpandableChart>
               <h3>Dry months seen by the satellite</h3>
               <p className="muted">
                 {isAllDistricts ? 'All 30 districts' : area}, {surveyPeriodLong}.
               </p>
               <DryMonthsChart
                 districts={activeDistricts}
+                period={surveyPeriod}
                 getValue={(district) => district.summary.satellite_drought_months}
                 unit="dry months"
                 color={CHART_COLORS.dry}
@@ -695,14 +697,15 @@ export default function OverviewPage({ districts, overview }) {
                 howToRead="A longer bar means more dry months. This comparison stays on the survey period so it can be compared with household reports."
                 sources={['rainfall', 'boundaries']}
               />
-            </div>
+            </ExpandableChart>
 
-            <div className="panel">
+            <ExpandableChart>
               <h3>Households that reported drought</h3>
               <p className="muted">{householdSurveyLabel}.</p>
               {householdChartDistricts.length ? (
                 <DryMonthsChart
                   districts={householdChartDistricts}
+                  period={surveyPeriod}
                   getValue={(district) => district.household_drought_pct}
                   unit="% of households"
                   color={CHART_COLORS.normal}
@@ -720,16 +723,17 @@ export default function OverviewPage({ districts, overview }) {
                 }
                 sources={surveyView === 'imported' ? [] : ['cfsva']}
               />
-            </div>
+            </ExpandableChart>
           </div>
 
-          <div className="panel">
+          <ExpandableChart>
             <h3>Average dry months per year</h3>
             <p className="muted">
               Districts ranked from most to fewest for {periodLabel}. Longer bars mean more dry months.
             </p>
             <DryMonthsChart
               districts={filteredDistricts}
+              period={surveyPeriod}
               getValue={(district) => district.filtered_avg_dry_months}
               unit="months per year"
               color={CHART_COLORS.rain}
@@ -739,7 +743,7 @@ export default function OverviewPage({ districts, overview }) {
               howToRead="A longer bar means the district was dry more often during the selected years."
               sources={['rainfall', 'boundaries']}
             />
-          </div>
+          </ExpandableChart>
           </ChartSection>
 
           <ChartSection
@@ -748,7 +752,7 @@ export default function OverviewPage({ districts, overview }) {
             tag={combinedTag}
             description="Whether each month, year and season was wetter or drier than normal."
           >
-          <div className="panel">
+          <ExpandableChart>
             <h3>Was each month wetter or drier than normal?</h3>
             <p className="muted">
               {isSingleDistrict
@@ -762,7 +766,7 @@ export default function OverviewPage({ districts, overview }) {
               howToRead="Each month has two bars: rainfall and the normal amount. For a multi-year range, each bar is the average for that calendar month. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
               sources={['rainfall', 'boundaries']}
             />
-          </div>
+          </ExpandableChart>
 
           <DryPatternCharts
             byYear={byYear}
@@ -773,6 +777,8 @@ export default function OverviewPage({ districts, overview }) {
             isAllDistricts={isAllDistricts}
             startYear={startYear}
             endYear={endYear}
+            districts={activeDistricts}
+            series={filteredSeries}
           />
           </ChartSection>
         </>
