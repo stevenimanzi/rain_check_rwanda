@@ -1,5 +1,6 @@
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid'
 import { useEffect, useRef, useState } from 'react'
+import AssistantMarkdown from './AssistantMarkdown'
 
 const SUGGESTIONS = [
   'What does this project show?',
@@ -49,7 +50,7 @@ export default function AssistantChat({ chat, compact = false }) {
 
         {messages.map((message, index) => (
           <div key={index} className={`assistant-message ${message.role}`} translate="no">
-            {message.content}
+            {message.role === 'assistant' ? <AssistantMarkdown>{message.content}</AssistantMarkdown> : message.content}
           </div>
         ))}
 
