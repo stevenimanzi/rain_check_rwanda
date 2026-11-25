@@ -3,13 +3,13 @@ import {
   ArrowUpTrayIcon,
   CalendarDaysIcon,
   ChevronDownIcon,
-  MagnifyingGlassIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { fetchDistrictRainfall, fetchHouseholdSurveyImports, fetchSurveyComparison, importHouseholdSurvey } from '../api'
 import ChartInfo from '../components/ChartInfo'
 import ChartSection from '../components/ChartSection'
 import CountryDroughtCharts from '../components/CountryDroughtCharts'
+import DistrictMultiSelect from '../components/DistrictMultiSelect'
 import DryMonthsChart from '../components/DryMonthsChart'
 import DryPatternCharts from '../components/DryPatternCharts'
 import GapChart from '../components/GapChart'
@@ -18,19 +18,13 @@ import MismatchOverview from '../components/MismatchOverview'
 import Notice from '../components/Notice'
 import RainDeviationChart from '../components/RainDeviationChart'
 import StatCard from '../components/StatCard'
-import { CHART_COLORS, RISK_LABELS } from '../utils'
+import SurveyPreviewDialog from '../components/SurveyPreviewDialog'
+import { CHART_COLORS, RISK_LABELS, monthYear } from '../utils'
 
 const matchText = (value) => {
   if (value === null) return ''
   const strength = Math.abs(value) < 0.3 ? 'only a little' : Math.abs(value) < 0.6 ? 'fairly well' : 'very well'
   return `Overall, the satellite and households match ${strength} (match score ${value}, where 1 is a perfect match and 0 is no match).`
-}
-
-// "2025-04" -> "Apr 2025" (or "April 2025")
-const monthYear = (key, month = 'short') => {
-  const [year, number] = key.split('-').map(Number)
-
-  return new Date(year, number - 1).toLocaleString('en', { month, year: 'numeric' })
 }
 
 const average = (values) => (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null)
@@ -98,80 +92,6 @@ const aggregateYearlyHistory = (districtDetails) => {
       year: group.year,
       dry_months: Math.round(average(group.dryMonths) * 10) / 10,
     }))
-}
-
-function DistrictMultiSelect({ districts, selectedIds, onChange }) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const ref = useRef(null)
-  const allSelected = selectedIds === null
-  const selectedCount = allSelected ? districts.length : selectedIds.length
-  const summary = allSelected
-    ? 'All districts'
-    : selectedIds.length === 0
-      ? 'No districts selected'
-      : selectedIds.length === 1
-        ? districts.find((district) => district.id === selectedIds[0])?.name ?? '1 district selected'
-        : `${selectedIds.length} districts selected`
-
-  useEffect(() => {
-    const dismiss = (event) => {
-      if (!ref.current?.contains(event.target)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', dismiss)
-    return () => document.removeEventListener('pointerdown', dismiss)
-  }, [])
-
-  const toggle = (id) => {
-    const activeIds = allSelected ? districts.map((district) => district.id) : selectedIds
-    const next = activeIds.includes(id) ? activeIds.filter((selectedId) => selectedId !== id) : [...activeIds, id]
-    onChange(next.length === districts.length ? null : next)
-  }
-
-  const visibleDistricts = districts.filter((district) =>
-    district.name.toLowerCase().includes(search.trim().toLowerCase()),
-  )
-
-  return (
-    <div className="filter-field district-filter">
-      <span>Districts</span>
-      <div className="district-picker" ref={ref}>
-        <button type="button" className="district-picker-trigger" aria-haspopup="true" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
-          <span className="district-picker-summary">{summary}</span>
-          <span className="district-picker-count">{selectedCount}/{districts.length}</span>
-          <ChevronDownIcon className={`custom-select-chevron ${open ? 'open' : ''}`} />
-        </button>
-        {open && (
-          <div className="district-picker-options" role="group" aria-label="Select districts">
-            <div className="district-picker-search">
-              <MagnifyingGlassIcon className="icon" />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search districts" autoFocus />
-            </div>
-            <div className="district-picker-actions">
-              <span>{selectedCount} of {districts.length} selected</span>
-              <div className="district-picker-action-buttons">
-                <button type="button" className="district-picker-all" disabled={allSelected} onClick={() => onChange(null)}>Select all</button>
-                <button type="button" className="district-picker-clear" disabled={selectedCount === 0} onClick={() => onChange([])}>Clear</button>
-              </div>
-            </div>
-            <div className="district-picker-list">
-              {visibleDistricts.map((district) => (
-                <label key={district.id}>
-                  <input
-                    type="checkbox"
-                    checked={allSelected || selectedIds.includes(district.id)}
-                    onChange={() => toggle(district.id)}
-                  />
-                  <span>{district.name}</span>
-                </label>
-              ))}
-              {visibleDistricts.length === 0 && <div className="district-picker-empty">No districts found</div>}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
 }
 
 function CustomSelect({ label, value, options, onChange, className = '' }) {
@@ -299,14 +219,12 @@ export default function OverviewPage({ districts, overview }) {
     if (importFormOpen && dialog && !dialog.open) dialog.showModal()
   }, [importFormOpen])
 
-  // 'baseline' = the original CFSVA 2024 values only; 'preview' = the unsaved preview; otherwise a saved import.
+  // 'baseline' = the original CFSVA 2024 values only; otherwise a saved import (the latest by default).
   const selectedImport = selectedImportId === 'baseline'
     ? null
-    : selectedImportId === 'preview' && previewImport
-      ? previewImport
-      : surveyImports.find((surveyImport) => String(surveyImport.id) === selectedImportId) ?? surveyImports[0] ?? null
+    : surveyImports.find((surveyImport) => String(surveyImport.id) === selectedImportId) ?? surveyImports[0] ?? null
   const comparisonKey = selectedImport
-    ? `${selectedImport.id ?? 'preview'}:${selectedImport.survey_year}:${surveyView}:${selectedImport.observations.length}`
+    ? `${selectedImport.id}:${selectedImport.survey_year}:${surveyView}:${selectedImport.observations.length}`
     : null
 
   useEffect(() => {
@@ -454,13 +372,11 @@ export default function OverviewPage({ districts, overview }) {
     setSurveyImportsError(null)
   }
 
-  // View only: show the survey on its own, without saving it. It is dropped when the preview is closed.
+  // View only: the survey opens in its own large dialog and never touches the dashboards or the database.
   const handlePreview = (preview, file) => {
     setPreviewImport(preview)
     setPreviewFile(file)
     setPreviewMessage(null)
-    setSelectedImportId('preview')
-    setSurveyView('imported')
     setImportFormOpen(false)
   }
 
@@ -468,9 +384,6 @@ export default function OverviewPage({ districts, overview }) {
     setPreviewImport(null)
     setPreviewFile(null)
     setPreviewMessage(null)
-    setComparison(null)
-    setSelectedImportId('')
-    setSurveyView('merged')
   }
 
   // Turns the previewed file into a permanent, merged import.
@@ -478,8 +391,7 @@ export default function OverviewPage({ districts, overview }) {
     if (!previewImport || !previewFile) return
 
     if (!importAccessToken) {
-      setPreviewMessage('Sign in to save this survey.')
-      setImportFormOpen(true)
+      setPreviewMessage('Your sign-in expired. Close this preview, sign in again and upload the file once more to save it.')
       return
     }
 
@@ -501,7 +413,11 @@ export default function OverviewPage({ districts, overview }) {
       setSurveyView('merged')
     } catch (error) {
       if (error.response?.status === 401) setImportAccessToken('')
-      setPreviewMessage(error.response?.data?.message || 'The survey could not be saved. Try again.')
+      setPreviewMessage(
+        error.response?.status === 401
+          ? 'Your sign-in expired. Close this preview, sign in again and upload the file once more to save it.'
+          : error.response?.data?.message || 'The survey could not be saved. Try again.',
+      )
     } finally {
       setPreviewSaving(false)
     }
@@ -569,7 +485,7 @@ export default function OverviewPage({ districts, overview }) {
             <ArrowUpTrayIcon className="icon" />
             Import survey data
           </button>
-          {(surveyImports.length > 0 || previewImport) && (
+          {surveyImports.length > 0 && (
             <>
               <CustomSelect
                 label="Household survey view"
@@ -584,12 +500,9 @@ export default function OverviewPage({ districts, overview }) {
               <CustomSelect
                 label="Survey upload"
                 className="survey-source-select"
-                value={selectedImport ? (selectedImport.id === null ? 'preview' : selectedImport.id) : 'baseline'}
+                value={selectedImport ? selectedImport.id : 'baseline'}
                 options={[
                   { value: 'baseline', label: 'CFSVA 2024 only (original)' },
-                  ...(previewImport
-                    ? [{ value: 'preview', label: `Preview: ${previewImport.source_name} (${previewImport.survey_year}), not saved` }]
-                    : []),
                   ...surveyImports.map((surveyImport) => ({
                     value: surveyImport.id,
                     label: `${surveyImport.source_name} (${surveyImport.survey_year})`,
@@ -626,7 +539,13 @@ export default function OverviewPage({ districts, overview }) {
             if (event.key === 'Escape') setImportFormOpen(false)
           }}
           onClick={(event) => {
-            if (event.target === event.currentTarget) setImportFormOpen(false)
+            // Clicks inside the dialog (including its padding) never close it; only clicks on the backdrop do.
+            const box = event.currentTarget.getBoundingClientRect()
+            const inside =
+              event.clientX >= box.left && event.clientX <= box.right &&
+              event.clientY >= box.top && event.clientY <= box.bottom
+
+            if (!inside) setImportFormOpen(false)
           }}
         >
           <button
@@ -649,21 +568,14 @@ export default function OverviewPage({ districts, overview }) {
       )}
 
       {previewImport && (
-        <div className="survey-preview-banner" role="status">
-          <div>
-            <strong>Preview, not saved.</strong> You are viewing {previewImport.source_name} ({previewImport.survey_year}){' '}
-            on its own. It is not stored and disappears when you close the preview or reload the page.
-            {previewMessage && <span className="survey-preview-error"> {previewMessage}</span>}
-          </div>
-          <div className="survey-preview-actions">
-            <button type="button" className="primary-button" onClick={savePreview} disabled={previewSaving}>
-              {previewSaving ? 'Saving...' : 'Save and merge'}
-            </button>
-            <button type="button" className="survey-preview-close" onClick={closePreview} disabled={previewSaving}>
-              Close preview
-            </button>
-          </div>
-        </div>
+        <SurveyPreviewDialog
+          preview={previewImport}
+          districts={districts}
+          saving={previewSaving}
+          message={previewMessage}
+          onSave={savePreview}
+          onClose={closePreview}
+        />
       )}
       {comparisonUnavailable && (
         <Notice title="No satellite rainfall for this survey's period yet">

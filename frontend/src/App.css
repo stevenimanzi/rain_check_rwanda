@@ -757,11 +757,40 @@ body {
 }
 
 .survey-import-form {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
   margin-top: 16px;
+}
+
+.survey-import-form > .survey-mode,
+.survey-import-form > button {
+  grid-column: 1 / -1;
+}
+
+.survey-import-form > button {
+  justify-self: start;
+}
+
+/* Survey year, source name and CSV file: same height, border and background, in one row */
+.survey-import-form .filter-field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 52px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .survey-import-form {
+    grid-template-columns: 1fr;
+  }
 }
 
 .survey-login-form {
@@ -782,20 +811,49 @@ body {
 }
 
 .survey-import-form input[type='file'] {
-  max-width: 290px;
+  /* 52px field; a 36px button leaves 16px, shared as 8px above and below */
+  padding: 8px 8px;
+  color: var(--muted);
   font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.survey-import-form input[type='file']::file-selector-button {
+  box-sizing: border-box;
+  height: 36px;
+  margin-right: 12px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.survey-import-form input[type='file']::file-selector-button:hover {
+  background: #163f75;
 }
 
 .survey-import-form button,
 .survey-login-form button {
-  padding: 9px 14px;
+  padding: 11px 20px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--accent);
   color: #fff;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.survey-import-form button:hover:not(:disabled),
+.survey-login-form button:hover:not(:disabled) {
+  background: #163f75;
 }
 
 .survey-import-form button:disabled,
@@ -854,48 +912,155 @@ body {
   line-height: 1.4;
 }
 
-.survey-preview-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 14px 18px;
-  border-radius: 14px;
-  background: #fff7e6;
-  color: #7a4b00;
-  font-size: 14px;
+.survey-preview-dialog {
+  position: fixed;
+  width: 97vw;
+  height: 96vh;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
 }
 
-.survey-preview-error {
-  color: var(--risk-high);
+.survey-preview-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.survey-preview-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(2px);
+}
+
+.survey-preview-header {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  background: var(--primary);
+  color: #fff;
+}
+
+.survey-preview-header h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 22px;
+}
+
+.survey-preview-header p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  opacity: 0.92;
+}
+
+.survey-preview-tag {
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 12px;
   font-weight: 600;
 }
 
 .survey-preview-actions {
   display: flex;
-  gap: 8px;
+  flex: none;
+  align-items: center;
+  gap: 10px;
 }
 
-.survey-preview-actions button {
-  padding: 8px 14px;
+.survey-preview-save {
+  padding: 9px 16px;
   border: 0;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--primary);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 
-.survey-preview-actions .survey-preview-close {
-  background: #fff;
-  color: var(--primary);
+.survey-preview-x {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
 }
 
-.survey-preview-actions button:disabled {
+.survey-preview-x .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.survey-preview-save:disabled,
+.survey-preview-x:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.survey-preview-filter {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 24px 0;
+}
+
+.survey-preview-filter .district-filter {
+  min-width: 260px;
+}
+
+/* Hide the "Districts" label visually (screen readers still read it) */
+.survey-preview-filter .district-filter > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.survey-preview-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.survey-preview-grid {
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .survey-preview-dialog {
+    width: 98vw;
+    height: 97vh;
+  }
+
+  .survey-preview-header {
+    flex-wrap: wrap;
+  }
 }
 
 .survey-import-account {
@@ -903,19 +1068,27 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 16px;
-  color: var(--muted);
+  margin-top: 20px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
   font-size: 13px;
 }
 
 .survey-sign-out {
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--card);
-  color: var(--muted);
+  padding: 6px 12px;
+  border: 1px solid #c5d6e4;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary);
   cursor: pointer;
   font: inherit;
+  font-weight: 600;
+}
+
+.survey-sign-out:hover:not(:disabled) {
+  background: var(--card);
 }
 
 .survey-template {

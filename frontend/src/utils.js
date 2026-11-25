@@ -10,6 +10,13 @@ export const shortMonth = (item) =>
 export const longMonth = (item) =>
   new Date(item.year, item.month - 1).toLocaleString('en', { month: 'long', year: 'numeric' })
 
+// "2025-04" -> "Apr 2025" (or "April 2025" with month = 'long')
+export const monthYear = (key, month = 'short') => {
+  const [year, number] = key.split('-').map(Number)
+
+  return new Date(year, number - 1).toLocaleString('en', { month, year: 'numeric' })
+}
+
 export const RISK_LABELS = {
   low: 'Low',
   medium: 'Medium',

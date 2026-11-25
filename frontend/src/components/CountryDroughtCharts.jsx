@@ -1,5 +1,5 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { SOURCES } from '../sources'
+import ChartInfo from './ChartInfo'
 import { CHART_COLORS } from '../utils'
 
 const COLORS = {
@@ -110,17 +110,17 @@ export default function CountryDroughtCharts({
             { name: 'Not drought', value: satelliteMonths.length - satelliteDrought, color: COLORS.noDrought },
           ]}
         />
-        <p className="pie-note">
-          {isAllDistricts
-            ? 'Each month uses average rainfall across all 30 districts. '
-            : isSingleDistrict
-              ? `Uses ${area}'s monthly rainfall. `
-              : `Uses average monthly rainfall across ${districtCount} selected districts. `}
-          Drought means at least 20% below normal; normally very dry months are excluded.
-        </p>
-        <a className="pie-source" href={SOURCES.rainfall.url} target="_blank" rel="noreferrer">
-          Source: {SOURCES.rainfall.type}: {SOURCES.rainfall.label}
-        </a>
+        <ChartInfo
+          shows={`The share of months in ${periodLabel} that the satellite judged to be drought months. ${
+            isAllDistricts
+              ? 'Each month uses average rainfall across all 30 districts.'
+              : isSingleDistrict
+                ? `It uses ${area}'s monthly rainfall.`
+                : `Each month uses average rainfall across ${districtCount} selected districts.`
+          }`}
+          howToRead="Red is drought months, blue is months that were not drought. Drought means at least 20% less rain than normal; months that are normally very dry (June to August) are not judged."
+          sources={['rainfall']}
+        />
       </section>
 
       <section className="panel">
@@ -147,17 +147,16 @@ export default function CountryDroughtCharts({
             },
           ]}
         />
-        <p className="pie-note">
-          {isSingleDistrict
-            ? householdSurveyNote
-            : `Equal-weighted average of ${householdValues.length} available district percentages, not a population-weighted national estimate. ${householdSurveyNote}`}
-        </p>
-        {includeCfsvaSource && (
-          <a className="pie-source" href={SOURCES.cfsva.url} target="_blank" rel="noreferrer">
-            Source: {SOURCES.cfsva.type}: {SOURCES.cfsva.label}
-          </a>
-        )}
-        {householdSourceName && <p className="pie-source">Imported source: {householdSourceName}</p>}
+        <ChartInfo
+          shows={
+            isSingleDistrict
+              ? householdSurveyNote
+              : `Equal-weighted average of ${householdValues.length} available district percentages, not a population-weighted national estimate. ${householdSurveyNote}`
+          }
+          howToRead="Red is the share of households that reported drought; blue is the share that did not."
+          sourceLabel={householdSourceName}
+          sources={includeCfsvaSource ? ['cfsva'] : []}
+        />
       </section>
     </div>
   )

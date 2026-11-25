@@ -122,12 +122,6 @@ export default function HouseholdSurveyImportPanel({ districts, accessToken, onI
 
       {accessToken ? (
         <>
-          <div className="survey-import-account">
-            <span>Signed in to upload surveys</span>
-            <button type="button" className="survey-sign-out" onClick={signOut} disabled={busy}>
-              Sign out
-            </button>
-          </div>
           <form className="survey-import-form" onSubmit={submit}>
             <label className="filter-field">
               <span>Survey year</span>
@@ -149,7 +143,7 @@ export default function HouseholdSurveyImportPanel({ districts, accessToken, onI
                 required
                 value={sourceName}
                 onChange={(event) => setSourceName(event.target.value)}
-                placeholder="e.g. Household survey 2025"
+                placeholder="e.g. Household survey"
               />
             </label>
 
@@ -219,6 +213,15 @@ export default function HouseholdSurveyImportPanel({ districts, accessToken, onI
         <p className={`survey-feedback ${feedback.type}`} role={feedback.type === 'error' ? 'alert' : 'status'}>
           {feedback.text}
         </p>
+      )}
+
+      {accessToken && (
+        <div className="survey-import-account">
+          <span>Signed in to upload surveys</span>
+          <button type="button" className="survey-sign-out" onClick={signOut} disabled={busy}>
+            Sign out
+          </button>
+        </div>
       )}
     </div>
   )
