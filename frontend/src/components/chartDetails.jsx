@@ -17,7 +17,6 @@ export const districtColumns = (districts, period) => {
     ...(hasSummary
       ? [
           { key: 'dry', label: period ? `Dry months, ${period}` : 'Dry months in the survey period' },
-          { key: 'avg', label: 'Dry months each year' },
           { key: 'gap', label: 'Gap with households' },
           { key: 'risk', label: 'Mismatch risk' },
         ]
@@ -33,7 +32,6 @@ export const districtRow = (district, highlight = false) => ({
     province: district.province ?? '-',
     household: formatPercent(district.household_drought_pct),
     dry: district.summary?.satellite_drought_months ?? '-',
-    avg: district.summary?.avg_dry_months_per_year ?? '-',
     gap: district.summary?.basis_risk_pct != null ? `${district.summary.basis_risk_pct} points` : '-',
     risk: district.summary?.risk_level ? <RiskBadge level={district.summary.risk_level} /> : '-',
   },

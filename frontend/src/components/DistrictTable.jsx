@@ -48,7 +48,6 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
               <th>District</th>
               <th>Province</th>
               <th>Households that reported drought</th>
-              <th>Dry months each year</th>
               <th>Dry months, Apr 2023 to Mar 2024</th>
               <th>Gap with households</th>
               <th>Mismatch risk</th>
@@ -64,7 +63,6 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
                 <td>{district.name}</td>
                 <td>{district.province}</td>
                 <td>{formatPercent(district.household_drought_pct)}</td>
-                <td>{district.summary.avg_dry_months_per_year}</td>
                 <td>{district.summary.satellite_drought_months}</td>
                 <td>{district.summary.basis_risk_pct} points</td>
                 <td>
@@ -74,7 +72,7 @@ export default function DistrictTable({ districts, selectedId, onSelect }) {
             ))}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={7}>No districts match.</td>
+                <td colSpan={6}>No districts match.</td>
               </tr>
             )}
           </tbody>

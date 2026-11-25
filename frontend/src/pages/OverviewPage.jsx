@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowUpTrayIcon,
-  CalendarDaysIcon,
   ChevronDownIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
@@ -11,7 +10,6 @@ import ChartSection from '../components/ChartSection'
 import CountryDroughtCharts from '../components/CountryDroughtCharts'
 import DistrictMultiSelect from '../components/DistrictMultiSelect'
 import DryMonthsChart from '../components/DryMonthsChart'
-import DryPatternCharts from '../components/DryPatternCharts'
 import ExpandableChart from '../components/ExpandableChart'
 import GapChart from '../components/GapChart'
 import HouseholdSurveyImportPanel from '../components/HouseholdSurveyImportPanel'
@@ -29,19 +27,6 @@ const matchText = (value) => {
 }
 
 const average = (values) => (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null)
-
-const calendarMonthShares = (series) =>
-  Array.from({ length: 12 }, (_, index) => {
-    const month = index + 1
-    const judged = series.filter((item) => item.month === month && item.judged)
-
-    return {
-      month,
-      dry_pct: judged.length
-        ? Math.round((judged.filter((item) => item.satellite_drought).length / judged.length) * 1000) / 10
-        : null,
-    }
-  })
 
 const aggregateRainfall = (districtDetails, settings) => {
   const grouped = new Map()
@@ -74,25 +59,6 @@ const aggregateRainfall = (districtDetails, settings) => {
         satellite_drought: judged && rainfallDeficit >= settings.rainfall_deficit_threshold,
       }
     })
-}
-
-const aggregateYearlyHistory = (districtDetails) => {
-  const grouped = new Map()
-
-  districtDetails.forEach((district) => {
-    district.history.by_year.forEach((row) => {
-      const group = grouped.get(row.year) ?? { year: row.year, dryMonths: [] }
-      group.dryMonths.push(Number(row.dry_months))
-      grouped.set(row.year, group)
-    })
-  })
-
-  return [...grouped.values()]
-    .sort((a, b) => a.year - b.year)
-    .map((group) => ({
-      year: group.year,
-      dry_months: Math.round(average(group.dryMonths) * 10) / 10,
-    }))
 }
 
 function CustomSelect({ label, value, options, onChange, className = '' }) {
@@ -142,7 +108,7 @@ function CustomSelect({ label, value, options, onChange, className = '' }) {
 
 // lockedDistrictId: show this page for one district only (used by the Districts page); the district picker is hidden.
 export default function OverviewPage({ districts, overview, lockedDistrictId = null }) {
-  const { national, by_year: countryByYear, rank_correlation: matchScore } = overview
+  const { national, rank_correlation: matchScore } = overview
   const [surveyImports, setSurveyImports] = useState([])
   const [surveyImportsError, setSurveyImportsError] = useState(null)
   const [selectedImportId, setSelectedImportId] = useState('')
@@ -156,20 +122,10 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
   const [previewMessage, setPreviewMessage] = useState(null)
   const [comparison, setComparison] = useState(null)
   const importDialogRef = useRef(null)
-  const rainfallYears = [...new Set(national.map((month) => month.year))].sort((a, b) => a - b)
-  const availableYears = [...new Set([
-    ...national.map((month) => month.year),
-    ...surveyImports.map((surveyImport) => Number(surveyImport.survey_year)),
-  ])].sort((a, b) => a - b)
-  const yearOptions = rainfallYears.length ? rainfallYears : availableYears
-  const [selectedYears, setSelectedYears] = useState(null)
-  const defaultStartYear = yearOptions[0]
-  const defaultEndYear = yearOptions[yearOptions.length - 1]
-  const startYear = selectedYears?.start ?? defaultStartYear
-  const endYear = selectedYears?.end ?? defaultEndYear
   const [selectedDistrictIds, setSelectedDistrictIds] = useState(lockedDistrictId ? [lockedDistrictId] : null)
   const [districtRainfall, setDistrictRainfall] = useState({})
   const [districtError, setDistrictError] = useState(null)
+  const [countryRainfall, setCountryRainfall] = useState({ key: null, series: null, error: null })
 
   useEffect(() => {
     let active = true
@@ -185,36 +141,6 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
       active = false
     }
   }, [])
-
-  useEffect(() => {
-    if (selectedDistrictIds === null || selectedDistrictIds.length === 0) return undefined
-
-    let active = true
-    const controller = new AbortController()
-    const missingIds = selectedDistrictIds.filter((id) => districtRainfall[id] === undefined)
-    if (missingIds.length === 0) return undefined
-
-    const timer = setTimeout(() => {
-      fetchDistrictRainfall(missingIds, controller.signal)
-        .then((details) => {
-          if (active) {
-            setDistrictRainfall((current) => ({
-              ...current,
-              ...Object.fromEntries(details.map(({ id, rainfall }) => [id, rainfall])),
-            }))
-          }
-        })
-        .catch((error) => {
-          if (active) setDistrictError(error.message || 'The selected district data could not be loaded.')
-        })
-    }, 150)
-
-    return () => {
-      active = false
-      clearTimeout(timer)
-      controller.abort()
-    }
-  }, [selectedDistrictIds, districtRainfall])
 
   useEffect(() => {
     const dialog = importDialogRef.current
@@ -251,13 +177,97 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
       controller.abort()
     }
     // selectedImport is identified by comparisonKey; its values do not change without the key changing.
-  }, [comparisonKey])
+  }, [comparisonKey, selectedImport, surveyView])
 
   // The comparison replaces the original one only once it matches the chosen survey and has satellite rainfall
   // for the survey's period; otherwise the dashboards keep using CFSVA 2024 for the mismatch charts.
   const surveyComparison = comparisonKey && comparison?.key === comparisonKey && !comparison.failed ? comparison : null
   const comparisonActive = Boolean(surveyComparison?.window.complete)
   const comparisonUnavailable = Boolean(selectedImport) && Boolean(surveyComparison) && !surveyComparison.window.complete
+  const comparisonWindow = comparisonActive ? surveyComparison.window : overview.window
+  const windowKey = `${comparisonWindow.start}:${comparisonWindow.end}`
+  const districtRequestKey = `${windowKey}:${selectedDistrictIds?.join(',') ?? ''}`
+  const currentDistrictError = districtError?.key === districtRequestKey ? districtError.message : null
+  const isDefaultWindow =
+    comparisonWindow.start === overview.window.start && comparisonWindow.end === overview.window.end
+  const surveyPeriod = `${monthYear(comparisonWindow.start)} to ${monthYear(comparisonWindow.end)}`
+  const surveyPeriodLong = `${monthYear(comparisonWindow.start, 'long')} to ${monthYear(comparisonWindow.end, 'long')}`
+  const isInComparisonWindow = (month) => {
+    const key = `${month.year}-${String(month.month).padStart(2, '0')}`
+
+    return key >= comparisonWindow.start && key <= comparisonWindow.end
+  }
+  const currentCountryRainfall = countryRainfall.key === windowKey ? countryRainfall : null
+  const countryRainfallLoading = !isDefaultWindow && !currentCountryRainfall
+  const countryRainfallError = currentCountryRainfall?.error
+
+  useEffect(() => {
+    if (isDefaultWindow) return undefined
+
+    let active = true
+    const controller = new AbortController()
+
+    fetchDistrictRainfall(districts.map(({ id }) => id), controller.signal, comparisonWindow)
+      .then((details) => {
+        if (active) {
+          setCountryRainfall({
+            key: windowKey,
+            series: aggregateRainfall(details, overview.settings),
+            error: null,
+          })
+        }
+      })
+      .catch((error) => {
+        if (active && error.name !== 'CanceledError') {
+          setCountryRainfall({
+            key: windowKey,
+            series: null,
+            error: error.message || 'The country rainfall data could not be loaded.',
+          })
+        }
+      })
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [comparisonWindow, districts, isDefaultWindow, overview.settings, windowKey])
+
+  useEffect(() => {
+    if (selectedDistrictIds === null || selectedDistrictIds.length === 0) return undefined
+
+    let active = true
+    const controller = new AbortController()
+    const missingIds = selectedDistrictIds.filter((id) => districtRainfall[`${windowKey}:${id}`] === undefined)
+    if (missingIds.length === 0) return undefined
+
+    const timer = setTimeout(() => {
+      fetchDistrictRainfall(missingIds, controller.signal, comparisonWindow)
+        .then((details) => {
+          if (active) {
+            setDistrictRainfall((current) => ({
+              ...current,
+              ...Object.fromEntries(details.map(({ id, rainfall }) => [`${windowKey}:${id}`, rainfall])),
+            }))
+          }
+        })
+        .catch((error) => {
+          if (active && error.name !== 'CanceledError') {
+            setDistrictError({
+              key: districtRequestKey,
+              message: error.message || 'The selected district data could not be loaded.',
+            })
+          }
+        })
+    }, 150)
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [comparisonWindow, districtRainfall, districtRequestKey, selectedDistrictIds, windowKey])
+
   const comparisonDistricts = comparisonActive ? surveyComparison.districts : districts
   const selectedDistrictIdList = selectedDistrictIds ?? []
   const selectedIds = new Set(selectedDistrictIdList)
@@ -267,16 +277,17 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
   const selectedDistrictDetails = selectedDistrictIdList
     .map((id) => {
       const district = districts.find((item) => item.id === id)
-      const rainfall = districtRainfall[id]
+      const rainfall = districtRainfall[`${windowKey}:${id}`]
 
       return district && rainfall ? { ...district, rainfall } : null
     })
     .filter((district) => district !== null)
-  const selectedDistrictReady =
-    selectedDistrictIds === null ||
-    (selectedDistrictIdList.length > 0 && selectedDistrictDetails.length === selectedDistrictIdList.length)
+  const selectedDistrictReady = selectedDistrictIds === null
+    ? !countryRainfallLoading && !countryRainfallError
+    : selectedDistrictIdList.length > 0 && selectedDistrictDetails.length === selectedDistrictIdList.length
   const districtLoading =
-    selectedDistrictIds !== null && selectedDistrictIdList.length > 0 && !districtError && !selectedDistrictReady
+    (selectedDistrictIds !== null && selectedDistrictIdList.length > 0 && !currentDistrictError && !selectedDistrictReady) ||
+    (selectedDistrictIds === null && countryRainfallLoading)
   const districtCount = activeDistricts.length
   const isAllDistricts = selectedDistrictIds === null
   const noDistrictsSelected = selectedDistrictIds !== null && selectedDistrictIdList.length === 0
@@ -288,46 +299,24 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
       ? singleDistrict?.name ?? 'Selected district'
       : `${districtCount} selected districts`
   const rainfallSeries = isAllDistricts
-    ? national
+    ? isDefaultWindow ? national : currentCountryRainfall?.series ?? []
     : isSingleDistrict
       ? selectedDistrictDetails[0]?.rainfall ?? []
       : aggregateRainfall(selectedDistrictDetails, overview.settings)
-  const filteredSeries = rainfallSeries.filter((month) => month.year >= startYear && month.year <= endYear)
+  const filteredSeries = rainfallSeries.filter(isInComparisonWindow)
   const assessedMonths = filteredSeries.filter((month) => month.judged)
   const dryMonths = assessedMonths.filter((month) => month.satellite_drought).length
-  const byYearSource = isAllDistricts
-    ? countryByYear
-    : isSingleDistrict
-      ? selectedDistrictDetails[0]?.history.by_year ?? []
-      : aggregateYearlyHistory(selectedDistrictDetails)
-  const byYear = byYearSource.filter((row) => row.year >= startYear && row.year <= endYear)
-  const byMonth = calendarMonthShares(filteredSeries)
-  const driestYear = [...byYear].sort((a, b) => b.dry_months - a.dry_months)[0]
   const highRisk = activeDistricts.filter((district) => district.summary.risk_level === 'high').length
-  const periodLabel = startYear === endYear ? String(startYear) : `${startYear} to ${endYear}`
+  const periodLabel = surveyPeriod
   const mismatchValue = isSingleDistrict
     ? RISK_LABELS[singleDistrict.summary.risk_level] ?? 'No survey data'
     : `${highRisk} of ${districtCount}`
   const combinedTag = isSingleDistrict ? area : 'All selected districts combined'
-  const surveyPeriod = comparisonActive
-    ? `${monthYear(surveyComparison.window.start)} to ${monthYear(surveyComparison.window.end)}`
-    : 'Apr 2023 to Mar 2024'
-  const surveyPeriodLong = comparisonActive
-    ? `${monthYear(surveyComparison.window.start, 'long')} to ${monthYear(surveyComparison.window.end, 'long')}`
-    : 'April 2023 to March 2024'
   const surveyTitle = comparisonActive && selectedImport
     ? `${selectedImport.source_name} (${selectedImport.survey_year})`
     : '2024 survey'
   const activeMatchScore = comparisonActive ? surveyComparison.rank_correlation : matchScore
   const mismatchLabel = isSingleDistrict ? `Mismatch risk (${surveyTitle})` : 'High-mismatch districts'
-  const filteredDistricts = activeDistricts.map((district) => {
-    const years = district.history.by_year.filter((row) => row.year >= startYear && row.year <= endYear)
-
-    return {
-      ...district,
-      filtered_avg_dry_months: years.length ? Math.round(average(years.map((row) => row.dry_months)) * 10) / 10 : null,
-    }
-  })
   const importValues = new Map(
     (selectedImport?.observations ?? []).map((observation) => [
       Number(observation.district_id),
@@ -606,9 +595,14 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
         </Notice>
       )}
       {districtLoading && <div className="panel" role="status">Loading {area} data...</div>}
-      {districtError && (
+      {currentDistrictError && (
         <Notice title="Could not load district data">
-          {districtError} Change the district selection or choose all districts to continue.
+          {currentDistrictError} Change the district selection or choose all districts to continue.
+        </Notice>
+      )}
+      {countryRainfallError && (
+        <Notice title="Could not load rainfall for this survey period">
+          {countryRainfallError} The household comparison remains available, but rainfall charts could not be loaded.
         </Notice>
       )}
 
@@ -626,15 +620,9 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
               hint={`${assessedMonths.length} assessable months, ${periodLabel}`}
             />
             <StatCard
-              label={`Driest year, ${periodLabel}`}
-              value={driestYear?.year ?? '-'}
-              hint={
-                driestYear
-                  ? isSingleDistrict
-                    ? `${driestYear.dry_months} dry months in ${area}`
-                    : `Average ${driestYear.dry_months} dry months across ${districtCount} districts`
-                  : 'No rainfall data for this period'
-              }
+              label="Satellite data coverage"
+              value={`${filteredSeries.length} of 12`}
+              hint={`Monthly records for ${surveyPeriod}`}
             />
             <StatCard label={mismatchLabel} value={mismatchValue} hint={`Household survey comparison: ${surveyPeriod}`} />
           </div>
@@ -650,12 +638,11 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
           <CountryDroughtCharts
             districts={householdChartDistricts}
             series={filteredSeries}
-            startYear={startYear}
-            endYear={endYear}
             area={area}
             isAllDistricts={isAllDistricts}
             isSingleDistrict={isSingleDistrict}
             districtCount={districtCount}
+            period={surveyPeriod}
             householdSurveyLabel={householdSurveyLabel}
             householdSurveyNote={householdSurveyNote}
             householdSourceName={selectedImport?.source_name}
@@ -672,7 +659,7 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
           <ExpandableChart>
             <h3>{isAllDistricts ? 'Where the satellite and households disagree' : `Satellite and households in ${area}`}</h3>
             <p className="muted">
-              This comparison uses the household survey period ({surveyPeriod}), regardless of the selected satellite years.
+              This comparison uses the same period as the household survey ({surveyPeriod}).
               Red: households reported more drought; blue: satellite rainfall indicated more drought.
             </p>
             <GapChart districts={activeDistricts} period={surveyPeriod} />
@@ -736,60 +723,28 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
             </ExpandableChart>
           </div>
 
-          <ExpandableChart>
-            <h3>Average dry months per year</h3>
-            <p className="muted">
-              Districts ranked from most to fewest for {periodLabel}. Longer bars mean more dry months.
-            </p>
-            <DryMonthsChart
-              districts={filteredDistricts}
-              period={surveyPeriod}
-              getValue={(district) => district.filtered_avg_dry_months}
-              unit="months per year"
-              color={CHART_COLORS.rain}
-            />
-            <ChartInfo
-              shows={`Average dry months per year in ${periodLabel}, calculated from rainfall at least 20% below normal.`}
-              howToRead="A longer bar means the district was dry more often during the selected years."
-              sources={['rainfall', 'boundaries']}
-            />
-          </ExpandableChart>
           </ChartSection>
 
           <ChartSection
             number={3}
             title="Rainfall over time"
             tag={combinedTag}
-            description="Whether each month, year and season was wetter or drier than normal."
+            description={`Whether each month was wetter or drier than normal during ${surveyPeriod}.`}
           >
           <ExpandableChart>
             <h3>Was each month wetter or drier than normal?</h3>
             <p className="muted">
               {isSingleDistrict
                 ? area
-                : `Average rainfall across ${districtCount} ${isAllDistricts ? 'districts' : 'selected districts'}`}, {periodLabel}
-              {startYear === endYear ? '.' : '; monthly averages grouped by calendar month.'}
+                : `Average rainfall across ${districtCount} ${isAllDistricts ? 'districts' : 'selected districts'}`}, {periodLabel}.
             </p>
-            <RainDeviationChart series={filteredSeries} maxMonths={filteredSeries.length} />
+            <RainDeviationChart series={filteredSeries} maxMonths={12} />
             <ChartInfo
               shows={`Monthly rainfall compared with normal rainfall for ${isSingleDistrict ? area : `${districtCount} districts`}, ${periodLabel}.`}
-              howToRead="Each month has two bars: rainfall and the normal amount. For a multi-year range, each bar is the average for that calendar month. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
+              howToRead="Each month has two bars: rainfall and its historical normal for that calendar month. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
               sources={['rainfall', 'boundaries']}
             />
           </ExpandableChart>
-
-          <DryPatternCharts
-            byYear={byYear}
-            byMonth={byMonth}
-            area={area}
-            isAverage={!isSingleDistrict}
-            averageDistrictCount={districtCount}
-            isAllDistricts={isAllDistricts}
-            startYear={startYear}
-            endYear={endYear}
-            districts={activeDistricts}
-            series={filteredSeries}
-          />
           </ChartSection>
         </>
       )}

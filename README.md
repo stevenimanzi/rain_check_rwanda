@@ -32,9 +32,9 @@ can guide further investigation; they are not insurance payout determinations.
 
 | Page | What it communicates |
 | --- | --- |
-| Overview | Filter satellite analysis by year range and one or more districts; choose an imported household survey view, compare satellite and household drought, and see rainfall, driest years, risky months and district rankings. Mismatch comparisons remain tied to the 2024 survey. |
-| Districts | A searchable, filterable table of all 30 districts. Click one for its own comparison, rainfall and history. |
-| Map | District map of long-term drought risk, recent dry months, households reporting drought, and basis risk. |
+| Overview | Choose districts and a household survey; satellite rainfall, dry months and mismatch comparisons use the same 12-month survey period. |
+| Districts | A searchable, filterable table of all 30 districts. Click one for its matched-period comparison and rainfall. |
+| Map | District map of dry months in the matched survey period, household drought reports, and basis risk. |
 | For institutions | Who can use the data, CSV downloads, data sources and how the measures work. |
 
 Every chart has a box underneath saying what it shows, how to read it and where the data comes from.
@@ -42,7 +42,7 @@ Every chart has a box underneath saying what it shows, how to read it and where 
 ## How to interact
 
 1. Start on **Overview** and read the explanation under each chart.
-2. Open **Districts**, search or filter by risk level, and click a district to see its comparison and history.
+2. Open **Districts**, search or filter by risk level, and click a district to see its matched-period comparison.
 3. Open **Map** and switch between the four views. Click a district to see its charts below the map.
 4. Open **For institutions** to download data. On **Overview**, use the **Import survey data** button beside the filters to upload a district household CSV.
 
@@ -92,6 +92,8 @@ Gisagara 39%, measured 38.4%). Values are rounded and accurate to about one perc
   August dry season) are not judged, because small changes look huge there.
 - **Comparison period:** April 2023 to March 2024, the 12 months households were asked about in CFSVA 2024
   (fieldwork April 2024).
+- **Satellite display and comparison:** use only the same 12 months as the selected household survey. Earlier satellite
+  observations remain in the database only to calculate each calendar month's historical normal.
 - **Overview pies:** the satellite share classifies Rwanda's average rainfall by month in this period, excluding
   normally very dry months; the household share is the unweighted average of the 30 district estimates, not a
   population-weighted national prevalence.

@@ -57,7 +57,7 @@ function ChartTooltip({ active, payload }) {
 }
 
 /**
- * Paired bars compare monthly rainfall with normal, averaging by calendar month for multi-year ranges.
+ * Paired bars compare each supplied monthly rainfall value with its calendar-month normal.
  */
 export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN }) {
   const chartHeight = useChartHeight(300, 520)

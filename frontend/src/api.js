@@ -49,8 +49,11 @@ export const fetchDistricts = () => client.get('/districts').then((res) => res.d
 
 export const fetchDistrict = (id) => client.get(`/districts/${id}`).then((res) => res.data.data)
 
-export const fetchDistrictRainfall = (ids, signal) =>
-  client.get('/districts/rainfall', { params: { ids }, signal }).then((res) => res.data.data)
+export const fetchDistrictRainfall = (ids, signal, window) =>
+  client.get('/districts/rainfall', {
+    params: { ids, ...(window ? { start: window.start, end: window.end } : {}) },
+    signal,
+  }).then((res) => res.data.data)
 
 export const fetchHouseholdSurveyImports = () =>
   client.get('/imports/household-drought').then((res) => res.data.data)

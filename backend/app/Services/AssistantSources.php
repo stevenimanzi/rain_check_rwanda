@@ -61,8 +61,7 @@ class AssistantSources
                 ['key' => 'name', 'label' => 'District'],
                 ['key' => 'province', 'label' => 'Province'],
                 ['key' => 'dry', 'label' => 'Dry months, Apr 2023 to Mar 2024'],
-                ['key' => 'avg', 'label' => 'Dry months each year'],
-                ['key' => 'years', 'label' => 'Years covered'],
+                ['key' => 'coverage', 'label' => 'Months of satellite data'],
             ],
             'rows' => $districts->map(fn (array $d) => [
                 'id' => $d['id'],
@@ -70,8 +69,7 @@ class AssistantSources
                     'name' => $d['name'],
                     'province' => $d['province'],
                     'dry' => $d['summary']['satellite_drought_months'],
-                    'avg' => $d['summary']['avg_dry_months_per_year'],
-                    'years' => $d['history']['years_covered'],
+                    'coverage' => $d['summary']['satellite_window_months'].' of 12',
                 ],
             ])->values()->all(),
         ];

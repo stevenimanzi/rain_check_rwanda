@@ -10,13 +10,11 @@ const RWANDA_CENTER = [-1.95, 29.9]
 const SCALE_COLORS = ['#eaf5fc', '#a9d7f3', '#40a6df', '#1d4f91']
 
 const VALUE_OF = {
-  history: (d) => d.summary.avg_dry_months_per_year,
   drought: (d) => d.summary.satellite_drought_months,
   households: (d) => d.household_drought_pct,
 }
 
 const UNIT = {
-  history: 'dry months each year',
   drought: 'dry months, Apr 2023 to Mar 2024',
   households: '% of households that reported drought',
 }

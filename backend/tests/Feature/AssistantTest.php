@@ -25,6 +25,10 @@ class AssistantTest extends TestCase
         foreach ([2021, 2022, 2023, 2024] as $year) {
             RainfallRecord::create(['district_id' => $district->id, 'year' => $year, 'month' => 4, 'rainfall_mm' => 100 + $year - 2021]);
         }
+        foreach ([2022, 2023] as $year) {
+            RainfallRecord::create(['district_id' => $district->id, 'year' => $year, 'month' => 3, 'rainfall_mm' => 120 + $year - 2022]);
+        }
+        RainfallRecord::create(['district_id' => $district->id, 'year' => 2024, 'month' => 3, 'rainfall_mm' => 150]);
 
         $this->postJson('/api/assistant', ['messages' => [['role' => 'user', 'content' => $question]]] + $extra)->assertOk();
 
@@ -61,9 +65,11 @@ class AssistantTest extends TestCase
         $this->assertStringContainsString('Huye | Southern Province | households reporting drought: 31%', $prompt);
         $this->assertStringContainsString('poverty rate: 24.2%', $prompt);
         $this->assertStringContainsString('2 districts in 2 provinces', $prompt);
-        $this->assertStringContainsString('4 monthly satellite rainfall records, 2021 to 2024', $prompt);
+        $this->assertStringContainsString('2 monthly satellite rainfall records for April 2023 to March 2024', $prompt);
         $this->assertStringContainsString('Huye district, every month', $prompt);
         $this->assertStringNotContainsString('Gasabo district, every month', $prompt);
+        $this->assertStringNotContainsString('2021-04', $prompt);
+        $this->assertStringContainsString('2024-03', $prompt);
     }
 
     public function test_prompt_tells_the_model_how_to_refuse_unrelated_questions(): void
@@ -78,9 +84,9 @@ class AssistantTest extends TestCase
     {
         [$prompt] = $this->ask('which district had most rainfall?');
 
-        $this->assertStringContainsString('Districts with the MOST rain in a typical year', $prompt);
+        $this->assertStringContainsString('Districts ranked by total rainfall in the comparison period', $prompt);
         $this->assertStringContainsString('Huye', $prompt);
-        $this->assertStringContainsString('Wettest calendar month on average: April', $prompt);
+        $this->assertStringContainsString('Wettest month across districts: March', $prompt);
         $this->assertStringContainsString('UNDERSTAND THE QUESTION BEFORE REFUSING', $prompt);
     }
 

@@ -49,7 +49,11 @@ export default function DistrictsPage({ districts, overview, selectedId, onSelec
             value={summary.satellite_drought_months}
             hint={`Apr 2023 to Mar 2024. Score ${Math.round(summary.satellite_rank_pct)} out of 100`}
           />
-          <StatCard label="Dry months each year" value={summary.avg_dry_months_per_year} hint="Average, Apr 2023 to Mar 2024" />
+          <StatCard
+            label="Satellite data coverage"
+            value={`${summary.satellite_window_months} of 12 months`}
+            hint="April 2023 to March 2024"
+          />
           <StatCard label="Gap with households" value={`${summary.basis_risk_pct} points`} hint="Under 25 low, 25 to 50 medium, over 50 high" />
         </div>
         <p className="verdict">{VERDICTS[summary.direction]}</p>

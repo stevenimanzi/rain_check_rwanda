@@ -3,7 +3,6 @@ import { fetchDistrictRainfall } from '../api'
 import { formatPercent } from '../utils'
 import ChartInfo from './ChartInfo'
 import ExpandableChart from './ExpandableChart'
-import DryPatternCharts from './DryPatternCharts'
 import RainDeviationChart from './RainDeviationChart'
 import RiskBadge from './RiskBadge'
 import StatCard from './StatCard'
@@ -17,14 +16,14 @@ export const VERDICTS = {
     'The satellite saw more drought than households reported. Insurance based on rain could pay out when many farmers did not have a drought.',
 }
 
-export default function DistrictDetail({ district }) {
+export default function DistrictDetail({ district, comparisonWindow }) {
   const [districtData, setDistrictData] = useState({ districtId: null, rainfall: null, error: null })
 
   useEffect(() => {
     let active = true
     const controller = new AbortController()
 
-    fetchDistrictRainfall([district.id], controller.signal)
+    fetchDistrictRainfall([district.id], controller.signal, comparisonWindow)
       .then((details) => {
         const selected = details.find((item) => item.id === district.id)
         if (!selected) throw new Error('The selected district rainfall was not returned.')
@@ -42,10 +41,15 @@ export default function DistrictDetail({ district }) {
       active = false
       controller.abort()
     }
-  }, [district.id])
+  }, [district.id, comparisonWindow])
 
   const currentDistrictData = districtData.districtId === district.id ? districtData : null
   const rainfall = currentDistrictData?.rainfall ?? null
+  const periodRainfall = rainfall?.filter((month) => {
+    const key = `${month.year}-${String(month.month).padStart(2, '0')}`
+
+    return key >= comparisonWindow.start && key <= comparisonWindow.end
+  })
   const loadError = currentDistrictData?.error
 
   if (loadError) {
@@ -54,7 +58,7 @@ export default function DistrictDetail({ district }) {
   if (!rainfall) return <div className="panel" role="status">Loading {district.name} rainfall...</div>
 
   const districtDetails = { ...district, rainfall }
-  const { summary, history } = districtDetails
+  const { summary } = districtDetails
 
   return (
     <>
@@ -77,9 +81,9 @@ export default function DistrictDetail({ district }) {
             hint={`Apr 2023 to Mar 2024. Score ${Math.round(summary.satellite_rank_pct)} out of 100`}
           />
           <StatCard
-            label="Dry months each year"
-            value={summary.avg_dry_months_per_year}
-            hint="Average, Apr 2023 to Mar 2024"
+            label="Satellite data coverage"
+            value={`${summary.satellite_window_months} of 12 months`}
+            hint="April 2023 to March 2024"
           />
         </div>
         <p className="verdict">{VERDICTS[summary.direction]}</p>
@@ -91,23 +95,14 @@ export default function DistrictDetail({ district }) {
 
         <ExpandableChart className="chart-block">
           <h3>Rain compared to normal</h3>
-          <RainDeviationChart series={districtDetails.rainfall} />
+          <RainDeviationChart series={periodRainfall} maxMonths={12} />
           <ChartInfo
-            shows={`Monthly rainfall in ${districtDetails.name} compared with normal rainfall, last 3 years.`}
-            howToRead="Each month has two bars: rainfall and the normal amount, averaged by calendar month over the last 3 years. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
+            shows={`Monthly rainfall in ${districtDetails.name} compared with normal rainfall, April 2023 to March 2024.`}
+            howToRead="Each month has two bars: rainfall and its historical normal for that calendar month. Red rainfall bars are at least 20% below normal; grey bars are normally very dry and are not assessed."
             sources={['rainfall', 'boundaries']}
           />
         </ExpandableChart>
       </div>
-
-      <DryPatternCharts
-        byYear={history.by_year}
-        byMonth={history.by_calendar_month}
-        area={districtDetails.name}
-        isAverage={false}
-        districts={[districtDetails]}
-        series={districtDetails.rainfall}
-      />
     </>
   )
 }
