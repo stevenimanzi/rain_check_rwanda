@@ -35,6 +35,7 @@ class AssistantKnowledge
         return implode("\n\n", array_filter([
             $this->datasetFacts($districts),
             $this->nationalSummary($districts),
+            $this->rainfallAmounts($districts),
             $this->provinceSummary($districts),
             $this->rankings($districts),
             $this->districtTable($districts),
@@ -86,6 +87,61 @@ class AssistantKnowledge
             ."- Average dry months per district in each year: {$byYear}.\n"
             ."- Share of years a district is dry, by calendar month (average of districts): {$byMonth}.\n"
             .($poverty->isNotEmpty() ? '- Average poverty rate across districts: '.round($poverty->avg(), 1)."%.\n" : '');
+    }
+
+    /**
+     * How much rain falls, in millimetres: wettest and driest months, by calendar month, by year, and for each district.
+     * Without this the assistant can only talk about dry months, not about amounts of rain.
+     */
+    private function rainfallAmounts(Collection $districts): ?string
+    {
+        $records = RainfallRecord::get(['district_id', 'year', 'month', 'rainfall_mm']);
+
+        if ($records->isEmpty()) {
+            return null;
+        }
+
+        $names = $districts->pluck('name', 'id');
+        $mm = fn (float $value) => round($value, 1).' mm';
+
+        // Rainfall across all districts: the average of the district values for each calendar month.
+        $byCalendarMonth = $records->groupBy('month')->map(fn (Collection $rows) => (float) $rows->avg('rainfall_mm'))->sortKeys();
+        $wettest = $byCalendarMonth->sortDesc();
+        $driest = $byCalendarMonth->sort();
+
+        $byYearMonth = $records->groupBy(fn ($r) => $r->year.'-'.$r->month)->map(fn (Collection $rows) => (float) $rows->avg('rainfall_mm'));
+        $wettestOnRecord = $byYearMonth->sortDesc()->take(3)->map(function (float $value, string $key) use ($mm) {
+            [$year, $month] = explode('-', $key);
+
+            return $this->monthName((int) $month).' '.$year.' ('.$mm($value).')';
+        })->implode(', ');
+
+        $yearTotals = $records->groupBy('year')->map(fn (Collection $rows) => (float) $rows->groupBy('month')->map(fn ($m) => $m->avg('rainfall_mm'))->sum())->sortKeys();
+        $totals = $yearTotals->map(fn (float $value, $year) => $year.': '.$mm($value))->implode(', ');
+
+        $perDistrict = $records->groupBy('district_id')->map(function (Collection $rows, $id) use ($names, $mm) {
+            $months = $rows->groupBy('month')->map(fn (Collection $m) => (float) $m->avg('rainfall_mm'));
+            $wet = $months->sortDesc()->keys()->first();
+            $dry = $months->sort()->keys()->first();
+
+            return '- '.($names[$id] ?? 'District '.$id).': wettest month '.$this->monthName((int) $wet).' ('.$mm($months[$wet])
+                .'), driest month '.$this->monthName((int) $dry).' ('.$mm($months[$dry]).')';
+        })->sortKeys()->implode("
+");
+
+        return "Amount of rain (satellite estimate, millimetres per month, average of all districts and years):
+"
+            .'- Average rain by calendar month: '.$byCalendarMonth->map(fn (float $v, $m) => $this->monthName((int) $m).' '.$mm($v))->implode(', ').".
+"
+            .'- Wettest calendar month on average: '.$this->monthName((int) $wettest->keys()->first()).' ('.$mm($wettest->first()).'). '
+            .'Driest: '.$this->monthName((int) $driest->keys()->first()).' ('.$mm($driest->first()).").
+"
+            ."- Three wettest single months on record (average of all districts): {$wettestOnRecord}.
+"
+            ."- Total rain in each year, average of districts: {$totals}.
+"
+            ."Wettest and driest calendar month for each district (average over the years):
+{$perDistrict}";
     }
 
     private function provinceSummary(Collection $districts): string
