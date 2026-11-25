@@ -74,6 +74,16 @@ class AssistantTest extends TestCase
         $this->assertStringContainsString('Nta makuru mfite kuri ibyo', $prompt);
     }
 
+    public function test_prompt_has_rainfall_amounts_and_matches_related_keywords(): void
+    {
+        [$prompt] = $this->ask('which district had most rainfall?');
+
+        $this->assertStringContainsString('Districts with the MOST rain in a typical year', $prompt);
+        $this->assertStringContainsString('Huye', $prompt);
+        $this->assertStringContainsString('Wettest calendar month on average: April', $prompt);
+        $this->assertStringContainsString('UNDERSTAND THE QUESTION BEFORE REFUSING', $prompt);
+    }
+
     public function test_language_detector(): void
     {
         $detector = new LanguageDetector;

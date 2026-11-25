@@ -129,6 +129,29 @@ class AssistantKnowledge
         })->sortKeys()->implode("
 ");
 
+        // Rain in a typical year (sum of the 12 calendar-month averages) and in the April 2023 to March 2024 comparison year.
+        $districtRain = $records->groupBy('district_id')->map(function (Collection $rows, $id) use ($names) {
+            $typicalYear = (float) $rows->groupBy('month')->map(fn (Collection $m) => $m->avg('rainfall_mm'))->sum();
+            $window = $rows->filter(fn ($r) => ($r->year == 2023 && $r->month >= 4) || ($r->year == 2024 && $r->month <= 3));
+
+            return [
+                'name' => $names[$id] ?? 'District '.$id,
+                'typical' => $typicalYear,
+                'window' => $window->count() === 12 ? (float) $window->sum('rainfall_mm') : null,
+            ];
+        })->sortBy('name')->values();
+
+        $rank = fn (string $key, bool $desc) => $districtRain->whereNotNull($key)
+            ->sortBy($key, SORT_REGULAR, $desc)->take(5)
+            ->map(fn (array $d) => $d['name'].' ('.$mm($d[$key]).')')->implode(', ');
+        $provinceOf = $districts->pluck('province', 'name');
+        $provinceRain = $districtRain->groupBy(fn (array $d) => $provinceOf[$d['name']] ?? 'Unknown')
+            ->map(fn (Collection $rows) => (float) $rows->avg('typical'))->sortDesc()
+            ->map(fn (float $v, string $province) => $province.' ('.$mm($v).')')->implode(', ');
+        $districtLines = $districtRain->map(fn (array $d) => '- '.$d['name'].': '.$mm($d['typical']).' in a typical year'
+            .($d['window'] !== null ? ', '.$mm($d['window']).' from April 2023 to March 2024' : ''))->implode("
+");
+
         return "Amount of rain (satellite estimate, millimetres per month, average of all districts and years):
 "
             .'- Average rain by calendar month: '.$byCalendarMonth->map(fn (float $v, $m) => $this->monthName((int) $m).' '.$mm($v))->implode(', ').".
@@ -139,6 +162,17 @@ class AssistantKnowledge
             ."- Three wettest single months on record (average of all districts): {$wettestOnRecord}.
 "
             ."- Total rain in each year, average of districts: {$totals}.
+"
+            ."- Districts with the MOST rain in a typical year (highest rainfall), wettest first: ".$rank('typical', true).".
+"
+            .'- Districts with the LEAST rain in a typical year (lowest rainfall), driest first: '.$rank('typical', false).".
+"
+            ."- Provinces ranked by average rain in a typical year (average of their districts), wettest first: {$provinceRain}.
+"
+            .'- Districts with the most rain from April 2023 to March 2024: '.$rank('window', true).'. Least: '.$rank('window', false).".
+"
+            ."Rain for each district (millimetres, rain in a typical year = sum of the 12 monthly averages over 2014 to 2024):
+{$districtLines}
 "
             ."Wettest and driest calendar month for each district (average over the years):
 {$perDistrict}";
