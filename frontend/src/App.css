@@ -1048,8 +1048,14 @@ body {
   overflow-y: auto;
 }
 
-.survey-preview-grid {
+.grid-2.even.survey-preview-grid {
+  grid-template-columns: 1fr;
   align-items: start;
+}
+
+/* Each panel takes the full width of the dialog, one under the other */
+.survey-preview-grid > .panel {
+  width: 100%;
 }
 
 @media (max-width: 900px) {
