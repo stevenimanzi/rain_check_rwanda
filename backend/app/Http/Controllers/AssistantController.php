@@ -45,46 +45,68 @@ class AssistantController extends Controller
 
         $kinyarwanda = $language->isKinyarwanda(end($messages)['content']);
 
-        try {
-            $model = config('services.google.model');
-            $response = Http::withHeaders(['x-goog-api-key' => $key])
-                ->withOptions(['verify' => config('services.google.ca_bundle') ?: true])
-                ->timeout(60)
-                // Google answers 429/503 when busy; a short retry usually succeeds.
-                ->retry(3, 1500, fn ($e) => in_array($e->response?->status(), [429, 500, 503], true), throw: false)
-                ->post(
-                    "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent",
-                    [
-                        'systemInstruction' => [
-                            'parts' => [
-                                ['text' => $this->systemPrompt($knowledge, $messages, $kinyarwanda, $data['page_language'] ?? 'en')],
-                            ],
-                        ],
-                        'contents' => array_map(
-                            fn (array $message) => [
-                                'role' => $message['role'] === 'assistant' ? 'model' : 'user',
-                                'parts' => [['text' => $message['content']]],
-                            ],
-                            $messages,
-                        ),
-                        'generationConfig' => [
-                            'maxOutputTokens' => 3000,
-                            'temperature' => 0.2,
-                        ],
-                    ],
-                );
+        $body = [
+            'systemInstruction' => [
+                'parts' => [
+                    ['text' => $this->systemPrompt($knowledge, $messages, $kinyarwanda, $data['page_language'] ?? 'en')],
+                ],
+            ],
+            'contents' => array_map(
+                fn (array $message) => [
+                    'role' => $message['role'] === 'assistant' ? 'model' : 'user',
+                    'parts' => [['text' => $message['content']]],
+                ],
+                $messages,
+            ),
+            'generationConfig' => [
+                'maxOutputTokens' => 3000,
+                'temperature' => 0.2,
+            ],
+        ];
 
-            if (! $response->successful()) {
-                report(new \RuntimeException('Google AI request failed: '.$response->status().' '.$response->body()));
+        // A CA bundle path copied from another machine must not break HTTPS on this one.
+        $caBundle = config('services.google.ca_bundle');
+        $verify = $caBundle && is_file($caBundle) ? $caBundle : true;
 
-                return response()->json(['message' => 'The assistant could not answer right now. Please try again.'], 502);
+        $payload = null;
+        $lastStatus = 0;
+
+        // The configured model first; when Google has retired it or it is busy, try the next one.
+        foreach ($this->models() as $model) {
+            try {
+                $response = Http::withHeaders(['x-goog-api-key' => $key])
+                    ->withOptions(['verify' => $verify])
+                    ->timeout(60)
+                    // Google answers 429/503 when busy; a short retry usually succeeds.
+                    ->retry(2, 1000, fn ($e) => in_array($e->response?->status(), [429, 500, 503], true), throw: false)
+                    ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", $body);
+            } catch (Throwable $e) {
+                report($e);
+                $lastStatus = 0;
+
+                continue;
             }
 
-            $payload = $response->json();
-        } catch (Throwable $e) {
-            report($e);
+            if ($response->successful()) {
+                $payload = $response->json();
+                break;
+            }
 
-            return response()->json(['message' => 'The assistant could not answer right now. Please try again.'], 502);
+            $lastStatus = $response->status();
+            report(new \RuntimeException("Google AI request failed for {$model}: {$lastStatus} ".$response->body()));
+
+            // A rejected key or a malformed request will not improve with another model.
+            if (in_array($lastStatus, [400, 401, 403], true)) {
+                break;
+            }
+        }
+
+        if ($payload === null) {
+            return response()->json([
+                'message' => 'The assistant could not answer right now. Please try again.',
+                // Only the HTTP status from Google, so a failure can be diagnosed without reading the server log.
+                'upstream_status' => $lastStatus,
+            ], 502);
         }
 
         $finishReason = $payload['candidates'][0]['finishReason'] ?? null;
@@ -103,6 +125,16 @@ class AssistantController extends Controller
         return response()->json(['reply' => trim($text) ?: ($kinyarwanda
             ? 'Sinabashije kubona igisubizo. Nyabuneka ongera ubaze ukoresheje andi magambo.'
             : 'I could not find an answer. Please rephrase your question.')]);
+    }
+
+    /** The configured model, then fallbacks, so one retired or overloaded model does not take the assistant down. */
+    private function models(): array
+    {
+        return array_values(array_unique(array_filter([
+            config('services.google.model'),
+            'gemini-3.5-flash',
+            'gemini-flash-latest',
+        ])));
     }
 
     /**
