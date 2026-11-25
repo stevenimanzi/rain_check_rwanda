@@ -21,6 +21,8 @@ export default function App() {
   const [overview, setOverview] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [error, setError] = useState(null)
+  // The period of the survey a page is showing; null means the default comparison period.
+  const [shownWindow, setShownWindow] = useState(null)
   const chat = useAssistantChat()
   const predictChat = useAssistantChat(sendPredictMessages)
 
@@ -59,8 +61,16 @@ export default function App() {
     }
 
     const pages = {
-      overview: <OverviewPage districts={districts} overview={overview} />,
-      districts: <DistrictsPage districts={districts} overview={overview} selectedId={selectedId} onSelect={setSelectedId} />,
+      overview: <OverviewPage districts={districts} overview={overview} onWindowChange={setShownWindow} />,
+      districts: (
+        <DistrictsPage
+          districts={districts}
+          overview={overview}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onWindowChange={setShownWindow}
+        />
+      ),
       map: <MapPage districts={districts} comparisonWindow={overview.window} />,
       institutions: <InstitutionsPage districts={districts} overview={overview} onNavigate={goTo} />,
     }
@@ -74,7 +84,7 @@ export default function App() {
       <Sidebar page={page} open={menuOpen} onChange={goTo} onClose={() => setMenuOpen(false)} />
 
       <div className="main">
-        <TopBar title={title} onMenuClick={() => setMenuOpen(true)} />
+        <TopBar title={title} period={shownWindow ?? overview?.window} onMenuClick={() => setMenuOpen(true)} />
         <main className="content">{renderPage()}</main>
       </div>
 

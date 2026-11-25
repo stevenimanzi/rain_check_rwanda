@@ -6,7 +6,7 @@ import StatCard from '../components/StatCard'
 import { formatPercent } from '../utils'
 import OverviewPage from './OverviewPage'
 
-export default function DistrictsPage({ districts, overview, selectedId, onSelect }) {
+export default function DistrictsPage({ districts, overview, selectedId, onSelect, onWindowChange }) {
   const district = districts.find((item) => item.id === selectedId)
 
   if (!district) {
@@ -60,7 +60,13 @@ export default function DistrictsPage({ districts, overview, selectedId, onSelec
       </div>
 
       {/* Keyed by district so the page starts fresh (survey choice, years) for each district. */}
-      <OverviewPage key={district.id} districts={districts} overview={overview} lockedDistrictId={district.id} />
+      <OverviewPage
+        key={district.id}
+        districts={districts}
+        overview={overview}
+        lockedDistrictId={district.id}
+        onWindowChange={onWindowChange}
+      />
     </>
   )
 }

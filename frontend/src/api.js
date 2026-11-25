@@ -79,6 +79,16 @@ export const importHouseholdSurvey = ({ file, surveyYear, sourceName, token, mod
   }).then((res) => res.data.data)
 }
 
+// Gets one more month of satellite rainfall for a survey's period; call it until the status is not "fetching".
+// The sign-in token is only needed for a survey that has not been saved.
+export const fetchSatelliteRainfall = (surveyYear, token, signal) =>
+  client
+    .post('/satellite-rainfall', { survey_year: surveyYear }, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal,
+    })
+    .then((res) => res.data.data)
+
 // Re-runs the satellite vs household comparison with a survey's values (saved or previewed). Nothing is stored.
 export const fetchSurveyComparison = ({ surveyYear, view, observations }, signal) =>
   client

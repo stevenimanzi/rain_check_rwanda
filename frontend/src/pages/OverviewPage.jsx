@@ -5,7 +5,7 @@ import {
   ChevronDownIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { fetchDistrictRainfall, fetchHouseholdSurveyImports, fetchSurveyComparison, importHouseholdSurvey } from '../api'
+import { fetchDistrictRainfall, fetchHouseholdSurveyImports, importHouseholdSurvey } from '../api'
 import ChartInfo from '../components/ChartInfo'
 import ChartSection from '../components/ChartSection'
 import CountryDroughtCharts from '../components/CountryDroughtCharts'
@@ -17,8 +17,10 @@ import HouseholdSurveyImportPanel from '../components/HouseholdSurveyImportPanel
 import MismatchOverview from '../components/MismatchOverview'
 import Notice from '../components/Notice'
 import RainDeviationChart from '../components/RainDeviationChart'
+import SatelliteDataNotice from '../components/SatelliteDataNotice'
 import StatCard from '../components/StatCard'
 import SurveyPreviewDialog from '../components/SurveyPreviewDialog'
+import useSurveyComparison from '../components/useSurveyComparison'
 import { CHART_COLORS, RISK_LABELS, monthYear } from '../utils'
 
 const matchText = (value) => {
@@ -108,7 +110,7 @@ function CustomSelect({ label, value, options, onChange, className = '' }) {
 }
 
 // lockedDistrictId: show this page for one district only (used by the Districts page); the district picker is hidden.
-export default function OverviewPage({ districts, overview, lockedDistrictId = null }) {
+export default function OverviewPage({ districts, overview, lockedDistrictId = null, onWindowChange }) {
   const { national, rank_correlation: matchScore } = overview
   const [surveyImports, setSurveyImports] = useState([])
   const [surveyImportsError, setSurveyImportsError] = useState(null)
@@ -121,7 +123,6 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
   const [previewFile, setPreviewFile] = useState(null)
   const [previewSaving, setPreviewSaving] = useState(false)
   const [previewMessage, setPreviewMessage] = useState(null)
-  const [comparison, setComparison] = useState(null)
   const importDialogRef = useRef(null)
   const [selectedDistrictIds, setSelectedDistrictIds] = useState(lockedDistrictId ? [lockedDistrictId] : null)
   const [districtRainfall, setDistrictRainfall] = useState({})
@@ -152,39 +153,12 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
   const selectedImport = selectedImportId === 'baseline'
     ? null
     : surveyImports.find((surveyImport) => String(surveyImport.id) === selectedImportId) ?? surveyImports[0] ?? null
-  const comparisonKey = selectedImport
-    ? `${selectedImport.id}:${selectedImport.survey_year}:${surveyView}:${selectedImport.observations.length}`
-    : null
-
-  useEffect(() => {
-    if (!selectedImport) return undefined
-
-    let active = true
-    const controller = new AbortController()
-
-    fetchSurveyComparison(
-      { surveyYear: selectedImport.survey_year, view: surveyView, observations: selectedImport.observations },
-      controller.signal,
-    )
-      .then((result) => {
-        if (active) setComparison({ key: comparisonKey, ...result })
-      })
-      .catch((error) => {
-        if (active && error.name !== 'CanceledError') setComparison({ key: comparisonKey, failed: true })
-      })
-
-    return () => {
-      active = false
-      controller.abort()
-    }
-    // selectedImport is identified by comparisonKey; its values do not change without the key changing.
-  }, [comparisonKey, selectedImport, surveyView])
+  const surveyResult = useSurveyComparison(selectedImport, surveyView, importAccessToken)
 
   // The comparison replaces the original one only once it matches the chosen survey and has satellite rainfall
   // for the survey's period; otherwise the dashboards keep using CFSVA 2024 for the mismatch charts.
-  const surveyComparison = comparisonKey && comparison?.key === comparisonKey && !comparison.failed ? comparison : null
+  const surveyComparison = surveyResult.comparison
   const comparisonActive = Boolean(surveyComparison?.window.complete)
-  const comparisonUnavailable = Boolean(selectedImport) && Boolean(surveyComparison) && !surveyComparison.window.complete
   const comparisonWindow = comparisonActive ? surveyComparison.window : overview.window
   const windowKey = `${comparisonWindow.start}:${comparisonWindow.end}`
   const districtRequestKey = `${windowKey}:${selectedDistrictIds?.join(',') ?? ''}`
@@ -193,6 +167,12 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
     comparisonWindow.start === overview.window.start && comparisonWindow.end === overview.window.end
   const surveyPeriod = `${monthYear(comparisonWindow.start)} to ${monthYear(comparisonWindow.end)}`
   const surveyPeriodLong = `${monthYear(comparisonWindow.start, 'long')} to ${monthYear(comparisonWindow.end, 'long')}`
+  // Keeps the period named in the top bar the same as the one on this page.
+  useEffect(() => {
+    onWindowChange?.(comparisonWindow)
+    return () => onWindowChange?.(null)
+  }, [comparisonWindow, onWindowChange])
+
   const isInComparisonWindow = (month) => {
     const key = `${month.year}-${String(month.month).padStart(2, '0')}`
 
@@ -544,18 +524,19 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
         <SurveyPreviewDialog
           preview={previewImport}
           districts={districts}
+          accessToken={importAccessToken}
           saving={previewSaving}
           message={previewMessage}
           onSave={savePreview}
           onClose={closePreview}
         />
       )}
-      {comparisonUnavailable && (
-        <Notice title="No satellite rainfall for this survey's period yet">
-          Satellite rainfall is missing for {monthYear(surveyComparison.window.start, 'long')} to{' '}
-          {monthYear(surveyComparison.window.end, 'long')}, so the mismatch charts still compare against CFSVA 2024.
-          The household charts show the selected survey.
-        </Notice>
+      {/* While a preview is open it fetches the satellite data itself and shows its own progress. */}
+      {!previewImport && (
+        <SatelliteDataNotice
+          result={surveyResult}
+          meanwhile="Until then the mismatch charts compare against CFSVA 2024; the household charts show the selected survey."
+        />
       )}
       {surveyImportsError && (
         <Notice title="Could not load imported survey data">

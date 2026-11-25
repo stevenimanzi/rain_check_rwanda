@@ -13,4 +13,9 @@ class District extends Model
     {
         return $this->hasMany(RainfallRecord::class);
     }
+
+    public function satelliteRainfallRecords(): HasMany
+    {
+        return $this->hasMany(SatelliteRainfallRecord::class);
+    }
 }

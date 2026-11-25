@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { fetchSurveyComparison } from '../api'
 import { CHART_COLORS, monthYear } from '../utils'
 import DistrictMultiSelect from './DistrictMultiSelect'
 import DryMonthsChart from './DryMonthsChart'
@@ -8,15 +7,18 @@ import ExpandableChart from './ExpandableChart'
 import MismatchOverview from './MismatchOverview'
 import Notice from './Notice'
 import RiskBadge from './RiskBadge'
+import SatelliteDataNotice from './SatelliteDataNotice'
 import StatCard from './StatCard'
+import useSurveyComparison from './useSurveyComparison'
 
 /**
  * Large view of an imported survey that has NOT been saved. It shows only what was uploaded, on its own,
  * and disappears when closed. "Save and merge" turns it into a permanent import.
  */
-export default function SurveyPreviewDialog({ preview, districts, saving, message, onSave, onClose }) {
+export default function SurveyPreviewDialog({ preview, districts, accessToken, saving, message, onSave, onClose }) {
   const dialogRef = useRef(null)
-  const [comparison, setComparison] = useState(null)
+  const result = useSurveyComparison(preview, 'imported', accessToken)
+  const { comparison } = result
   // null = every district; otherwise the ids shown in this preview
   const [selectedIds, setSelectedIds] = useState(null)
 
@@ -24,27 +26,6 @@ export default function SurveyPreviewDialog({ preview, districts, saving, messag
     const dialog = dialogRef.current
     if (dialog && !dialog.open) dialog.showModal()
   }, [])
-
-  useEffect(() => {
-    let active = true
-    const controller = new AbortController()
-
-    fetchSurveyComparison(
-      { surveyYear: preview.survey_year, view: 'imported', observations: preview.observations },
-      controller.signal,
-    )
-      .then((result) => {
-        if (active) setComparison(result)
-      })
-      .catch((error) => {
-        if (active && error.name !== 'CanceledError') setComparison({ failed: true })
-      })
-
-    return () => {
-      active = false
-      controller.abort()
-    }
-  }, [preview])
 
   const isSelected = (id) => selectedIds === null || selectedIds.includes(id)
   const rows = preview.observations.filter((row) => isSelected(row.district_id))
@@ -56,7 +37,7 @@ export default function SurveyPreviewDialog({ preview, districts, saving, messag
   const lowest = ranked[ranked.length - 1]
   const provinceById = new Map(districts.map((district) => [district.id, district.province]))
   const comparedById = new Map((comparison?.districts ?? []).map((district) => [district.id, district]))
-  const compared = comparison && !comparison.failed && comparison.window.complete
+  const compared = Boolean(comparison?.window.complete)
   const period = compared ? `${monthYear(comparison.window.start)} to ${monthYear(comparison.window.end)}` : null
   const comparedDistricts = compared
     ? comparison.districts.filter((district) => isSelected(district.id) && district.household_drought_pct !== null)
@@ -143,14 +124,8 @@ export default function SurveyPreviewDialog({ preview, districts, saving, messag
           <Notice title="No districts selected">Select one or more districts to see the preview.</Notice>
         )}
         {compared && comparedDistricts.length > 0 && <MismatchOverview districts={comparedDistricts} period={period} />}
-        {comparison && !comparison.failed && !comparison.window.complete && (
-          <Notice title="No satellite rainfall for this survey's period yet">
-            Satellite rainfall is missing for {monthYear(comparison.window.start, 'long')} to{' '}
-            {monthYear(comparison.window.end, 'long')}, so this preview can't be compared with the satellite. The
-            household values are shown below.
-          </Notice>
-        )}
-        {comparison?.failed && (
+        <SatelliteDataNotice result={result} meanwhile="The household values are shown below." />
+        {result.failed && (
           <Notice title="Could not compare with the satellite">The household values are shown below.</Notice>
         )}
 
@@ -173,7 +148,9 @@ export default function SurveyPreviewDialog({ preview, districts, saving, messag
             <p className="muted">
               {compared
                 ? `Compared with satellite dry months for ${period}.`
-                : 'Satellite comparison is not available for this survey period.'}
+                : result.satellite === 'fetching'
+                  ? 'The satellite comparison appears when the satellite data is ready.'
+                  : 'Satellite comparison is not available for this survey period.'}
             </p>
             <div className="table-scroll">
               <table className="table plain">

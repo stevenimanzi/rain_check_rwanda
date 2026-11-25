@@ -50,7 +50,15 @@ Every chart has a box underneath saying what it shows, how to read it and where 
 
 The **Overview** page accepts a CSV with `district` and `household_drought_pct` columns. Download the provided template, fill in percentages from 0 to 100, enter the survey year and source name, then sign in with the survey uploader account and upload the file. District names must match the dashboard; blank percentage rows are skipped, so partial coverage is allowed. Files are limited to 1 MiB, and unknown or repeated districts are rejected.
 
-Imports are stored as separate source- and year-labelled records. **Imported data only** shows one chosen upload. **Merge selected upload with CFSVA 2024** uses that upload where it has values and fills districts missing from the upload with the existing CFSVA 2024 values; values are never averaged or overwritten in storage. The household pie and district bars follow this selection, while mismatch comparisons remain fixed to the CFSVA 2024 period. Select multiple districts to compare each separately; rainfall trend charts average only the selected districts. Satellite charts only show years with rainfall data; importing household data does not create rainfall observations.
+Imports are stored as separate source- and year-labelled records. **Imported data only** shows one chosen upload. **Merge selected upload with CFSVA 2024** uses that upload where it has values and fills districts missing from the upload with the existing CFSVA 2024 values; values are never averaged or overwritten in storage. The household pie and district bars follow this selection, while mismatch comparisons use the 12 months the selected survey asked about. Select multiple districts to compare each separately; rainfall trend charts average only the selected districts.
+
+### Satellite rainfall for a new survey
+
+A survey for year Y is compared with April of year Y-1 to March of year Y. When the project does not hold rainfall for that period, the dashboard fetches it from the official CHIRPS v3 monthly maps (no account or API key), one month per request, shows the progress, and updates the comparison when all 12 months are ready. Only the part of each map that covers Rwanda is downloaded. A month appears about two weeks after it ends; until the whole period is published, the comparison stays on CFSVA 2024.
+
+Downloaded months are stored in their own table, separate from `data/rainfall.csv`. A comparison uses one of the two sources for its whole period, never a mix. Normal rainfall for downloaded months is the 2014-2024 median in `data/chirps_normals_2014_2024.csv`, calculated from the same official maps with `php artisan raincheck:satellite-normals`.
+
+`data/sample_household_survey_2026.csv` holds made-up values for trying this: import it with survey year 2026 to compare April 2025 to March 2026.
 
 Set `IMPORT_EMAIL` and a long, unique `IMPORT_PASSWORD` privately in `backend/.env` for local use or in the backend service's environment settings on Render. Generate a strong password with:
 
@@ -67,6 +75,7 @@ On phones the sidebar becomes a menu opened with the button in the top bar.
 | Data | Source | Used for | In this repo |
 | --- | --- | --- | --- |
 | Monthly rainfall, April 2023 to March 2024 (the household window; each month also stores its normal, from 2014-2024) | [CHIRPS v3 monthly Africa GeoTIFFs](https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/africa/tifs/), Climate Hazards Center, UC Santa Barbara | Dry months, drought years, risky months | `data/rainfall.csv` (averaged per district) |
+| Monthly rainfall for the period of an imported survey that is not covered above; normals from 2014-2024 | The same CHIRPS v3 maps, fetched when needed | Comparing newer surveys with the satellite | `data/chirps_normals_2014_2024.csv`, `data/rwanda-districts.geojson` |
 | District boundaries | [geoBoundaries](https://www.geoboundaries.org/) Rwanda ADM2 | Maps and district averages | `frontend/public/rwanda-districts.geojson` |
 | Households reporting drought, by district | [NISR Statistics Portal and WFP, Rwanda CFSVA 2024](https://statistics.gov.rw/sites/default/files/documents/2025-07/Rwanda%20CFSVA%202024.pdf), Figure 8.4 | Comparing satellite with what households experienced | `data/household_drought_cfsva_2024.csv` |
 

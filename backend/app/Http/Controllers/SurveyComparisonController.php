@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\DistrictAnalysis;
+use App\Services\SatelliteRainfall;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -12,7 +13,7 @@ use Illuminate\Http\Request;
  */
 class SurveyComparisonController extends Controller
 {
-    public function __invoke(Request $request, DistrictAnalysis $analysis): JsonResponse
+    public function __invoke(Request $request, DistrictAnalysis $analysis, SatelliteRainfall $satellite): JsonResponse
     {
         $validated = $request->validate([
             'survey_year' => ['required', 'integer', 'between:1900,2100'],
@@ -23,12 +24,7 @@ class SurveyComparisonController extends Controller
         ]);
 
         $surveyYear = (int) $validated['survey_year'];
-        // Like CFSVA 2024 (asked in April 2024 about the 12 months before), a survey is compared with
-        // the satellite's April to March year that ends in the survey year.
-        $window = [
-            'start' => sprintf('%04d-04', $surveyYear - 1),
-            'end' => sprintf('%04d-03', $surveyYear),
-        ];
+        $window = $satellite->windowFor($surveyYear);
 
         $values = collect($validated['observations'])
             ->mapWithKeys(fn (array $row) => [(int) $row['district_id'] => (float) $row['household_drought_pct']])

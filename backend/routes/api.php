@@ -8,6 +8,7 @@ use App\Http\Controllers\HouseholdSurveyImportAuthController;
 use App\Http\Controllers\HouseholdSurveyImportController;
 use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\PredictController;
+use App\Http\Controllers\SatelliteRainfallController;
 use App\Http\Controllers\SurveyComparisonController;
 use App\Http\Middleware\RequireHouseholdSurveyImportLogin;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,7 @@ Route::get('/assistant/sources', AssistantSourcesController::class)->middleware(
 Route::post('/assistant', AssistantController::class)->middleware('throttle:20,1');
 Route::post('/predict', [PredictController::class, 'ask'])->middleware('throttle:20,1');
 Route::post('/survey-comparison', SurveyComparisonController::class)->middleware('throttle:60,1');
+Route::post('/satellite-rainfall', SatelliteRainfallController::class)->middleware('throttle:60,1');
 
 Route::get('/export/districts', [ExportController::class, 'districts']);
 Route::get('/export/rainfall', [ExportController::class, 'rainfall']);

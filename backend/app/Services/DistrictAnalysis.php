@@ -7,7 +7,7 @@ use Illuminate\Support\Collection;
 
 class DistrictAnalysis
 {
-    public function __construct(private DroughtMatchService $satellite) {}
+    public function __construct(private DroughtMatchService $satellite, private SatelliteRainfall $downloads) {}
 
     /**
      * @param  array<int, float>|null  $surveyValues  household drought % by district id from another survey.
@@ -22,8 +22,10 @@ class DistrictAnalysis
         $start = $window['start'] ?? config('raincheck.comparison_start');
         $end = $window['end'] ?? config('raincheck.comparison_end');
 
-        $rows = District::with('rainfallRecords')->orderBy('name')->get()->map(function (District $district) use ($surveyValues, $importedOnly, $start, $end) {
-            $series = $this->satellite->rainfallSeries($district->rainfallRecords);
+        $source = $window !== null ? $this->rainfallSource($start, $end) : 'rainfallRecords';
+
+        $rows = District::with($source)->orderBy('name')->get()->map(function (District $district) use ($source, $surveyValues, $importedOnly, $start, $end) {
+            $series = $this->satellite->rainfallSeries($district->{$source});
             $household = $this->number($district->household_drought_pct);
 
             if ($surveyValues !== null) {
@@ -50,20 +52,33 @@ class DistrictAnalysis
 
     public function rainfall(array $districtIds, ?string $start = null, ?string $end = null): Collection
     {
+        $source = $start !== null && $end !== null ? $this->rainfallSource($start, $end) : 'rainfallRecords';
         $start ??= config('raincheck.comparison_start');
         $end ??= config('raincheck.comparison_end');
 
-        return District::with('rainfallRecords')
+        return District::with($source)
             ->whereKey($districtIds)
             ->get()
-            ->map(function (District $district) use ($start, $end) {
-                $series = $this->satellite->rainfallSeries($district->rainfallRecords);
+            ->map(function (District $district) use ($source, $start, $end) {
+                $series = $this->satellite->rainfallSeries($district->{$source});
 
                 return [
                     'id' => $district->id,
                     'rainfall' => $this->rainfallInWindow($series, $start, $end),
                 ];
             });
+    }
+
+    /**
+     * The stored rainfall is used unless it falls short of a period that the downloaded official maps cover in full.
+     */
+    private function rainfallSource(string $start, string $end): string
+    {
+        $window = ['start' => $start, 'end' => $end];
+
+        return ! $this->downloads->storedDataCovers($window) && $this->downloads->missingMonths($window) === []
+            ? 'satelliteRainfallRecords'
+            : 'rainfallRecords';
     }
 
     private function rainfallInWindow(Collection $series, string $start, string $end): Collection

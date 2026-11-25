@@ -1,5 +1,6 @@
 import { Bars3Icon, CalendarDaysIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import { useEffect, useRef, useState } from 'react'
+import { monthYear } from '../utils'
 
 const LANGUAGES = {
   en: { label: 'English' },
@@ -54,7 +55,7 @@ function Flag({ code }) {
   )
 }
 
-export default function TopBar({ title, onMenuClick }) {
+export default function TopBar({ title, period, onMenuClick }) {
   const [language, setLanguage] = useState(() => {
     const cookieLanguage = document.cookie.match(/(?:^|;\s*)googtrans=\/[^/]+\/([^;]+)/)?.[1]
     return cookieLanguage && LANGUAGES[cookieLanguage] ? cookieLanguage : 'en'
@@ -110,10 +111,12 @@ export default function TopBar({ title, onMenuClick }) {
       <h1>{title}</h1>
 
       <div className="topbar-actions">
-        <div className="topbar-info">
-          <CalendarDaysIcon className="icon" />
-          <span>Comparison period: Apr 2023 - Mar 2024</span>
-        </div>
+        {period && (
+          <div className="topbar-info">
+            <CalendarDaysIcon className="icon" />
+            <span>Comparison period: {monthYear(period.start)} - {monthYear(period.end)}</span>
+          </div>
+        )}
 
         <div className="language-switcher" ref={languageMenuRef}>
           <button
