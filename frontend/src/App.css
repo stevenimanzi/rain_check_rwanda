@@ -1437,72 +1437,6 @@ body {
   line-height: 1.5;
 }
 
-.map-explanation .chart-info {
-  margin-top: 22px;
-}
-
-.map-explanation .chart-info dl {
-  display: grid;
-  grid-template-columns: minmax(130px, 0.25fr) minmax(0, 1fr);
-  gap: 10px 20px;
-  width: 100%;
-}
-
-.map-explanation .chart-info dt,
-.map-explanation .chart-info dd {
-  margin: 0;
-}
-
-.map-explanation .chart-info dt {
-  color: var(--primary);
-}
-
-.map-data {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-
-.map-data h2 {
-  margin: 0 0 6px;
-}
-
-.map-data > p {
-  margin: 0 0 12px;
-  line-height: 1.5;
-}
-
-.map-data-table caption {
-  padding: 8px 0;
-  color: var(--muted);
-  text-align: left;
-}
-
-.map-data-table th,
-.map-data-table td {
-  padding: 10px 12px;
-}
-
-.map-district-select {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  font: inherit;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-}
-
-.map-district-select:hover {
-  text-decoration: underline;
-}
-
-.map-district-select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
 /* Text pages */
 .prose p,
 .prose li {
@@ -1580,15 +1514,6 @@ body {
 
   .map {
     height: clamp(360px, 65vh, 560px);
-  }
-
-  .map-explanation .chart-info dl {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-
-  .map-explanation .chart-info dt:not(:first-child) {
-    margin-top: 8px;
   }
 
   .search,

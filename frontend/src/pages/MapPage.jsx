@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import DistrictDetail from '../components/DistrictDetail'
 import DistrictMap from '../components/DistrictMap'
 import { monthYear } from '../utils'
 
-export default function MapPage({ districts, selectedId, onSelect, comparisonWindow }) {
+export default function MapPage({ districts, comparisonWindow }) {
   const [metric, setMetric] = useState('drought')
-  const selectedDistrict = districts.find((district) => district.id === selectedId)
   const periodLabel = `${monthYear(comparisonWindow.start)} to ${monthYear(comparisonWindow.end)}`
   const metrics = [
     { id: 'drought', label: `Satellite dry months (${periodLabel})` },
@@ -28,14 +26,7 @@ export default function MapPage({ districts, selectedId, onSelect, comparisonWin
           </button>
         ))}
       </div>
-      <DistrictMap
-        districts={districts}
-        metric={metric}
-        onSelect={onSelect}
-        periodLabel={periodLabel}
-        selectedDistrictId={selectedId}
-      />
-      {selectedDistrict && <DistrictDetail district={selectedDistrict} comparisonWindow={comparisonWindow} />}
+      <DistrictMap districts={districts} metric={metric} periodLabel={periodLabel} />
     </>
   )
 }

@@ -80,7 +80,7 @@ function FitMapToDistricts({ boundaries }) {
   return null
 }
 
-export default function DistrictMap({ districts, metric, onSelect, periodLabel, selectedDistrictId }) {
+export default function DistrictMap({ districts, metric, periodLabel }) {
   const [boundaries, setBoundaries] = useState(null)
 
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function DistrictMap({ districts, metric, onSelect, periodLabel, 
         return `${district.name}: No household survey data`
       }
 
-      return `${district.name}: ${RISK_LABELS[district.summary.risk_level]} mismatch risk`
+      return `${district.name}: ${RISK_LABELS[district.summary.risk_level]} mismatch risk, ${district.summary.basis_risk_pct} points`
     }
 
     const value = VALUE_OF[metric](district)
@@ -152,41 +152,17 @@ export default function DistrictMap({ districts, metric, onSelect, periodLabel, 
   const explanation = {
     drought: {
       shows: `The number of dry months detected by satellite in each district during ${periodLabel}.`,
-      howToRead: 'A dry month has at least 20% less rain than normal. Use the color key to read the value. Click a district to see its details below.',
+      howToRead: 'A dry month has at least 20% less rain than normal. Use the color key to read the value, or hover over a district to see its exact value.',
     },
     households: {
       shows: 'The percentage of households in each district that reported drought in the CFSVA 2024 survey.',
-      howToRead: 'The color key shows the percentage range for each shade. A darker shade means a higher reported share. Grey means no data. Click a district to see its details below.',
+      howToRead: 'The color key shows the percentage range for each shade. A darker shade means a higher reported share. Grey means no data. Hover over a district to see its exact value.',
     },
     risk: {
       shows: 'How far apart the satellite and household drought rankings are for each district.',
-      howToRead: 'Risk is the absolute gap between the two percentile ranks: low is under 25 points, medium is 25 to under 50, and high is 50 or more. Grey means no household data. Click a district to see its details below.',
+      howToRead: 'Risk is the absolute gap between the two percentile ranks: low is under 25 points, medium is 25 to under 50, and high is 50 or more. Grey means no household data. Hover over a district to read its risk.',
     },
   }[metric]
-  const valueHeading = metric === 'drought'
-    ? `Dry months (${periodLabel})`
-    : metric === 'households'
-      ? 'Households reporting drought'
-      : 'Mismatch risk (points)'
-  const valueFor = (district) => {
-    if (metric === 'drought') {
-      const value = district.summary.satellite_drought_months
-
-      return value === null || value === undefined ? 'No data' : formatLegendValue(value, metric)
-    }
-
-    if (metric === 'households') {
-      const value = district.household_drought_pct
-
-      return value === null || value === undefined ? 'No data' : formatLegendValue(value, metric)
-    }
-
-    const value = district.summary.basis_risk_pct
-
-    return value === null || value === undefined
-      ? 'No household survey data'
-      : `${value} points - ${RISK_LABELS[district.summary.risk_level]}`
-  }
 
   const style = (feature) => ({
     fillColor: colorOf(byName[feature.properties.shapeName]),
@@ -195,12 +171,11 @@ export default function DistrictMap({ districts, metric, onSelect, periodLabel, 
     weight: 1.5,
   })
 
-  const bindEvents = (feature, layer) => {
+  const bindTooltip = (feature, layer) => {
     const district = byName[feature.properties.shapeName]
     if (!district) return
 
     layer.bindTooltip(tooltipOf(district))
-    layer.on('click', () => onSelect(district.id))
   }
 
   return (
@@ -212,13 +187,13 @@ export default function DistrictMap({ districts, metric, onSelect, periodLabel, 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {/* key forces the layer to redraw when the metric or data changes */}
-        <GeoJSON key={`${metric}-${districts.length}`} data={boundaries} style={style} onEachFeature={bindEvents} />
+        <GeoJSON key={`${metric}-${districts.length}`} data={boundaries} style={style} onEachFeature={bindTooltip} />
       </MapContainer>
 
       <section className="map-legend" aria-label="Map color key">
         <div className="map-legend-heading">
           <strong>Map key: {legendTitle}</strong>
-          <span>Hover over a district or use the table below to read its value.</span>
+          <span>Hover over a district to read its value.</span>
         </div>
         <ul className="map-legend-items">
           {legendItems.map(({ color, label }) => (
@@ -238,41 +213,6 @@ export default function DistrictMap({ districts, metric, onSelect, periodLabel, 
           sources={['rainfall', 'boundaries', 'cfsva']}
         />
       </div>
-
-      <section className="map-data" aria-labelledby="map-data-title">
-        <h2 id="map-data-title">District values</h2>
-        <p className="muted">The table gives the exact values behind the map. Select a district to see its detailed charts.</p>
-        <div className="table-scroll">
-          <table className="table map-data-table">
-            <caption>Map values by district</caption>
-            <thead>
-              <tr>
-                <th scope="col">District</th>
-                <th scope="col">Province</th>
-                <th scope="col">{valueHeading}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {districts.map((district) => (
-                <tr key={district.id} className={district.id === selectedDistrictId ? 'selected' : ''}>
-                  <td>
-                    <button
-                      type="button"
-                      className="map-district-select"
-                      aria-label={`Select ${district.name} to view its details`}
-                      onClick={() => onSelect(district.id)}
-                    >
-                      {district.name}
-                    </button>
-                  </td>
-                  <td>{district.province}</td>
-                  <td>{valueFor(district)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
   )
 }
