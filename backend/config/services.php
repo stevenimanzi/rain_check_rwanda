@@ -35,9 +35,9 @@ return [
         ],
     ],
 
-    'aiprovider' => [
-        'key' => env('AI_PROVIDER_API_KEY'),
-        'model' => env('AI_PROVIDER_MODEL', 'assistant-model'),
+    'google' => [
+        'key' => env('GOOGLE_API_KEY'),
+        'model' => env('GOOGLE_AI_MODEL', 'gemini-2.5-flash'),
     ],
 
     'imports' => [

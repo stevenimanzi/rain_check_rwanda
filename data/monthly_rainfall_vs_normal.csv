@@ -3739,7 +3739,7 @@ Rutsiro,2017,5,61.4,93.8,34.6,yes,yes
 Rutsiro,2017,6,11.9,32.3,63.2,no,no
 Rutsiro,2017,7,3.1,9.4,67.4,no,no
 Rutsiro,2017,8,30.6,30.6,-0.1,no,no
-Rutsiro,2017,9,83.1,83.1,-0,yes,no
+Rutsiro,2017,9,83.1,83.1,0,yes,no
 Rutsiro,2017,10,73.5,93.6,21.5,yes,yes
 Rutsiro,2017,11,96.1,119.9,19.8,yes,no
 Rutsiro,2017,12,52.1,96.4,45.9,yes,yes
@@ -3751,7 +3751,7 @@ Rutsiro,2018,5,119.6,88.8,-34.7,yes,no
 Rutsiro,2018,6,37.4,26.2,-42.6,no,no
 Rutsiro,2018,7,10.5,7.7,-35.2,no,no
 Rutsiro,2018,8,60.6,26.6,-128.3,no,no
-Rutsiro,2018,9,83.1,83.1,-0,yes,no
+Rutsiro,2018,9,83.1,83.1,0,yes,no
 Rutsiro,2018,10,88.1,93.6,5.8,yes,no
 Rutsiro,2018,11,100.8,119.9,15.9,yes,no
 Rutsiro,2018,12,113.2,91.4,-23.9,yes,no

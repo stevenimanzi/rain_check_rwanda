@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use AiProvider\Client;
 use App\Services\DistrictAnalysis;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Throwable;
 
 /**
@@ -16,7 +16,7 @@ class AssistantController extends Controller
 {
     public function __invoke(Request $request, DistrictAnalysis $analysis): JsonResponse
     {
-        $key = config('services.aiprovider.key');
+        $key = config('services.google.key');
 
         if (! $key) {
             return response()->json(['message' => 'The AI assistant is not switched on yet.'], 503);
@@ -38,37 +38,54 @@ class AssistantController extends Controller
         }
 
         try {
-            $client = new Client(apiKey: $key);
-
-            $reply = $client->messages->create(
-                model: config('services.aiprovider.model'),
-                maxTokens: 1500,
-                system: [
+            $model = config('services.google.model');
+            $response = Http::withHeaders(['x-goog-api-key' => $key])
+                ->timeout(60)
+                ->post(
+                    "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent",
                     [
-                        'type' => 'text',
-                        'text' => $this->systemPrompt($analysis),
-                        'cacheControl' => ['type' => 'ephemeral'],
+                        'systemInstruction' => [
+                            'parts' => [
+                                ['text' => $this->systemPrompt($analysis)],
+                            ],
+                        ],
+                        'contents' => array_map(
+                            fn (array $message) => [
+                                'role' => $message['role'] === 'assistant' ? 'model' : 'user',
+                                'parts' => [['text' => $message['content']]],
+                            ],
+                            $messages,
+                        ),
+                        'generationConfig' => [
+                            'maxOutputTokens' => 1500,
+                            'temperature' => 0.2,
+                        ],
                     ],
-                ],
-                messages: $messages,
-                outputConfig: ['effort' => 'low'],
-            );
+                );
+
+            if (! $response->successful()) {
+                report(new \RuntimeException('Google AI request failed: '.$response->status().' '.$response->body()));
+
+                return response()->json(['message' => 'The assistant could not answer right now. Please try again.'], 502);
+            }
+
+            $payload = $response->json();
         } catch (Throwable $e) {
             report($e);
 
             return response()->json(['message' => 'The assistant could not answer right now. Please try again.'], 502);
         }
 
-        if ($reply->stopReason === 'refusal') {
+        $finishReason = $payload['candidates'][0]['finishReason'] ?? null;
+        if ($finishReason === 'SAFETY') {
             return response()->json(['reply' => 'I cannot help with that request. Please ask about the RainCheck Rwanda data.']);
         }
 
-        $text = '';
-        foreach ($reply->content as $block) {
-            if ($block->type === 'text') {
-                $text .= $block->text;
-            }
-        }
+        $parts = $payload['candidates'][0]['content']['parts'] ?? [];
+        $text = implode('', array_map(
+            fn (array $part) => (string) ($part['text'] ?? ''),
+            $parts,
+        ));
 
         return response()->json(['reply' => trim($text) ?: 'I could not find an answer. Please rephrase your question.']);
     }
