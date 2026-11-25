@@ -72,7 +72,14 @@ class AssistantController extends Controller
         $lastStatus = 0;
 
         // The configured model first; when Google has retired it or it is busy, try the next one.
+        $startedAt = microtime(true);
+
         foreach ($this->models() as $model) {
+            // Stay inside the host's request time limit.
+            if (microtime(true) - $startedAt > 70) {
+                break;
+            }
+
             try {
                 $response = Http::withHeaders(['x-goog-api-key' => $key])
                     ->withOptions(['verify' => $verify])
@@ -132,8 +139,12 @@ class AssistantController extends Controller
     {
         return array_values(array_unique(array_filter([
             config('services.google.model'),
+            // The lite models are the steadiest on a free key; the others are tried last.
+            'gemini-3.5-flash-lite',
+            'gemini-flash-lite-latest',
+            'gemini-3.1-flash-lite',
             'gemini-3.5-flash',
-            'gemini-flash-latest',
+            'gemini-3.6-flash',
         ])));
     }
 
