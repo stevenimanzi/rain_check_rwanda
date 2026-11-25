@@ -1,27 +1,41 @@
 import { useEffect, useState } from 'react'
-import { GeoJSON, MapContainer, TileLayer } from 'react-leaflet'
+import L from 'leaflet'
+import { GeoJSON, MapContainer, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { RISK_COLORS, RISK_LABELS } from '../utils'
 import ChartInfo from './ChartInfo'
 
 const RWANDA_CENTER = [-1.95, 29.9]
 
-// Light to dark: more drought.
-const SCALE_COLORS = ['#eaf5fc', '#a9d7f3', '#40a6df', '#1d4f91']
+// The first color is the lowest value and the last is the highest.
+const SCALE_COLORS = ['#d5e9f6', '#78b9df', '#328dc4', '#174a86']
 
 const VALUE_OF = {
   drought: (d) => d.summary.satellite_drought_months,
   households: (d) => d.household_drought_pct,
 }
 
-const UNIT = {
-  drought: 'dry months, Apr 2023 to Mar 2024',
-  households: '% of households that reported drought',
+function formatLegendValue(value, metric) {
+  if (metric === 'households') {
+    return `${value}%`
+  }
+
+  return `${value} ${value === 1 ? 'dry month' : 'dry months'}`
+}
+
+function formatBandLabels(cuts, metric) {
+  const firstLabel = `Up to ${formatLegendValue(cuts[0], metric)}`
+  const middleLabels = cuts.slice(1).map((value, index) =>
+    `More than ${formatLegendValue(cuts[index], metric)} to ${formatLegendValue(value, metric)}`,
+  )
+  const lastLabel = `More than ${formatLegendValue(cuts[cuts.length - 1], metric)}`
+
+  return [firstLabel, ...middleLabels, lastLabel]
 }
 
 /**
- * Colours for a numeric metric. When there are only a few different values each gets its own colour;
- * otherwise the districts are split into four equal groups so the colours always show differences.
+ * Gives each value a color. A small number of distinct values get individual colors;
+ * otherwise, values are grouped into up to four bands.
  */
 function buildSteps(districts, metric) {
   const values = districts
@@ -34,21 +48,39 @@ function buildSteps(districts, metric) {
     const colors = distinct.map((_, i) => SCALE_COLORS[Math.round((i * (SCALE_COLORS.length - 1)) / Math.max(distinct.length - 1, 1))])
     return {
       colorFor: (value) => colors[distinct.indexOf(Number(value))] ?? RISK_COLORS.no_data,
-      legend: distinct.map((value, i) => ({ color: colors[i], label: String(value) })),
+      legend: distinct.map((value, i) => ({ color: colors[i], label: formatLegendValue(value, metric) })),
     }
   }
 
   const sorted = [...values].sort((a, b) => a - b)
-  const cuts = [0.25, 0.5, 0.75].map((q) => sorted[Math.floor(q * (sorted.length - 1))])
-  const labels = [`up to ${cuts[0]}`, `${cuts[0]} to ${cuts[1]}`, `${cuts[1]} to ${cuts[2]}`, `above ${cuts[2]}`]
+  const cuts = [...new Set([0.25, 0.5, 0.75].map((q) => sorted[Math.floor(q * (sorted.length - 1))]))]
+  const colorCount = cuts.length + 1
+  const colors = Array.from({ length: colorCount }, (_, index) =>
+    SCALE_COLORS[Math.round((index * (SCALE_COLORS.length - 1)) / (colorCount - 1))],
+  )
+  const bandLabels = formatBandLabels(cuts, metric)
 
   return {
-    colorFor: (value) => SCALE_COLORS[cuts.filter((cut) => value > cut).length],
-    legend: SCALE_COLORS.map((color, i) => ({ color, label: labels[i] })),
+    colorFor: (value) => colors[cuts.filter((cut) => value > cut).length],
+    legend: colors.map((color, index) => ({ color, label: bandLabels[index] })),
   }
 }
 
-export default function DistrictMap({ districts, metric, onSelect }) {
+function FitMapToDistricts({ boundaries }) {
+  const map = useMap()
+
+  useEffect(() => {
+    const bounds = L.geoJSON(boundaries).getBounds()
+
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 9 })
+    }
+  }, [boundaries, map])
+
+  return null
+}
+
+export default function DistrictMap({ districts, metric, onSelect, periodLabel, selectedDistrictId }) {
   const [boundaries, setBoundaries] = useState(null)
 
   useEffect(() => {
@@ -73,23 +105,92 @@ export default function DistrictMap({ districts, metric, onSelect }) {
     if (!district) return RISK_COLORS.no_data
     if (metric === 'risk') return RISK_COLORS[district.summary.risk_level] ?? RISK_COLORS.no_data
 
-    return steps.colorFor(VALUE_OF[metric](district))
+    const value = VALUE_OF[metric](district)
+
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+      return RISK_COLORS.no_data
+    }
+
+    return steps.colorFor(value)
   }
 
-  const tooltipOf = (district) =>
-    metric === 'risk'
-      ? `${district.name}: ${RISK_LABELS[district.summary.risk_level]} mismatch risk`
-      : `${district.name}: ${VALUE_OF[metric](district)} ${UNIT[metric]}`
+  const tooltipOf = (district) => {
+    if (metric === 'risk') {
+      if (district.summary.risk_level === 'no_data') {
+        return `${district.name}: No household survey data`
+      }
+
+      return `${district.name}: ${RISK_LABELS[district.summary.risk_level]} mismatch risk`
+    }
+
+    const value = VALUE_OF[metric](district)
+
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+      return `${district.name}: No data`
+    }
+
+    return metric === 'drought'
+      ? `${district.name}: ${formatLegendValue(value, metric)} during ${periodLabel}`
+      : `${district.name}: ${formatLegendValue(value, metric)} of households reported drought`
+  }
 
   const legend =
     metric === 'risk'
       ? ['low', 'medium', 'high'].map((level) => ({ color: RISK_COLORS[level], label: `${RISK_LABELS[level]} mismatch risk` }))
       : steps.legend
   const legendItems = hasNoData ? [...legend, { color: RISK_COLORS.no_data, label: 'No data' }] : legend
+  const legendTitle = metric === 'drought'
+    ? `Satellite dry months (${periodLabel})`
+    : metric === 'households'
+      ? 'Households reporting drought'
+      : 'Mismatch risk'
+  const legendNote = metric === 'risk'
+    ? 'Green means low mismatch; red means high mismatch.'
+    : legend.length === 0
+      ? 'No values are available for this measure.'
+      : 'Lighter shades show lower values; darker shades show higher values. The key shows exact values when there are few values, otherwise it shows up to four ranges.'
+  const explanation = {
+    drought: {
+      shows: `The number of dry months detected by satellite in each district during ${periodLabel}.`,
+      howToRead: 'A dry month has at least 20% less rain than normal. Use the color key to read the value. Click a district to see its details below.',
+    },
+    households: {
+      shows: 'The percentage of households in each district that reported drought in the CFSVA 2024 survey.',
+      howToRead: 'The color key shows the percentage range for each shade. A darker shade means a higher reported share. Grey means no data. Click a district to see its details below.',
+    },
+    risk: {
+      shows: 'How far apart the satellite and household drought rankings are for each district.',
+      howToRead: 'Risk is the absolute gap between the two percentile ranks: low is under 25 points, medium is 25 to under 50, and high is 50 or more. Grey means no household data. Click a district to see its details below.',
+    },
+  }[metric]
+  const valueHeading = metric === 'drought'
+    ? `Dry months (${periodLabel})`
+    : metric === 'households'
+      ? 'Households reporting drought'
+      : 'Mismatch risk (points)'
+  const valueFor = (district) => {
+    if (metric === 'drought') {
+      const value = district.summary.satellite_drought_months
+
+      return value === null || value === undefined ? 'No data' : formatLegendValue(value, metric)
+    }
+
+    if (metric === 'households') {
+      const value = district.household_drought_pct
+
+      return value === null || value === undefined ? 'No data' : formatLegendValue(value, metric)
+    }
+
+    const value = district.summary.basis_risk_pct
+
+    return value === null || value === undefined
+      ? 'No household survey data'
+      : `${value} points - ${RISK_LABELS[district.summary.risk_level]}`
+  }
 
   const style = (feature) => ({
     fillColor: colorOf(byName[feature.properties.shapeName]),
-    fillOpacity: 0.8,
+    fillOpacity: 0.9,
     color: '#ffffff',
     weight: 1.5,
   })
@@ -105,6 +206,7 @@ export default function DistrictMap({ districts, metric, onSelect }) {
   return (
     <div className="panel">
       <MapContainer center={RWANDA_CENTER} zoom={8} className="map" scrollWheelZoom={false}>
+        <FitMapToDistricts boundaries={boundaries} />
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -113,20 +215,64 @@ export default function DistrictMap({ districts, metric, onSelect }) {
         <GeoJSON key={`${metric}-${districts.length}`} data={boundaries} style={style} onEachFeature={bindEvents} />
       </MapContainer>
 
-      <div className="legend">
-        {metric !== 'risk' && <strong>{UNIT[metric]}:</strong>}
-        {legendItems.map(({ color, label }) => (
-          <span key={label}>
-            <i style={{ background: color }} /> {label}
-          </span>
-        ))}
+      <section className="map-legend" aria-label="Map color key">
+        <div className="map-legend-heading">
+          <strong>Map key: {legendTitle}</strong>
+          <span>Hover over a district or use the table below to read its value.</span>
+        </div>
+        <ul className="map-legend-items">
+          {legendItems.map(({ color, label }) => (
+            <li key={label}>
+              <i aria-hidden="true" style={{ background: color }} />
+              {label}
+            </li>
+          ))}
+        </ul>
+        <p className="map-legend-note">{legendNote}</p>
+      </section>
+
+      <div className="map-explanation">
+        <ChartInfo
+          shows={explanation.shows}
+          howToRead={explanation.howToRead}
+          sources={['rainfall', 'boundaries', 'cfsva']}
+        />
       </div>
 
-      <ChartInfo
-        shows="Rwanda's 30 districts, coloured by the measure you pick in the tabs above the map."
-        howToRead="Darker colour means more drought. On the first three tabs the districts are split into four equal groups, so the darkest colour is the top quarter. On the mismatch tab, green means the satellite and households agree, and red means they disagree a lot. Click a district to see its charts below the map."
-        sources={['rainfall', 'boundaries', 'cfsva']}
-      />
+      <section className="map-data" aria-labelledby="map-data-title">
+        <h2 id="map-data-title">District values</h2>
+        <p className="muted">The table gives the exact values behind the map. Select a district to see its detailed charts.</p>
+        <div className="table-scroll">
+          <table className="table map-data-table">
+            <caption>Map values by district</caption>
+            <thead>
+              <tr>
+                <th scope="col">District</th>
+                <th scope="col">Province</th>
+                <th scope="col">{valueHeading}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {districts.map((district) => (
+                <tr key={district.id} className={district.id === selectedDistrictId ? 'selected' : ''}>
+                  <td>
+                    <button
+                      type="button"
+                      className="map-district-select"
+                      aria-label={`Select ${district.name} to view its details`}
+                      onClick={() => onSelect(district.id)}
+                    >
+                      {district.name}
+                    </button>
+                  </td>
+                  <td>{district.province}</td>
+                  <td>{valueFor(district)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   )
 }
