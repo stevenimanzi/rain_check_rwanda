@@ -20,7 +20,7 @@ export default function App() {
   const [districts, setDistricts] = useState(null)
   const [overview, setOverview] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState(null)
   const chat = useAssistantChat()
   const predictChat = useAssistantChat(sendPredictMessages)
 
@@ -30,7 +30,11 @@ export default function App() {
         setDistricts(overviewData.districts)
         setOverview(overviewData)
       })
-      .catch(() => setError(true))
+      .catch((requestError) => {
+        setError(requestError.response
+          ? `The server returned an error (HTTP ${requestError.response.status}). Check the backend logs.`
+          : 'The API could not be reached. Check that the backend server is running.')
+      })
   }, [])
 
   const goTo = (id) => {

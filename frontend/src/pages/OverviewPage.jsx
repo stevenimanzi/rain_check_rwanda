@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowUpTrayIcon,
+  CalendarDaysIcon,
   ChevronDownIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
@@ -418,12 +419,16 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
     <section className="overview-filters" aria-label="Overview filters">
       <div className="overview-filter-heading">
         <div>
-          <h2>{lockedDistrictId ? 'Household survey data' : 'Explore by district'}</h2>
+          <h2>{lockedDistrictId ? 'Household survey' : 'Explore by district'}</h2>
           <p>
             {lockedDistrictId
-              ? 'Choose which household survey the charts for this district use.'
-              : 'Choose districts to update every chart on this page.'}
+              ? `Satellite rainfall and household reports use the same 12-month period (${surveyPeriod}).`
+              : 'Choose districts and a household survey. Satellite rainfall is always matched to that survey period.'}
           </p>
+        </div>
+        <div className="overview-filter-range">
+          <CalendarDaysIcon className="icon" aria-hidden="true" />
+          <span>Showing {surveyPeriod}</span>
         </div>
       </div>
 
