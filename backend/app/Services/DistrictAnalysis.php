@@ -5,9 +5,6 @@ namespace App\Services;
 use App\Models\District;
 use Illuminate\Support\Collection;
 
-/**
- * Builds the full picture for every district: satellite drought history next to what households reported.
- */
 class DistrictAnalysis
 {
     public function __construct(private DroughtMatchService $satellite) {}

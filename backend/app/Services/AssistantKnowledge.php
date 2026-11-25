@@ -7,10 +7,6 @@ use App\Models\HouseholdSurveyImport;
 use App\Models\RainfallRecord;
 use Illuminate\Support\Collection;
 
-/**
- * Turns the database into the text the AI assistant answers from.
- * It is rebuilt on every request, so the assistant always matches the dashboard and any saved survey.
- */
 class AssistantKnowledge
 {
     /** How many districts mentioned in the chat get their full month-by-month rainfall. */

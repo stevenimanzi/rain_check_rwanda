@@ -4,24 +4,6 @@ namespace App\Services;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-
-/**
- * "Did the rain suit this crop?" for every district and every planting month.
- *
- * The database holds one season of satellite rainfall: the 12 months households were asked about
- * (config raincheck.comparison_start to comparison_end). Each month also carries its normal rain, the typical
- * amount for that calendar month. So for every planting month two things can be judged against the crop's needs
- * (config/crops.php):
- *  - a normal year, from the normal rain of each month: what the crop usually gets;
- *  - the observed season, from the rain that fell in the window, when the whole cycle fits inside it.
- * The share of households that reported drought in the district (CFSVA) is shown next to them.
- *
- * One observed season cannot give a probability, so none is calculated: the page shows the measured
- * percentages (rain as a share of the crop's need, households reporting drought) and says plainly what they are.
- *
- * A district is only used when its satellite rainfall can be trusted: households and satellite must not disagree
- * strongly there. Districts with high mismatch risk are left out; medium and low are kept.
- */
 class CropSuitability
 {
     private const MONTHS = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

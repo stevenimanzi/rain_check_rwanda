@@ -4,10 +4,6 @@ namespace App\Services;
 
 use Illuminate\Support\Collection;
 
-/**
- * The facts the Predict Future assistant answers from. Every figure is calculated here, in code, from the
- * database: the AI only explains them and is never asked to work them out.
- */
 class PredictionKnowledge
 {
     /** Districts mentioned in the chat get their month-by-month detail, up to this many. */

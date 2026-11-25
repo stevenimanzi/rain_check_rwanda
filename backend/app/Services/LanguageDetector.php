@@ -2,11 +2,6 @@
 
 namespace App\Services;
 
-/**
- * Cheap check for whether a chat message is written in Kinyarwanda.
- * The model is told the result, so the reply language follows the question and not the language
- * picked in the page menu. Anything that is not clearly Kinyarwanda is left to the model.
- */
 class LanguageDetector
 {
     /** Words that almost only appear in Kinyarwanda. One is enough. */

@@ -7,10 +7,6 @@ use App\Models\HouseholdSurveyImport;
 use App\Models\RainfallRecord;
 use Illuminate\Support\Collection;
 
-/**
- * The data sources behind the assistant's answers: who published them, what they measure, how the
- * project uses them, and the rows stored in the database. Shown in the chat's "Data from" dialog.
- */
 class AssistantSources
 {
     public function __construct(private DistrictAnalysis $analysis) {}

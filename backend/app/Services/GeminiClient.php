@@ -5,10 +5,6 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-/**
- * Sends a conversation to Google's Gemini models. The API key stays on the server.
- * When a model is retired or busy, the next one is tried, so one overloaded model does not take the feature down.
- */
 class GeminiClient
 {
     /**

@@ -4,9 +4,6 @@ namespace App\Services;
 
 use Illuminate\Support\Collection;
 
-/**
- * Reads satellite rainfall: which months were dry, and how often a district is dry.
- */
 class DroughtMatchService
 {
     /**
