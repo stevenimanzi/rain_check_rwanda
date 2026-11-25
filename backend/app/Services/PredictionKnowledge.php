@@ -5,7 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Collection;
 
 /**
- * The facts the Predict Future assistant answers from. Every percentage is calculated here, in code, from the
+ * The facts the Predict Future assistant answers from. Every figure is calculated here, in code, from the
  * database: the AI only explains them and is never asked to work them out.
  */
 class PredictionKnowledge
@@ -51,43 +51,45 @@ class PredictionKnowledge
     private function scope(Collection $districts): string
     {
         $trust = $districts->countBy(fn (array $d) => $this->crops->trust($d));
-        $period = $this->crops->period($districts);
-        $first = $period['first_year'];
-        $last = $period['last_year'];
+        $period = $this->crops->period($districts)['label'];
 
         return "What the predictions are made from:\n"
-            ."- Satellite rainfall (CHIRPS v3), monthly, {$first} to {$last}, for {$districts->count()} districts. Nothing before {$first} is in the database.\n"
-            ."- A \"chance\" below is how often something happened in those past years. It is not a weather forecast for next year.\n"
+            ."- Household drought reports (CFSVA 2024) are the main data: the share of households in each district that reported drought.\n"
+            ."- Satellite rainfall (CHIRPS v3) is kept only for the same months households were asked about: {$period}, for {$districts->count()} districts. Nothing outside those months is in the database.\n"
+            ."- Each month also has its NORMAL rain: the typical amount for that calendar month, worked out from earlier years before they were removed.\n"
+            ."- A \"normal year\" below uses the normal rain of every month. The \"observed season\" uses the rain that really fell in {$period}, and exists only when the crop's whole growing time fits inside those months.\n"
+            ."- Only ONE observed season exists, so no probability of success can be calculated. The percentages below are measurements, not chances.\n"
             ."- Trust rule: the satellite is used only where households agree with it. Mismatch risk low = verified, medium = usable (flagged), high = excluded (no prediction), no household value = unverified (low confidence).\n"
             .'- Districts: '.($trust['verified'] ?? 0).' verified, '.($trust['usable'] ?? 0).' usable, '.($trust['excluded'] ?? 0).' excluded, '.($trust['unverified'] ?? 0).' unverified.'."\n"
-            ."- NOT in the database: sunshine, temperature, soil, pests, prices, crop yields, and any weather forecast. Say so plainly if asked.";
+            .'- NOT in the database: sunshine, temperature, soil, pests, prices, crop yields, other years of rain, and any weather forecast. Say so plainly if asked.';
     }
 
     private function cropRanking(string $cropId, Collection $districts): string
     {
         $result = $this->crops->forCrop($cropId, $districts);
         $crop = $result['crop'];
+        $period = $result['period']['label'];
 
         $lines = [
             "{$crop['name']} - what it needs (approximate agronomic reference, not from the project data):",
-            '- Rain over the whole season ('.$crop['cycle_months'].' months from planting): '.$crop['good_mm'][0].' to '.$crop['good_mm'][1].' mm is good; under '.$crop['fail_mm'][0].' mm or over '.$crop['fail_mm'][1].' mm is poor.',
+            '- Rain over the whole season ('.$crop['cycle_months'].' months from planting): '.$crop['good_mm'][0].' to '.$crop['good_mm'][1].' mm is good; under '.$crop['fail_mm'][0].' mm or over '.$crop['fail_mm'][1].' mm is poor. "% of need" is the season rain divided by '.$crop['good_mm'][0].' mm.',
             '- At least '.$crop['min_monthly_mm'].' mm in every growing month; at least '.$crop['flowering_min_mm'].' mm in month '.$crop['flowering_month'].' (flowering). '.$crop['note'],
             '- Usual planting months: '.collect($crop['usual_planting_months'])->map(fn ($m) => CropSuitability::monthName($m))->implode(', ').'. The ranking compares only these months.',
-            '- A "good season" means all those needs were met; "marginal" means one need was missed a little; "poor" means a serious miss.',
+            '- "good" means all those needs were met; "marginal" means one need was missed a little; "poor" means a serious miss.',
             '',
-            "{$crop['name']} ranking (best first). Each line: best planting month; good seasons out of years checked, with the 95% plausible range; marginal and poor seasons; trust; confidence:",
+            "{$crop['name']} ranking (best first: normal year, then observed season, then fewer households reporting drought). Each line: best planting month; normal year; observed season {$period}; households reporting drought; trust; confidence:",
         ];
 
         foreach ($result['ranking'] as $row) {
             $best = $row['best'];
-            $good = $best['good'];
             $lines[] = sprintf(
-                '%d. %s (%s) | plant in %s, harvest %s | good in %d of %d years = %s%% (range %s%% to %s%%) | marginal %d, poor %d | average season rain %s mm | trust: %s (mismatch %s) | confidence: %s%s',
+                '%d. %s (%s); plant in %s, harvest %s; normal year: %s mm = %d%% of need, %s; %s; households reporting drought: %s; trust: %s (mismatch %s); confidence: %s%s',
                 $row['rank'], $row['name'], $row['province'], $best['name'], $best['harvest_name'],
-                $good['count'], $good['years'], $good['pct'], $good['low'], $good['high'],
-                $best['marginal'], $best['poor'], $best['average_season_mm'],
+                $best['typical']['total_mm'], $best['typical']['need_pct'], $best['typical']['verdict'],
+                $this->observedText($best['observed']),
+                $row['household_drought_pct'] !== null ? $row['household_drought_pct'].'%' : 'no value',
                 $row['trust'], $row['risk_level'], $row['confidence'],
-                $row['caveat'] ? ' | caveat: '.$row['caveat'] : '',
+                $row['caveat'] ? '; caveat: '.$row['caveat'] : '',
             );
         }
 
@@ -104,7 +106,7 @@ class PredictionKnowledge
         return implode("\n", $lines);
     }
 
-    /** Every planting month for one district and crop, and the years behind the best one. */
+    /** Every planting month for one district and crop. */
     private function districtDetail(string $cropId, array $district, Collection $districts): ?string
     {
         $row = $this->crops->forDistrict($cropId, $district['name'], $districts);
@@ -119,24 +121,36 @@ class PredictionKnowledge
             return "{$crop} in {$row['name']}: no prediction. {$row['reason']}";
         }
 
-        $lines = ["{$crop} in {$row['name']}, by planting month (good / marginal / poor years, average season rain):"];
+        $lines = [
+            "{$crop} in {$row['name']}, by planting month"
+            .($row['household_drought_pct'] !== null ? " (households reporting drought: {$row['household_drought_pct']}%)" : '').':',
+        ];
 
         foreach ($row['by_month'] as $month) {
+            if ($month['typical'] === null) {
+                continue;
+            }
+
             $lines[] = sprintf(
-                '- %s%s: good %d of %d (%s%%), marginal %d, poor %d, average %s mm',
+                '- %s%s: normal year %s mm = %d%% of need, %s%s; %s',
                 $month['name'], $month['usual'] ? ' (usual)' : '',
-                $month['good']['count'], $month['years'], $month['good']['pct'] ?? 'n/a',
-                $month['marginal'], $month['poor'], $month['average_season_mm'] ?? 'n/a',
+                $month['typical']['total_mm'], $month['typical']['need_pct'], $month['typical']['verdict'],
+                $month['typical']['reasons'] ? ' ('.implode(' ', $month['typical']['reasons']).')' : '',
+                $this->observedText($month['observed']),
             );
         }
 
-        $lines[] = "Year by year for the best month ({$row['best']['name']}):";
+        return implode("\n", $lines);
+    }
 
-        foreach ($row['best']['seasons'] as $season) {
-            $lines[] = "- {$season['label']}: {$season['total_mm']} mm, {$season['verdict']}".($season['reasons'] ? ' ('.implode(' ', $season['reasons']).')' : '');
+    private function observedText(?array $observed): string
+    {
+        if ($observed === null) {
+            return 'observed season: not covered (the growing time does not fit inside the observed months)';
         }
 
-        return implode("\n", $lines);
+        return "observed {$observed['label']}: {$observed['total_mm']} mm = {$observed['need_pct']}% of need, {$observed['verdict']}"
+            .($observed['reasons'] ? ' ('.implode(' ', $observed['reasons']).')' : '');
     }
 
     private function otherCrops(array $shown): ?string
@@ -147,34 +161,27 @@ class PredictionKnowledge
     }
 
     /**
-     * Typical rain and how often a month was dry, for any "what will the rain be like" question that is not about a crop.
+     * Normal and observed rain for each calendar month, for questions that are not about a crop.
      */
     private function climate(Collection $districts): string
     {
+        $period = $this->crops->period($districts)['label'];
         $lines = [
-            'Rain by calendar month for each district: average mm over the years (lowest to highest year in brackets), then the share of years that month was dry (20% or more below normal; "-" means the month is normally too dry to judge). Use these to answer "how likely is a dry or wet month" questions, and give the number of years.',
+            "Rain by calendar month for each district: normal mm (the typical amount), then the mm that really fell in {$period} and how far it was from normal (negative = drier than normal; DRY = 20% or more below normal; \"-\" = the month is normally too dry to judge). Use these for \"how wet or dry is a month\" questions. There is only this one observed year, so do not give a likelihood.",
         ];
 
         foreach ($districts as $district) {
-            $byMonth = collect($district['rainfall'])->groupBy('month');
-            $dry = collect($district['history']['by_calendar_month'])->keyBy('month');
-            $years = $district['history']['years_covered'];
             $parts = [];
 
-            foreach (range(1, 12) as $month) {
-                $values = $byMonth->get($month, collect())->pluck('rainfall_mm');
-
-                if ($values->isEmpty()) {
-                    continue;
-                }
-
-                $share = $dry[$month]['dry_pct'] ?? null;
-                $parts[] = substr(CropSuitability::monthName($month), 0, 3).' '.round($values->avg()).' ('.round($values->min()).'-'.round($values->max()).') dry '.($share === null ? '-' : round($share).'%');
+            foreach (collect($district['rainfall'])->sortBy(fn ($m) => $m['year'] * 100 + $m['month']) as $month) {
+                $flag = ! $month['judged'] ? '-' : ($month['satellite_drought'] ? 'DRY' : 'ok');
+                $parts[] = substr(CropSuitability::monthName($month['month']), 0, 3).' normal '.round($month['normal_mm'])
+                    .', observed '.round($month['rainfall_mm']).' ('.sprintf('%+d', -round($month['rainfall_deficit_pct'])).'%) '.$flag;
             }
 
             $trust = $this->crops->trust($district);
             $label = $trust === 'excluded' ? 'NOT TRUSTED, high mismatch risk' : $trust;
-            $lines[] = "{$district['name']} [{$label}, {$years} years]: ".implode('; ', $parts);
+            $lines[] = "{$district['name']} [{$label}]: ".implode('; ', $parts);
         }
 
         return implode("\n", $lines);

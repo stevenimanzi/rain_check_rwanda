@@ -2889,6 +2889,7 @@ body {
 }
 
 /* Predict Future */
+
 .predict-page {
   --verdict-good: #16a34a;
   --verdict-marginal: #f59e0b;
@@ -2934,402 +2935,8 @@ body {
   height: 520px;
 }
 
-.predict-planner h3 {
-  font-size: 18px;
-}
-
-.predict-crops {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0;
-}
-
-.predict-crops button {
-  padding: 7px 16px;
-  border: 0;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.predict-crops button.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-
-.predict-needs {
-  background: #fff;
-  border: 0;
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 14px;
-}
-
-.predict-needs ul {
-  margin: 6px 0;
-  padding-left: 20px;
-  line-height: 1.6;
-}
-
-.predict-needs .muted {
-  font-size: 12px;
-}
-
-.predict-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 16px;
-  margin: 14px 0 8px;
-  font-size: 13px;
-}
-
-.predict-toolbar label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-
-.predict-toolbar select {
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: #fff;
-  font: inherit;
-}
-
-.predict-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.predict-list > li {
-  background: #fff;
-  border: 0;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.predict-list > li.open {
-  box-shadow: 0 2px 10px rgba(29, 79, 145, 0.12);
-}
-
-.predict-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 30px minmax(110px, 1.1fr) minmax(110px, 1fr) minmax(190px, 1.6fr) minmax(160px, 1.3fr) 20px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.predict-row:hover {
-  background: var(--accent-soft);
-}
-
-.predict-row small {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.predict-rank {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--primary);
-  font-size: 13px;
-  font-weight: 700;
-  display: grid;
-  place-items: center;
-}
-
-.predict-tags {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-}
-
-.predict-chevron {
-  width: 18px;
-  height: 18px;
-  color: var(--muted);
-}
-
-.predict-chance {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.predict-chance-track {
-  position: relative;
-  flex: 1;
-  height: 10px;
-  border-radius: 6px;
-  background: #e6eef5;
-}
-
-.predict-chance-range {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-radius: 6px;
-  background: #a9d3ee;
-}
-
-.predict-chance-dot {
-  position: absolute;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  margin: -7px 0 0 -7px;
-  border-radius: 50%;
-  background: var(--primary);
-  box-shadow: 0 0 0 3px #fff;
-}
-
-.predict-chance-text {
-  min-width: 76px;
-  line-height: 1.2;
-}
-
-.predict-chance-text strong {
-  display: block;
-  font-size: 17px;
-}
-
-.predict-chance-text span {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.predict-detail {
-  padding: 4px 16px 16px;
-  background: #fbfdff;
-}
-
-.predict-sentence {
-  margin: 12px 0 8px;
-  line-height: 1.55;
-}
-
-.predict-caveat {
-  margin: 0 0 10px;
-  padding: 8px 12px;
-  background: #fff7e6;
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.predict-months {
-  margin: 12px 0;
-}
-
-.predict-months figcaption {
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.predict-months-plot {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 6px;
-  align-items: end;
-}
-
-.predict-month {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.predict-month.usual {
-  color: var(--text);
-  font-weight: 700;
-}
-
-.predict-month.best .predict-month-stack {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.predict-month-stack {
-  width: 100%;
-  max-width: 34px;
-  height: 90px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  border-radius: 4px;
-  overflow: hidden;
-  background: #e6eef5;
-}
-
-.predict-month:not(.usual) .predict-month-stack {
-  opacity: 0.6;
-}
-
-.predict-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.predict-legend i {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 5px;
-  border-radius: 2px;
-}
-
-.predict-table-wrap {
-  overflow-x: auto;
-}
-
-.predict-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.predict-table caption {
-  text-align: left;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.predict-table th,
-.predict-table td {
-  padding: 6px 8px;
-  text-align: left;
-  vertical-align: top;
-}
-
-.predict-table th {
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.predict-verdict {
-  display: inline-block;
-  padding: 1px 9px;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.predict-verdict.good {
-  background: var(--verdict-good);
-}
-
-.predict-verdict.marginal {
-  background: var(--verdict-marginal);
-}
-
-.predict-verdict.poor {
-  background: var(--verdict-poor);
-}
-
-.predict-evidence {
-  margin: 12px 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.predict-ask {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--primary);
-  color: #fff;
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.predict-ask .icon {
-  width: 16px;
-  height: 16px;
-}
-
-.predict-excluded {
-  margin-top: 14px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 10px;
-  background: #fff;
-  font-size: 13px;
-}
-
-.predict-excluded summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.predict-excluded ul {
-  margin: 0;
-  padding-left: 20px;
-  line-height: 1.6;
-}
-
-.predict-error {
-  color: var(--risk-high);
-}
-
-@media (max-width: 900px) {
-  .predict-row {
-    grid-template-columns: 30px 1fr 20px;
-  }
-
-  .predict-row .predict-plant,
-  .predict-row .predict-chance,
-  .predict-row .predict-tags {
-    grid-column: 2 / 3;
-  }
-
-  .predict-row .predict-chevron {
-    grid-column: 3;
-    grid-row: 1;
-  }
-}
-
-.predict-table tbody tr:nth-child(even) {
-  background: #f1f6fb;
-}
-
 /* No borders on any container of this page, including the shared panel, chat and chart blocks. */
+
 .predict-page .panel,
 .predict-page .assistant-form input,
 .predict-page .md-chart,
@@ -3347,8 +2954,8 @@ body {
   box-shadow: 0 1px 4px rgba(24, 50, 71, 0.12);
 }
 
-
 /* Breathing room on the Predict Future page. */
+
 .predict-page {
   gap: 28px;
   padding-bottom: 24px;
@@ -3409,99 +3016,6 @@ body {
   margin-top: 12px;
 }
 
-.predict-planner > .muted {
-  margin: 8px 0 20px;
-  line-height: 1.6;
-}
-
-.predict-crops {
-  gap: 12px;
-  margin: 20px 0 24px;
-}
-
-.predict-crops button {
-  padding: 10px 22px;
-}
-
-.predict-needs {
-  padding: 20px 22px;
-  line-height: 1.6;
-}
-
-.predict-needs ul {
-  margin: 10px 0 14px;
-}
-
-.predict-toolbar {
-  gap: 12px 24px;
-  margin: 28px 0 16px;
-}
-
-.predict-list {
-  gap: 14px;
-}
-
-.predict-row {
-  gap: 18px;
-  padding: 18px 22px;
-}
-
-.predict-detail {
-  padding: 8px 26px 26px;
-}
-
-.predict-sentence {
-  margin: 18px 0 14px;
-  line-height: 1.7;
-}
-
-.predict-caveat {
-  margin: 0 0 18px;
-  padding: 14px 18px;
-  line-height: 1.6;
-}
-
-.predict-months {
-  margin: 24px 0;
-}
-
-.predict-months figcaption {
-  margin-bottom: 14px;
-}
-
-.predict-months-plot {
-  gap: 10px;
-}
-
-.predict-legend {
-  gap: 8px 20px;
-  margin-top: 14px;
-}
-
-.predict-table th,
-.predict-table td {
-  padding: 10px 12px;
-}
-
-.predict-table caption {
-  margin-bottom: 12px;
-}
-
-.predict-evidence {
-  margin: 20px 0;
-  line-height: 1.6;
-}
-
-.predict-excluded {
-  margin-top: 24px;
-  padding: 18px 22px;
-}
-
-.predict-excluded ul {
-  margin-top: 12px;
-  line-height: 1.8;
-}
-
 @media (max-width: 720px) {
   .predict-page {
     gap: 20px;
@@ -3510,41 +3024,168 @@ body {
   .predict-page .panel {
     padding: 18px;
   }
-
-  .predict-row {
-    padding: 14px 16px;
-  }
-
-  .predict-detail {
-    padding: 4px 16px 20px;
-  }
 }
 
-/* Districts left out of the prediction: more room between the title, the explanation and the list */
-.predict-excluded {
-  margin-top: 28px;
-  padding: 22px 28px;
-  font-size: 14px;
+
+.predict-page [hidden] {
+  display: none;
 }
 
-.predict-excluded summary {
-  padding: 2px 0;
-  font-size: 15px;
+/* Room between the parts of a prediction answer: heading, chart, list, takeaway and sources. */
+.predict-chat .md-body {
+  line-height: 1.7;
 }
 
-.predict-excluded[open] summary {
+.predict-chat .md-body > * + * {
+  margin-top: 18px;
+}
+
+.predict-chat .md-body h1,
+.predict-chat .md-body h2,
+.predict-chat .md-body h3 {
+  margin-bottom: 4px;
+}
+
+.predict-chat .md-body p {
+  margin: 0;
+}
+
+.predict-chat .md-body ul,
+.predict-chat .md-body ol {
+  padding-left: 22px;
+}
+
+.predict-chat .md-body li {
+  margin: 0 0 14px;
+  line-height: 1.7;
+}
+
+.predict-chat .md-body li:last-child {
+  margin-bottom: 0;
+}
+
+/* A confidence badge that follows a sentence sits on its own line instead of squeezing against the text. */
+.predict-chat .md-body li .md-badge {
+  margin: 4px 8px 0 0;
+}
+
+.predict-chat .md-chart {
+  padding: 18px 20px;
+}
+
+.predict-chat .md-chart figcaption {
   margin-bottom: 14px;
 }
 
-.predict-excluded > p {
-  margin: 0 0 18px;
-  line-height: 1.65;
+.predict-chat .md-bar-row {
+  margin: 0 0 12px;
 }
 
-.predict-excluded ul {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding-left: 22px;
-  line-height: 1.65;
+.predict-chat .md-bar-row:last-child {
+  margin-bottom: 0;
+}
+
+.predict-chat .md-body hr {
+  margin: 22px 0;
+}
+
+.predict-chat .md-body blockquote {
+  padding: 14px 18px;
+}
+
+.predict-chat .md-table-wrap td,
+.predict-chat .md-table-wrap th {
+  padding: 10px 14px;
+}
+
+.predict-chat .md-sources {
+  margin-top: 22px;
+  gap: 10px;
+}
+
+.predict-chat .assistant-message.assistant {
+  padding: 20px 22px;
+}
+
+/* Scroll bars in the dashboard's colours: slim, rounded, light blue that turns darker on hover */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #a9cbe9 transparent;
+}
+
+/* Chrome, Edge and Safari take their look from these rules; Firefox uses the two lines above. */
+
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    min-width: 40px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-color: #a9cbe9;
+    background-clip: padding-box;
+    transition: background-color 0.15s ease;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--secondary);
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background-color: var(--primary);
+  }
+
+  /* On the dark blue sidebar the thumb is a soft white */
+  .sidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
+
+  .sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* Predict page: the question box stays at the bottom of the screen while the page scrolls */
+
+.predict-composer-slot {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  margin: 0 -8px -52px;
+  padding: 14px 28px 12px;
+  border-radius: 18px 18px 0 0;
+  background: var(--card);
+  box-shadow: 0 -8px 22px rgba(29, 79, 145, 0.12);
+}
+
+.predict-composer-slot .assistant-form {
+  margin-top: 0;
+}
+
+.predict-composer-slot .assistant-footer {
+  margin-top: 8px;
 }

@@ -172,7 +172,9 @@ function normalizeMarkdown(source) {
   const out = []
   let inFence = false
 
-  for (const line of source.replace(/\r\n/g, '\n').split('\n')) {
+  for (const rawLine of source.replace(/\r\n/g, '\n').split('\n')) {
+    // A doubled marker such as "## ## Title" would show the second pair of hashes as text.
+    const line = rawLine.replace(/^(\s*#{1,6})\s+#{1,6}\s+/, '$1 ')
     const text = line.trim()
     const previous = out.length ? out[out.length - 1].trim() : ''
     const isFence = text.startsWith('```')

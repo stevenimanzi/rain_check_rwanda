@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Services\ChanceEstimator;
 use App\Services\CropSuitability;
 use App\Services\DistrictAnalysis;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,18 +13,31 @@ class PredictTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * A district shaped like DistrictAnalysis::all() returns it.
+     * A district shaped like DistrictAnalysis::all() returns it: one season of rain (April 2023 to March 2024),
+     * each month with its normal rain.
      *
-     * @param  callable(int, int): float  $rain  rainfall for (year, month)
+     * @param  callable(int): float  $observed  rain that fell, by calendar month
+     * @param  callable(int): float  $normal  normal rain, by calendar month
      */
-    private function district(int $id, string $name, string $risk, callable $rain, string $direction = 'agrees'): array
+    private function district(int $id, string $name, string $risk, callable $observed, callable $normal, string $direction = 'agrees'): array
     {
         $series = collect();
 
-        foreach (range(2014, 2024) as $year) {
-            foreach (range(1, 12) as $month) {
-                $series->push(['year' => $year, 'month' => $month, 'rainfall_mm' => $rain($year, $month)]);
-            }
+        foreach (range(0, 11) as $i) {
+            $month = ($i + 3) % 12 + 1;
+            $year = $month >= 4 ? 2023 : 2024;
+            $mm = $observed($month);
+            $norm = $normal($month);
+
+            $series->push([
+                'year' => $year,
+                'month' => $month,
+                'rainfall_mm' => $mm,
+                'normal_mm' => $norm,
+                'rainfall_deficit_pct' => round(($norm - $mm) / $norm * 100, 1),
+                'judged' => true,
+                'satellite_drought' => ($norm - $mm) / $norm >= 0.2,
+            ]);
         }
 
         return [
@@ -34,10 +46,7 @@ class PredictTest extends TestCase
             'province' => 'Test Province',
             'household_drought_pct' => $risk === 'no_data' ? null : 20.0,
             'rainfall' => $series,
-            'history' => [
-                'years_covered' => 11,
-                'by_calendar_month' => collect(range(1, 12))->map(fn ($m) => ['month' => $m, 'dry_pct' => 10.0])->all(),
-            ],
+            'history' => ['years_covered' => 1, 'by_calendar_month' => []],
             'summary' => ['risk_level' => $risk, 'direction' => $direction, 'basis_risk_pct' => $risk === 'high' ? 60.0 : 5.0],
         ];
     }
@@ -49,36 +58,21 @@ class PredictTest extends TestCase
 
     private function standardDistricts(): array
     {
+        $wet = fn () => 120.0;
+        $dry = fn () => 20.0;
+
         return [
-            // Always enough rain in every month: a good season in every year.
-            $this->district(1, 'Wetville', 'low', fn () => 120.0),
+            // Enough rain in a normal year and in the observed season.
+            $this->district(1, 'Wetville', 'low', $wet, $wet),
             // Never enough rain.
-            $this->district(2, 'Dryton', 'medium', fn () => 20.0, 'satellite_understates'),
+            $this->district(2, 'Dryton', 'medium', $dry, $dry, 'satellite_understates'),
             // Fine on paper, but households and satellite disagree strongly: must not be used.
-            $this->district(3, 'Trapland', 'high', fn () => 120.0, 'satellite_understates'),
-            // Good in every year except the odd ones.
-            $this->district(4, 'Halfway', 'low', fn ($y) => $y % 2 === 0 ? 120.0 : 20.0),
-            $this->district(5, 'Unchecked', 'no_data', fn () => 120.0),
+            $this->district(3, 'Trapland', 'high', $wet, $wet, 'satellite_understates'),
+            // A normal year would be fine, but the observed season fell short.
+            $this->district(4, 'Halfway', 'low', $dry, $wet),
+            // Same rain as Wetville, but no household value to check it against.
+            $this->district(5, 'Unchecked', 'no_data', $wet, $wet),
         ];
-    }
-
-    public function test_chance_estimator_gives_an_honest_range(): void
-    {
-        $nine = ChanceEstimator::share(9, 10);
-        $this->assertSame(90.0, $nine['pct']);
-        $this->assertEqualsWithDelta(59.6, $nine['low'], 0.1);
-        $this->assertEqualsWithDelta(98.2, $nine['high'], 0.1);
-
-        // 10 of 10 is not "100% certain": the plausible range still reaches well below it.
-        $ten = ChanceEstimator::share(10, 10);
-        $this->assertSame(100.0, $ten['pct']);
-        $this->assertLessThan(75, $ten['low']);
-
-        $none = ChanceEstimator::share(0, 10);
-        $this->assertSame(0.0, $none['low']);
-        $this->assertGreaterThan(0, $none['high']);
-
-        $this->assertNull(ChanceEstimator::share(0, 0)['pct']);
     }
 
     public function test_a_season_is_judged_on_total_rain_dry_months_and_flowering(): void
@@ -104,70 +98,68 @@ class PredictTest extends TestCase
         $this->assertSame('good', $judge([130, 130, 130, 130, 0])['verdict']);
     }
 
-    public function test_untrusted_districts_are_left_out_and_the_rest_are_ranked_by_honest_odds(): void
+    public function test_untrusted_districts_are_left_out_and_the_rest_are_ranked(): void
     {
         $this->fakeAnalysis($this->standardDistricts());
 
         $result = app(CropSuitability::class)->forCrop('maize');
         $ranked = collect($result['ranking']);
 
+        $this->assertSame('April 2023 to March 2024', $result['period']['label']);
         $this->assertSame(['Trapland'], collect($result['excluded'])->pluck('name')->all());
         $this->assertStringContainsString('no prediction is made', $result['excluded'][0]['reason']);
-        $this->assertFalse($ranked->pluck('name')->contains('Trapland'));
 
+        // Normal year, then observed season, then households, then trust.
         $this->assertSame(['Wetville', 'Unchecked', 'Halfway', 'Dryton'], $ranked->pluck('name')->all());
         $this->assertSame([1, 2, 3, 4], $ranked->pluck('rank')->all());
 
         $wetville = $ranked->firstWhere('name', 'Wetville');
         $this->assertSame('verified', $wetville['trust']);
-        $this->assertSame('high', $wetville['confidence']);
-        $this->assertSame(11, $wetville['best']['good']['count']);
-        $this->assertSame(11, $wetville['best']['years']);
-        $this->assertLessThan(100, $wetville['best']['good']['low']);
+        // One observed season is never high confidence.
+        $this->assertSame('medium', $wetville['confidence']);
+        $this->assertSame('good', $wetville['best']['typical']['verdict']);
+        $this->assertSame(600.0, $wetville['best']['typical']['total_mm']);
+        $this->assertSame(120, $wetville['best']['typical']['need_pct']);
+        $this->assertSame('good', $wetville['best']['observed']['verdict']);
+
+        $halfway = $ranked->firstWhere('name', 'Halfway');
+        $this->assertSame('good', $halfway['best']['typical']['verdict']);
+        // The rain that really fell in an October-planted season was poor, so a month without an observed season ranks above it.
+        $this->assertSame('poor', collect($halfway['by_month'])->firstWhere('name', 'October')['observed']['verdict']);
+        $this->assertNull($halfway['best']['observed']);
 
         $dryton = $ranked->firstWhere('name', 'Dryton');
         $this->assertSame('usable', $dryton['trust']);
-        $this->assertSame(0, $dryton['best']['good']['count']);
-        $this->assertStringContainsString('may be lower', $dryton['caveat']);
+        $this->assertSame('low', $dryton['confidence']);
+        $this->assertSame('poor', $dryton['best']['typical']['verdict']);
+        $this->assertStringContainsString('less than this says', $dryton['caveat']);
 
-        // No household value: still ranked, but with low confidence and a warning.
         $unchecked = $ranked->firstWhere('name', 'Unchecked');
         $this->assertSame('unverified', $unchecked['trust']);
         $this->assertSame('low', $unchecked['confidence']);
         $this->assertNotNull($unchecked['caveat']);
-
-        // Half the years are good: the plausible range is wide and the pct is 50-ish of the best usual month.
-        $halfway = $ranked->firstWhere('name', 'Halfway');
-        $this->assertGreaterThan(0, $halfway['best']['good']['count']);
-        $this->assertLessThan($halfway['best']['years'], $halfway['best']['good']['count']);
     }
 
-    public function test_only_the_usual_planting_months_can_be_recommended_but_all_twelve_are_shown(): void
+    public function test_every_month_has_a_normal_year_but_only_some_have_an_observed_season(): void
     {
-        $this->fakeAnalysis([$this->district(1, 'Wetville', 'low', fn () => 120.0)]);
+        $this->fakeAnalysis([$this->district(1, 'Wetville', 'low', fn () => 120.0, fn () => 120.0)]);
 
         $row = app(CropSuitability::class)->forCrop('maize')['ranking'][0];
 
         $this->assertCount(12, $row['by_month']);
+        $this->assertNotContains(null, array_column($row['by_month'], 'typical'));
+
+        $byName = collect($row['by_month'])->keyBy('name');
+
+        // A season planted in October (to February) fits inside April 2023 to March 2024; one planted in February does not.
+        $this->assertNotNull($byName['October']['observed']);
+        $this->assertSame('Oct 2023 to Feb 2024', $byName['October']['observed']['label']);
+        $this->assertNull($byName['February']['observed']);
+
         $this->assertContains($row['best']['month'], [9, 10, 2, 3]);
         $this->assertTrue($row['best']['usual']);
         // Planted in the best month, harvested four months later (maize has a five month cycle).
         $this->assertSame(($row['best']['month'] + 3) % 12 + 1, $row['best']['harvest_month']);
-    }
-
-    public function test_api_returns_the_ranking_and_404_for_an_unknown_crop(): void
-    {
-        $this->fakeAnalysis($this->standardDistricts());
-
-        $this->getJson('/api/predict/crops')->assertOk()->assertJsonPath('data.0.id', 'maize');
-
-        $this->getJson('/api/predict/crops/maize')->assertOk()
-            ->assertJsonPath('data.crop.name', 'Maize')
-            ->assertJsonPath('data.ranking.0.name', 'Wetville')
-            ->assertJsonPath('data.excluded.0.name', 'Trapland')
-            ->assertJsonPath('data.period.first_year', 2014);
-
-        $this->getJson('/api/predict/crops/wheat')->assertNotFound();
     }
 
     public function test_crop_names_are_found_in_english_french_and_kinyarwanda(): void
@@ -200,21 +192,24 @@ class PredictTest extends TestCase
         return [$sent];
     }
 
-    public function test_chat_prompt_carries_calculated_chances_and_the_honesty_rules(): void
+    public function test_chat_prompt_carries_calculated_figures_and_the_honesty_rules(): void
     {
         [$prompt] = $this->ask([['role' => 'user', 'content' => 'Which district is best for maize?']]);
 
         $this->assertStringContainsString('1. Wetville', $prompt);
-        $this->assertStringContainsString('good in 11 of 11 years = 100%', $prompt);
-        $this->assertStringContainsString('plausible range', $prompt);
-        $this->assertStringContainsString('Never say "will"', $prompt);
+        $this->assertStringContainsString('normal year: 600 mm = 120% of need, good', $prompt);
+        $this->assertMatchesRegularExpression('/observed (Sep|Oct) 2023 to (Jan|Feb) 2024: 600 mm = 120% of need, good/', $prompt);
+        $this->assertStringContainsString('households reporting drought: 20%', $prompt);
+        $this->assertStringContainsString('Only ONE observed season exists', $prompt);
+        $this->assertStringContainsString('Never write "X% chance"', $prompt);
         $this->assertStringContainsString('NOT in the database: sunshine, temperature', $prompt);
         $this->assertStringContainsString('Left out, no prediction made:', $prompt);
-        $this->assertStringContainsString('Trapland', $prompt);
         $this->assertStringContainsString('NOT TRUSTED, high mismatch risk', $prompt);
         // Maize only, until another crop is asked about.
         $this->assertStringNotContainsString('Beans ranking', $prompt);
         $this->assertStringContainsString('Other crops that can be ranked', $prompt);
+        // Nothing from outside the household window is claimed.
+        $this->assertStringNotContainsString('2014', $prompt);
     }
 
     public function test_chat_prompt_follows_the_crop_and_district_in_the_question(): void
@@ -223,7 +218,7 @@ class PredictTest extends TestCase
 
         $this->assertStringContainsString('Beans ranking', $prompt);
         $this->assertStringContainsString('Beans in Halfway, by planting month', $prompt);
-        $this->assertStringContainsString('Year by year for the best month', $prompt);
+        $this->assertStringContainsString('normal year', $prompt);
         $this->assertStringNotContainsString('Maize ranking', $prompt);
     }
 

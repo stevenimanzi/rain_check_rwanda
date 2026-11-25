@@ -6,12 +6,18 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 /**
- * "How often did the rain suit this crop?" for every district and every planting month.
+ * "Did the rain suit this crop?" for every district and every planting month.
  *
- * It replays the satellite rainfall of 2014 to 2024: for each year it asks whether a crop planted in a given month
- * would have had the rain it needs (see config/crops.php). The share of years that did is the chance shown to
- * the user. It is a record of what happened, not a weather forecast, so it is always shown with the number of
- * years behind it and an uncertainty range.
+ * The database holds one season of satellite rainfall: the 12 months households were asked about
+ * (config raincheck.comparison_start to comparison_end). Each month also carries its normal rain, the typical
+ * amount for that calendar month. So for every planting month two things can be judged against the crop's needs
+ * (config/crops.php):
+ *  - a normal year, from the normal rain of each month: what the crop usually gets;
+ *  - the observed season, from the rain that fell in the window, when the whole cycle fits inside it.
+ * The share of households that reported drought in the district (CFSVA) is shown next to them.
+ *
+ * One observed season cannot give a probability, so none is calculated: the page shows the measured
+ * percentages (rain as a share of the crop's need, households reporting drought) and says plainly what they are.
  *
  * A district is only used when its satellite rainfall can be trusted: households and satellite must not disagree
  * strongly there. Districts with high mismatch risk are left out; medium and low are kept.
@@ -19,6 +25,8 @@ use Illuminate\Support\Collection;
 class CropSuitability
 {
     private const MONTHS = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    private const SEVERITY = ['good' => 0, 'marginal' => 1, 'poor' => 2];
 
     public function __construct(private DistrictAnalysis $analysis)
     {
@@ -87,7 +95,7 @@ class CropSuitability
             $assessment = $this->assess($district, $profile, $trust);
 
             if ($assessment === null) {
-                $excluded->push($this->excludedEntry($district, 'not_enough_rain_years'));
+                $excluded->push($this->excludedEntry($district, 'not_enough_rain'));
 
                 continue;
             }
@@ -95,12 +103,10 @@ class CropSuitability
             $ranking->push($assessment);
         }
 
-        // The lower end of the uncertainty range decides the order, so a district that was good 10 of 10 times
-        // ranks above one that was good 3 of 3 times. With equal evidence, a district whose satellite rain was
-        // checked against households ranks above one that could not be checked.
+        // A normal year that suits the crop comes first, then the observed season, then fewer households
+        // reporting drought, then a satellite that was checked against households.
         $ranking = $ranking
-            ->sort(fn (array $a, array $b) => [$b['best']['good']['low'], $b['best']['good']['count'], $this->trustOrder($a['trust']), $a['best']['poor'], $a['name']]
-                <=> [$a['best']['good']['low'], $a['best']['good']['count'], $this->trustOrder($b['trust']), $b['best']['poor'], $b['name']])
+            ->sort(fn (array $a, array $b) => $this->rankKey($a) <=> $this->rankKey($b))
             ->values()
             ->map(fn (array $entry, int $index) => ['rank' => $index + 1] + $entry);
 
@@ -141,93 +147,6 @@ class CropSuitability
             'high' => 'excluded',
             default => 'unverified',
         };
-    }
-
-    /** @return array<string, mixed>|null */
-    private function assess(array $district, array $profile, string $trust): ?array
-    {
-        $rain = $this->rainByMonthIndex($district['rainfall']);
-
-        if ($rain === []) {
-            return null;
-        }
-
-        $firstYear = intdiv(min(array_keys($rain)), 12);
-        $lastYear = intdiv(max(array_keys($rain)), 12);
-        $usual = $profile['usual_planting_months'];
-
-        $byMonth = collect(range(1, 12))->map(function (int $month) use ($rain, $profile, $firstYear, $lastYear, $usual) {
-            $seasons = collect(range($firstYear, $lastYear))
-                ->map(fn (int $year) => $this->season($rain, $profile, $year, $month))
-                ->filter()
-                ->values();
-
-            $count = fn (string $verdict) => $seasons->where('verdict', $verdict)->count();
-
-            return [
-                'month' => $month,
-                'name' => self::MONTHS[$month],
-                'usual' => in_array($month, $usual, true),
-                'years' => $seasons->count(),
-                'good' => ChanceEstimator::share($count('good'), $seasons->count()),
-                'workable' => ChanceEstimator::share($count('good') + $count('marginal'), $seasons->count()),
-                'marginal' => $count('marginal'),
-                'poor' => $count('poor'),
-                'average_season_mm' => $seasons->isNotEmpty() ? round($seasons->avg('total_mm'), 1) : null,
-                'seasons' => $seasons->all(),
-            ];
-        });
-
-        $best = $byMonth
-            ->filter(fn (array $row) => $row['usual'] && $row['years'] > 0)
-            ->sort(fn (array $a, array $b) => [$b['good']['low'], $b['good']['count'], $a['poor']] <=> [$a['good']['low'], $a['good']['count'], $b['poor']])
-            ->first();
-
-        if ($best === null) {
-            return null;
-        }
-
-        $summary = $district['summary'];
-
-        return [
-            'id' => $district['id'],
-            'name' => $district['name'],
-            'province' => $district['province'],
-            'trust' => $trust,
-            'confidence' => $this->confidence($trust, $best['years']),
-            'risk_level' => $summary['risk_level'] ?? 'no_data',
-            'direction' => $summary['direction'] ?? null,
-            'basis_risk_pct' => $summary['basis_risk_pct'] ?? null,
-            'household_drought_pct' => $district['household_drought_pct'],
-            'caveat' => $this->caveat($summary['direction'] ?? null, $trust),
-            'best' => $this->monthRow($best, $profile),
-            'by_month' => $byMonth->map(fn (array $row) => Arr::except($this->monthRow($row, $profile), ['seasons']))->all(),
-        ];
-    }
-
-    /** The planting window of one year: the months of rain it had and whether the crop would have had enough. */
-    private function season(array $rain, array $profile, int $year, int $startMonth): ?array
-    {
-        $start = $year * 12 + $startMonth - 1;
-        $monthly = [];
-
-        for ($i = 0; $i < $profile['cycle_months']; $i++) {
-            if (! isset($rain[$start + $i])) {
-                return null;
-            }
-
-            $monthly[] = $rain[$start + $i];
-        }
-
-        $judged = $this->judge($monthly, $profile, $startMonth);
-        $end = $start + $profile['cycle_months'] - 1;
-
-        return [
-            'year' => $year,
-            'label' => substr(self::MONTHS[$startMonth], 0, 3).' '.$year.' to '.substr(self::MONTHS[$end % 12 + 1], 0, 3).' '.intdiv($end, 12),
-            'monthly_mm' => $monthly,
-            'total_mm' => round(array_sum($monthly), 1),
-        ] + $judged;
     }
 
     /**
@@ -281,27 +200,159 @@ class CropSuitability
         return ['verdict' => ['good', 'marginal', 'poor'][$severity], 'reasons' => $reasons];
     }
 
-    /** The planting month as shown to the user, with when to harvest. */
-    private function monthRow(array $row, array $profile): array
+    /** @return array<string, mixed>|null */
+    private function assess(array $district, array $profile, string $trust): ?array
     {
-        $harvestMonth = ($row['month'] - 1 + $profile['cycle_months'] - 1) % 12 + 1;
+        $observed = [];
+        $normal = [];
 
-        return $row + ['harvest_month' => $harvestMonth, 'harvest_name' => self::MONTHS[$harvestMonth]];
+        foreach ($district['rainfall'] as $month) {
+            $observed[$month['year'] * 12 + $month['month'] - 1] = (float) $month['rainfall_mm'];
+
+            if (($month['normal_mm'] ?? null) !== null) {
+                $normal[$month['month']] = (float) $month['normal_mm'];
+            }
+        }
+
+        if ($observed === []) {
+            return null;
+        }
+
+        $byMonth = collect(range(1, 12))->map(fn (int $month) => $this->plantingMonth($month, $observed, $normal, $profile));
+
+        $best = $byMonth
+            ->filter(fn (array $row) => $row['usual'] && $row['typical'] !== null)
+            ->sort(fn (array $a, array $b) => $this->monthKey($a, $profile) <=> $this->monthKey($b, $profile))
+            ->first();
+
+        if ($best === null) {
+            return null;
+        }
+
+        $summary = $district['summary'];
+
+        return [
+            'id' => $district['id'],
+            'name' => $district['name'],
+            'province' => $district['province'],
+            'trust' => $trust,
+            // One observed season can never give high confidence; it is medium only where households agree with the satellite.
+            'confidence' => $trust === 'verified' ? 'medium' : 'low',
+            'risk_level' => $summary['risk_level'] ?? 'no_data',
+            'direction' => $summary['direction'] ?? null,
+            'basis_risk_pct' => $summary['basis_risk_pct'] ?? null,
+            'household_drought_pct' => $district['household_drought_pct'],
+            'caveat' => $this->caveat($summary['direction'] ?? null, $trust),
+            'best' => $best,
+            'by_month' => $byMonth->all(),
+        ];
+    }
+
+    /**
+     * One planting month: the normal year and, when the whole cycle fits inside the observed window, that season.
+     *
+     * @param  array<int, float>  $observed  month index (year * 12 + month - 1) => mm
+     * @param  array<int, float>  $normal  calendar month => normal mm
+     */
+    private function plantingMonth(int $month, array $observed, array $normal, array $profile): array
+    {
+        $cycle = $profile['cycle_months'];
+        $harvest = ($month - 1 + $cycle - 1) % 12 + 1;
+
+        $typicalMonthly = [];
+
+        for ($i = 0; $i < $cycle; $i++) {
+            $value = $normal[($month - 1 + $i) % 12 + 1] ?? null;
+
+            if ($value === null) {
+                $typicalMonthly = null;
+                break;
+            }
+
+            $typicalMonthly[] = $value;
+        }
+
+        $seen = null;
+
+        foreach (array_unique(array_map(fn (int $index) => intdiv($index, 12), array_keys($observed))) as $year) {
+            $seen = $this->observedSeason($observed, $profile, $year, $month);
+
+            if ($seen !== null) {
+                break;
+            }
+        }
+
+        return [
+            'month' => $month,
+            'name' => self::MONTHS[$month],
+            'usual' => in_array($month, $profile['usual_planting_months'], true),
+            'harvest_month' => $harvest,
+            'harvest_name' => self::MONTHS[$harvest],
+            'typical' => $typicalMonthly === null ? null : $this->season($typicalMonthly, $profile, $month),
+            'observed' => $seen,
+        ];
+    }
+
+    private function observedSeason(array $observed, array $profile, int $year, int $startMonth): ?array
+    {
+        $start = $year * 12 + $startMonth - 1;
+        $monthly = [];
+
+        for ($i = 0; $i < $profile['cycle_months']; $i++) {
+            if (! isset($observed[$start + $i])) {
+                return null;
+            }
+
+            $monthly[] = $observed[$start + $i];
+        }
+
+        $end = $start + $profile['cycle_months'] - 1;
+
+        return $this->season($monthly, $profile, $startMonth) + [
+            'label' => substr(self::MONTHS[$startMonth], 0, 3).' '.$year.' to '.substr(self::MONTHS[$end % 12 + 1], 0, 3).' '.intdiv($end, 12),
+        ];
+    }
+
+    /** Rain over a cycle, as a share of the crop's minimum need, and whether it was enough. */
+    private function season(array $monthly, array $profile, int $startMonth): array
+    {
+        $total = round(array_sum($monthly), 1);
+
+        return [
+            'monthly_mm' => array_map(fn ($mm) => round($mm, 1), $monthly),
+            'total_mm' => $total,
+            // 100% means exactly the least rain the crop needs; above 100% is more than that.
+            'need_pct' => (int) round($total / $profile['good_mm'][0] * 100),
+        ] + $this->judge($monthly, $profile, $startMonth);
+    }
+
+    /** Lower sorts first: best typical verdict, best observed verdict, then rain closest to the middle of the ideal range. */
+    private function monthKey(array $row, array $profile): array
+    {
+        $middle = array_sum($profile['good_mm']) / 2;
+
+        return [
+            self::SEVERITY[$row['typical']['verdict']],
+            $row['observed'] ? self::SEVERITY[$row['observed']['verdict']] : 1,
+            abs($row['typical']['total_mm'] - $middle),
+        ];
+    }
+
+    private function rankKey(array $row): array
+    {
+        return [
+            self::SEVERITY[$row['best']['typical']['verdict']],
+            $row['best']['observed'] ? self::SEVERITY[$row['best']['observed']['verdict']] : 1,
+            $row['household_drought_pct'] ?? 100.0,
+            $this->trustOrder($row['trust']),
+            $row['name'],
+        ];
     }
 
     /** Lower sorts first: with equal evidence a verified district outranks a usable one, and that an unverified one. */
     private function trustOrder(string $trust): int
     {
         return ['verified' => 0, 'usable' => 1, 'unverified' => 2][$trust] ?? 3;
-    }
-
-    private function confidence(string $trust, int $years): string
-    {
-        return match (true) {
-            $trust === 'verified' && $years >= 10 => 'high',
-            in_array($trust, ['verified', 'usable'], true) && $years >= 8 => 'medium',
-            default => 'low',
-        };
     }
 
     private function caveat(?string $direction, string $trust): ?string
@@ -311,8 +362,8 @@ class CropSuitability
         }
 
         return match ($direction) {
-            'satellite_understates' => 'Households here report more drought than the satellite shows, so the real chance of a good season may be lower than this.',
-            'satellite_overstates' => 'The satellite shows more drought than households report, so the real chance of a good season may be higher than this.',
+            'satellite_understates' => 'Households here report more drought than the satellite shows, so the rain may suit the crop less than this says.',
+            'satellite_overstates' => 'The satellite shows more drought than households report, so the rain may suit the crop better than this says.',
             default => null,
         };
     }
@@ -332,26 +383,21 @@ class CropSuitability
             'household_drought_pct' => $district['household_drought_pct'],
             'reason' => $why === 'high_mismatch'
                 ? 'Households and the satellite disagree strongly here (mismatch '.$summary['basis_risk_pct'].' points), so the satellite rainfall is not trusted and no prediction is made.'
-                : 'There are not enough years of satellite rainfall to judge a full planting window.',
+                : 'There is no satellite rainfall to judge a planting window.',
         ];
     }
 
-    /** Satellite rainfall as month index (year * 12 + month - 1) => millimetres. */
-    private function rainByMonthIndex(Collection $series): array
-    {
-        $rain = [];
-
-        foreach ($series as $month) {
-            $rain[$month['year'] * 12 + $month['month'] - 1] = (float) $month['rainfall_mm'];
-        }
-
-        return $rain;
-    }
-
+    /** The months of observed rain in the database, for example April 2023 to March 2024. */
     public function period(Collection $districts): array
     {
-        $years = $districts->pluck('rainfall')->flatten(1)->pluck('year');
+        $months = $districts->pluck('rainfall')->flatten(1)->map(fn (array $m) => $m['year'] * 12 + $m['month'] - 1);
 
-        return ['first_year' => $years->min(), 'last_year' => $years->max()];
+        if ($months->isEmpty()) {
+            return ['first' => null, 'last' => null, 'label' => 'no rainfall'];
+        }
+
+        $label = fn (int $index) => self::MONTHS[$index % 12 + 1].' '.intdiv($index, 12);
+
+        return ['first' => $label($months->min()), 'last' => $label($months->max()), 'label' => $label($months->min()).' to '.$label($months->max())];
     }
 }

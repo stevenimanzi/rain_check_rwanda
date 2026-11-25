@@ -209,7 +209,7 @@ happened. This gap is called mismatch risk (also called basis risk). In Kinyarwa
 "itandukaniro hagati y'icyogajuru n'ibyo ingo zatangaje" and keep the English term in brackets.
 
 How the numbers are made:
-- Rainfall: CHIRPS v3 satellite rainfall, monthly, 2014 to 2024, averaged over each district.
+- Rainfall: CHIRPS v3 satellite rainfall, monthly, kept only for April 2023 to March 2024 (the months households were asked about), averaged over each district.
 - Normal rainfall for a calendar month is the median of that month in the other years.
 - A dry month is a month with {$deficit}% or more less rain than normal. Months that normally get under {$minimum} mm (June to August) are not judged.
 - Households that reported drought: NISR and WFP, Rwanda CFSVA 2024. The district values were measured from a published chart, so they can be off by about 1 percentage point.

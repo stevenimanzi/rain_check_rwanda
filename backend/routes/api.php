@@ -19,8 +19,6 @@ Route::get('/districts/{district}', [DistrictController::class, 'show']);
 
 Route::get('/assistant/sources', AssistantSourcesController::class)->middleware('throttle:60,1');
 Route::post('/assistant', AssistantController::class)->middleware('throttle:20,1');
-Route::get('/predict/crops', [PredictController::class, 'crops']);
-Route::get('/predict/crops/{crop}', [PredictController::class, 'crop'])->middleware('throttle:60,1');
 Route::post('/predict', [PredictController::class, 'ask'])->middleware('throttle:20,1');
 Route::post('/survey-comparison', SurveyComparisonController::class)->middleware('throttle:60,1');
 

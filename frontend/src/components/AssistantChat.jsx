@@ -1,5 +1,6 @@
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import AssistantMarkdown from './AssistantMarkdown'
 
 const SUGGESTIONS = [
@@ -21,6 +22,7 @@ export default function AssistantChat({
   placeholder = 'Ask a question about the data',
   footer = 'AI can make mistakes. Check important numbers on the charts.',
   className = '',
+  composerSlot,
 }) {
   const { messages, loading, error, send } = chat
   const [text, setText] = useState('')
@@ -36,6 +38,33 @@ export default function AssistantChat({
     send(text)
     setText('')
   }
+
+
+  const composer = (
+    <div className="assistant-composer">
+      <form className="assistant-form" onSubmit={submit}>
+        <input
+          type="text"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder={placeholder}
+          maxLength={500}
+          aria-label="Your question"
+        />
+        <button type="submit" disabled={loading || !text.trim()} aria-label="Send">
+          <PaperAirplaneIcon className="icon" />
+        </button>
+      </form>
+
+      <div className="assistant-footer">
+        <span>{footer}</span>
+      </div>
+    </div>
+  )
+
+  // composerSlot: a page can pass its own element to keep the input bar there (for example pinned to the bottom of the screen).
+  // null means the element is not ready yet, so nothing is shown until it is.
+  const inline = composerSlot === undefined
 
   return (
     <div className={`${compact ? 'assistant-chat compact' : 'assistant-chat'} ${className}`.trim()}>
@@ -64,23 +93,7 @@ export default function AssistantChat({
         <div ref={endRef} />
       </div>
 
-      <form className="assistant-form" onSubmit={submit}>
-        <input
-          type="text"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder={placeholder}
-          maxLength={500}
-          aria-label="Your question"
-        />
-        <button type="submit" disabled={loading || !text.trim()} aria-label="Send">
-          <PaperAirplaneIcon className="icon" />
-        </button>
-      </form>
-
-      <div className="assistant-footer">
-        <span>{footer}</span>
-      </div>
+      {inline ? composer : composerSlot && createPortal(composer, composerSlot)}
     </div>
   )
 }

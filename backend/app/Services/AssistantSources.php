@@ -207,14 +207,14 @@ class AssistantSources
         return [
             'id' => 'crops',
             'title' => 'Crop water needs',
-            'subtitle' => 'What each crop needs from the rain, used to judge past seasons',
+            'subtitle' => 'What each crop needs from the rain, used to judge planting seasons',
             'summary' => [
                 ['label' => 'Crops', 'value' => (string) $crops->count()],
                 ['label' => 'Judged on', 'value' => 'Rain only'],
             ],
             'about' => [
                 ['Source', 'Rounded reference values in the spirit of the FAO crop water guidelines (FAO Irrigation and Drainage Papers 33 and 56). They are not measured in Rwanda and are not part of the satellite or household data.'],
-                ['How the project uses them', 'Each past planting window is judged on three checks: the rain over the whole season, dry months while the crop is growing, and rain in the flowering month. The share of years that passed all checks is the chance shown on the Predict Future page.'],
+                ['How the project uses them', 'Each planting window is judged on three checks: the rain over the whole season, dry months while the crop is growing, and rain in the flowering month. The share of years that passed all checks is the chance shown on the Predict Future page.'],
                 ['Limits', 'Sunshine, temperature, soil, variety, pests and altitude are not judged. An agronomist can change the values in config/crops.php.'],
             ],
             'columns' => [
