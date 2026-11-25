@@ -14,7 +14,7 @@ review of rainfall-index insurance.
 
 - **Live app:** https://raincheckrwandaweb.onrender.com/
 - **Live API:** https://raincheck-api-7nk6.onrender.com/api/districts (free hosting: the first visit after a quiet period can take up to a minute)
-- **Demo (animated GIF, 89 seconds):** [`docs/demo.gif`](docs/demo.gif)
+- **Demo video:** [Watch on Google Drive](https://drive.google.com/file/d/120aN5DEMFl_chRu0nOqf91GwlUniZbLJ/view?usp=drive_link)
 - No login is required for read-only use. Survey imports require a private backend token.
 
 ## Main finding
