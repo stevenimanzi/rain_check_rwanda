@@ -27,6 +27,52 @@ const pageLanguage = () => {
 export const sendAssistantMessages = (messages) =>
   client.post('/assistant', { messages, page_language: pageLanguage() }).then((res) => res.data.reply)
 
+export const sendPredictMessages = (messages) =>
+  client.post('/predict', { messages, page_language: pageLanguage() }).then((res) => res.data.reply)
+
+// The crops that can be ranked, and every usable district ranked for one crop. Cached: the data rarely changes.
+let cropsRequest = null
+const cropRankings = {}
+
+export const fetchPredictCrops = () => {
+  cropsRequest ??= client
+    .get('/predict/crops')
+    .then((res) => res.data.data)
+    .catch((error) => {
+      cropsRequest = null
+      throw error
+    })
+
+  return cropsRequest
+}
+
+export const fetchCropRanking = (crop) => {
+  cropRankings[crop] ??= client
+    .get(`/predict/crops/${crop}`)
+    .then((res) => res.data.data)
+    .catch((error) => {
+      delete cropRankings[crop]
+      throw error
+    })
+
+  return cropRankings[crop]
+}
+
+// Details of the data sources behind the assistant's answers. They rarely change, so one request is enough.
+let sourcesRequest = null
+
+export const fetchAssistantSources = () => {
+  sourcesRequest ??= client
+    .get('/assistant/sources')
+    .then((res) => res.data.data)
+    .catch((error) => {
+      sourcesRequest = null
+      throw error
+    })
+
+  return sourcesRequest
+}
+
 export const fetchDistricts = () => client.get('/districts').then((res) => res.data.data)
 
 export const fetchDistrict = (id) => client.get(`/districts/${id}`).then((res) => res.data.data)

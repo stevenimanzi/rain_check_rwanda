@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchOverview } from './api'
+import { fetchOverview, sendPredictMessages } from './api'
 import AssistantWidget from './components/AssistantWidget'
 import Notice from './components/Notice'
 import Sidebar from './components/Sidebar'
@@ -11,6 +11,7 @@ import DistrictsPage from './pages/DistrictsPage'
 import InstitutionsPage from './pages/InstitutionsPage'
 import MapPage from './pages/MapPage'
 import OverviewPage from './pages/OverviewPage'
+import PredictPage from './pages/PredictPage'
 import './App.css'
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null)
   const [error, setError] = useState(false)
   const chat = useAssistantChat()
+  const predictChat = useAssistantChat(sendPredictMessages)
 
   useEffect(() => {
     fetchOverview()
@@ -41,6 +43,9 @@ export default function App() {
   const renderPage = () => {
     if (page === 'assistant') {
       return <AssistantPage chat={chat} />
+    }
+    if (page === 'predict') {
+      return <PredictPage chat={predictChat} />
     }
     if (error) {
       return <Notice title="Could not load the data">The server did not answer. Please refresh the page in a minute.</Notice>
@@ -69,7 +74,7 @@ export default function App() {
         <main className="content">{renderPage()}</main>
       </div>
 
-      {page !== 'assistant' && <AssistantWidget chat={chat} />}
+      {page !== 'assistant' && page !== 'predict' && <AssistantWidget chat={chat} />}
     </div>
   )
 }

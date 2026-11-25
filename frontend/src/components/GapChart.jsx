@@ -51,6 +51,7 @@ export default function GapChart({ districts, period }) {
 
   return (
     <>
+      <ChartClickHint>Click a bar to see that district and a table of all districts.</ChartClickHint>
       <div className="clickable-chart">
       <ResponsiveContainer width="100%" height={data.length * 24 + 64}>
         <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
@@ -81,7 +82,6 @@ export default function GapChart({ districts, period }) {
           { color: '#64748b', label: 'Same rank (0)', line: 'dashed' },
         ]}
       />
-      <ChartClickHint>Click a bar to see that district and a table of all districts.</ChartClickHint>
 
       {selected && selectedGap !== undefined && (
         <ChartDetailsDialog

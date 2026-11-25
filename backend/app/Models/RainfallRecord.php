@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RainfallRecord extends Model
 {
-    protected $fillable = ['district_id', 'year', 'month', 'rainfall_mm'];
+    protected $fillable = ['district_id', 'year', 'month', 'rainfall_mm', 'normal_mm'];
 
     public function district(): BelongsTo
     {

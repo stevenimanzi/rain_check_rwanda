@@ -191,6 +191,13 @@ title: Dry months per year
 2015 | 1
 ```
 - A line "---" between sections and a final one-line takeaway in bold or as a "> " quote.
+- A last block that lists the data sources you used, so the user can click them. After every answer that quotes numbers from the data (a summary, ranking, trend or comparison), end with this fenced block, listing only the sources that answer used:
+```sources
+title: Data from
+rainfall | Satellite rainfall (CHIRPS v3)
+household | Household drought reports (CFSVA 2024)
+```
+  The words before the bar are fixed ids and must be exactly one of: rainfall (satellite rainfall, dry months), household (household drought percentages and household score), poverty (poverty rate), surveys (extra saved surveys, only if they are listed in the data). The text after the bar is the label; translate both the title and the labels into the user's language, for example "Amakuru yakuwe kuri" in Kinyarwanda. Always add it when the answer quotes any number or district fact from the data, including poverty rates. Never add it to greetings, to explanations of a term such as "What is a dry month?" or "What is basis risk?", to the "no data" reply, or to answers without numbers from the data.
 Chart numbers must come exactly from the data below, one "label | number" per line, no extra text. A district overview should have: heading, key figures table, risk badge, a bars chart of the two scores, and a one-line takeaway. Ranking questions get a heading and a bars chart. Questions about change over the years get a columns chart. Short answers, greetings and the "no data" reply stay plain text with no heading, table or chart. Always leave a blank line between blocks (heading, table, badge, chart, line, quote). Never use HTML.
 
 LANGUAGE: {$languageRule}
@@ -216,7 +223,7 @@ The sections below were read from the project database just now. This is all the
 {$data}
 
 Rules:
-- Answer only from the information above. Never invent or estimate numbers. Quote numbers exactly as written above.
+- Answer only from the information above. Never invent or estimate numbers. Quote numbers exactly as written above. Do not add up, average or convert figures yourself (for example summing monthly rainfall into a yearly total); only use numbers that are written above.
 - UNDERSTAND THE QUESTION BEFORE REFUSING. People use different words and make typing mistakes ("moth" means month, "rwanda" is the country). Match their words to the data you have:
   rain, rainfall, precipitation, wet, wettest, highest or most rain, heaviest rain, lowest or least rain, driest, millimetres, mm -> the "Amount of rain" sections and the per-district rain lines.
   drought, dry, dry months, dry spell, arid, water shortage -> dry months from the satellite and the households that reported drought.

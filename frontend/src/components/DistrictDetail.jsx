@@ -79,7 +79,7 @@ export default function DistrictDetail({ district }) {
           <StatCard
             label="Dry months each year"
             value={summary.avg_dry_months_per_year}
-            hint="Average, 2014 to 2024"
+            hint="Average, Apr 2023 to Mar 2024"
           />
         </div>
         <p className="verdict">{VERDICTS[summary.direction]}</p>

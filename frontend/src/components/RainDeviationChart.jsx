@@ -110,6 +110,7 @@ export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN })
 
   return (
     <>
+      <ChartClickHint>Click a month to see its details and a table of all months.</ChartClickHint>
       <div className="clickable-chart">
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={data} margin={{ top: 10, right: 12, left: 4, bottom: 0 }} barGap={3}>
@@ -152,7 +153,6 @@ export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN })
       </ResponsiveContainer>
       </div>
       <ChartLegend items={LEGEND_ITEMS} />
-      <ChartClickHint>Click a month to see its details and a table of all months.</ChartClickHint>
 
       {selectedPoint && (
         <ChartDetailsDialog

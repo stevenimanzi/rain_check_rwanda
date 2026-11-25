@@ -13,7 +13,15 @@ const SUGGESTIONS = [
  * The conversation: messages, suggested questions and the input box.
  * `chat` comes from useAssistantChat.
  */
-export default function AssistantChat({ chat, compact = false }) {
+export default function AssistantChat({
+  chat,
+  compact = false,
+  suggestions = SUGGESTIONS,
+  welcome = 'Hello! I can explain the RainCheck Rwanda results in simple words. Ask me about a district, a chart or how a number is calculated.',
+  placeholder = 'Ask a question about the data',
+  footer = 'AI can make mistakes. Check important numbers on the charts.',
+  className = '',
+}) {
   const { messages, loading, error, send } = chat
   const [text, setText] = useState('')
   const endRef = useRef(null)
@@ -30,16 +38,13 @@ export default function AssistantChat({ chat, compact = false }) {
   }
 
   return (
-    <div className={compact ? 'assistant-chat compact' : 'assistant-chat'}>
+    <div className={`${compact ? 'assistant-chat compact' : 'assistant-chat'} ${className}`.trim()}>
       <div className="assistant-messages" aria-live="polite">
         {messages.length === 0 && (
           <div className="assistant-welcome">
-            <p>
-              Hello! I can explain the RainCheck Rwanda results in simple words. Ask me about a district, a chart or
-              how a number is calculated.
-            </p>
+            <p>{welcome}</p>
             <div className="assistant-suggestions">
-              {SUGGESTIONS.map((question) => (
+              {suggestions.map((question) => (
                 <button key={question} type="button" onClick={() => send(question)}>
                   {question}
                 </button>
@@ -64,7 +69,7 @@ export default function AssistantChat({ chat, compact = false }) {
           type="text"
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Ask a question about the data"
+          placeholder={placeholder}
           maxLength={500}
           aria-label="Your question"
         />
@@ -74,7 +79,7 @@ export default function AssistantChat({ chat, compact = false }) {
       </form>
 
       <div className="assistant-footer">
-        <span>AI can make mistakes. Check important numbers on the charts.</span>
+        <span>{footer}</span>
       </div>
     </div>
   )

@@ -7,7 +7,7 @@ const FALLBACK_ERROR = 'The assistant could not answer right now. Please try aga
  * Conversation state for the AI assistant. It lives in App so the page and the floating
  * button share one conversation.
  */
-export default function useAssistantChat() {
+export default function useAssistantChat(sender = sendAssistantMessages) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -22,7 +22,7 @@ export default function useAssistantChat() {
     setError('')
 
     try {
-      const reply = await sendAssistantMessages(next)
+      const reply = await sender(next)
       setMessages([...next, { role: 'assistant', content: reply }])
     } catch (err) {
       setError(err.response?.data?.message ?? FALLBACK_ERROR)
