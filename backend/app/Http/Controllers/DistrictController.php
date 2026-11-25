@@ -9,9 +9,7 @@ use Illuminate\Http\Request;
 
 class DistrictController extends Controller
 {
-    public function __construct(private DistrictAnalysis $analysis)
-    {
-    }
+    public function __construct(private DistrictAnalysis $analysis) {}
 
     /**
      * All districts, without the monthly rainfall series (kept for the detail view).
@@ -28,9 +26,15 @@ class DistrictController extends Controller
         $validated = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['required', 'integer', 'distinct', 'exists:districts,id'],
+            'start' => ['nullable', 'required_with:end', 'date_format:Y-m'],
+            'end' => ['nullable', 'required_with:start', 'date_format:Y-m', 'after_or_equal:start'],
         ]);
 
-        return response()->json(['data' => $this->analysis->rainfall($validated['ids'])]);
+        return response()->json(['data' => $this->analysis->rainfall(
+            $validated['ids'],
+            $validated['start'] ?? null,
+            $validated['end'] ?? null,
+        )]);
     }
 
     public function show(District $district): JsonResponse

@@ -1,6 +1,7 @@
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline'
 import { API_BASE } from '../api'
 import { SOURCES } from '../sources'
+import { monthYear } from '../utils'
 
 const USERS = [
   {
@@ -27,7 +28,7 @@ const USERS = [
   {
     who: 'SACCOs, microfinance, NGOs and farmer programmes',
     decision: 'When farmers are most at risk, so loans, savings and insurance can be timed well.',
-    gets: 'The months most often dry and each district history, free to download.',
+    gets: 'Rainfall and drought indicators matched to the household survey period, free to download.',
     page: 'districts',
     pageLabel: 'Districts',
   },
@@ -42,16 +43,16 @@ const USERS = [
 
 export default function InstitutionsPage({ districts, overview, onNavigate }) {
   const { settings } = overview
-  const years = overview.by_year
+  const comparisonPeriod = `${monthYear(overview.window.start)} to ${monthYear(overview.window.end)}`
 
   const hasHouseholds = districts.every((d) => d.household_drought_pct !== null)
 
   const datasets = [
     {
       name: 'Satellite rainfall',
-      use: 'Finding dry months, drought years and risky months',
+      use: 'Comparing satellite rainfall with households for the same 12 months',
       source: 'rainfall',
-      status: `Loaded: ${years[0]?.year} to ${years[years.length - 1]?.year}, all 30 districts`,
+      status: `Comparison: ${comparisonPeriod}; older records retained only for rainfall normals`,
       loaded: true,
     },
     {
@@ -121,7 +122,7 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
             <ArrowDownTrayIcon className="icon" />
             <span>
               <strong>Monthly rainfall</strong>
-              <small>Rain, normal rain and dry months for every district and month</small>
+              <small>Rain, normal rain and dry months for the household comparison period</small>
             </span>
           </a>
         </div>
@@ -172,7 +173,8 @@ export default function InstitutionsPage({ districts, overview, onNavigate }) {
         <ol>
           <li>
             <strong>Normal rain</strong> for a month is the usual amount of rain in that month in the other
-            years, 2014 to 2024.
+            years. Historical observations are retained to calculate this normal; comparisons use only{' '}
+            {comparisonPeriod}.
           </li>
           <li>
             A <strong>dry month</strong> is a month with {settings.rainfall_deficit_threshold}% or more less rain than

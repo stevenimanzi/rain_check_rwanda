@@ -46,14 +46,14 @@ class AssistantKnowledge
 
     private function datasetFacts(Collection $districts): string
     {
-        $records = RainfallRecord::count();
-        $firstYear = RainfallRecord::min('year');
-        $lastYear = RainfallRecord::max('year');
+        $start = (int) str_replace('-', '', config('raincheck.comparison_start'));
+        $end = (int) str_replace('-', '', config('raincheck.comparison_end'));
+        $records = RainfallRecord::whereRaw('(year * 100 + month) between ? and ?', [$start, $end])->count();
 
         return "Data in the database:\n"
             .'- '.$districts->count().' districts in '.$districts->pluck('province')->unique()->count().' provinces ('
             .$districts->pluck('province')->unique()->implode(', ').").\n"
-            ."- {$records} monthly satellite rainfall records, {$firstYear} to {$lastYear}.\n"
+            ."- {$records} monthly satellite rainfall records for ".$this->comparisonPeriodLabel().". Historical records are retained only to calculate normal rainfall.\n"
             .'- One household drought percentage per district (CFSVA 2024), plus any extra surveys saved by an admin (listed at the end).'."\n"
             .'- A poverty rate per district (EICV7 2024). It is stored, but it is not part of the mismatch score.';
     }
@@ -64,17 +64,6 @@ class AssistantKnowledge
         $levels = $compared->countBy(fn (array $d) => $d['summary']['risk_level']);
         $directions = $compared->countBy(fn (array $d) => $d['summary']['direction']);
 
-        $byYear = $districts->pluck('history.by_year')->flatten(1)->groupBy('year')
-            ->map(fn (Collection $rows, $year) => $year.': '.round($rows->avg('dry_months'), 1))
-            ->sortKeys()->implode(', ');
-
-        $byMonth = $districts->pluck('history.by_calendar_month')->flatten(1)->groupBy('month')
-            ->map(function (Collection $rows, $month) {
-                $values = $rows->whereNotNull('dry_pct');
-
-                return $this->monthName((int) $month).': '.($values->count() ? round($values->avg('dry_pct'), 1).'%' : 'not judged');
-            })->implode(', ');
-
         $poverty = $this->poverty;
 
         return "Country summary:\n"
@@ -84,18 +73,17 @@ class AssistantKnowledge
             .'- Mismatch risk: '.($levels['high'] ?? 0).' districts high, '.($levels['medium'] ?? 0).' medium, '.($levels['low'] ?? 0).' low.'."\n"
             .'- Satellite understates drought (households worse than satellite) in '.($directions['satellite_understates'] ?? 0)
             .' districts; satellite overstates in '.($directions['satellite_overstates'] ?? 0).'; they agree in '.($directions['agrees'] ?? 0).".\n"
-            ."- Average dry months per district in each year: {$byYear}.\n"
-            ."- Share of years a district is dry, by calendar month (average of districts): {$byMonth}.\n"
             .($poverty->isNotEmpty() ? '- Average poverty rate across districts: '.round($poverty->avg(), 1)."%.\n" : '');
     }
 
     /**
-     * How much rain falls, in millimetres: wettest and driest months, by calendar month, by year, and for each district.
-     * Without this the assistant can only talk about dry months, not about amounts of rain.
+     * Rainfall amounts for the same 12 months as the household survey.
      */
     private function rainfallAmounts(Collection $districts): ?string
     {
-        $records = RainfallRecord::get(['district_id', 'year', 'month', 'rainfall_mm']);
+        $records = RainfallRecord::get(['district_id', 'year', 'month', 'rainfall_mm'])
+            ->filter(fn (RainfallRecord $record) => $this->isInComparisonWindow($record->year, $record->month))
+            ->values();
 
         if ($records->isEmpty()) {
             return null;
@@ -104,40 +92,23 @@ class AssistantKnowledge
         $names = $districts->pluck('name', 'id');
         $mm = fn (float $value) => round($value, 1).' mm';
 
-        // Rainfall across all districts: the average of the district values for each calendar month.
+        // Rainfall across all districts: the average of the district values for each month in the comparison window.
         $byCalendarMonth = $records->groupBy('month')->map(fn (Collection $rows) => (float) $rows->avg('rainfall_mm'))->sortKeys();
         $wettest = $byCalendarMonth->sortDesc();
         $driest = $byCalendarMonth->sort();
 
-        $byYearMonth = $records->groupBy(fn ($r) => $r->year.'-'.$r->month)->map(fn (Collection $rows) => (float) $rows->avg('rainfall_mm'));
-        $wettestOnRecord = $byYearMonth->sortDesc()->take(3)->map(function (float $value, string $key) use ($mm) {
-            [$year, $month] = explode('-', $key);
-
-            return $this->monthName((int) $month).' '.$year.' ('.$mm($value).')';
-        })->implode(', ');
-
-        $yearTotals = $records->groupBy('year')->map(fn (Collection $rows) => (float) $rows->groupBy('month')->map(fn ($m) => $m->avg('rainfall_mm'))->sum())->sortKeys();
-        $totals = $yearTotals->map(fn (float $value, $year) => $year.': '.$mm($value))->implode(', ');
-
-        $perDistrict = $records->groupBy('district_id')->map(function (Collection $rows, $id) use ($names, $mm) {
-            $months = $rows->groupBy('month')->map(fn (Collection $m) => (float) $m->avg('rainfall_mm'));
+        $districtRain = $records->groupBy('district_id')->map(function (Collection $rows, $id) use ($names) {
+            $months = $rows->groupBy('month')->map(fn (Collection $m) => (float) $m->avg('rainfall_mm'))->sortKeys();
             $wet = $months->sortDesc()->keys()->first();
             $dry = $months->sort()->keys()->first();
 
-            return '- '.($names[$id] ?? 'District '.$id).': wettest month '.$this->monthName((int) $wet).' ('.$mm($months[$wet])
-                .'), driest month '.$this->monthName((int) $dry).' ('.$mm($months[$dry]).')';
-        })->sortKeys()->implode("
-");
-
-        // Rain in a typical year (sum of the 12 calendar-month averages) and in the April 2023 to March 2024 comparison year.
-        $districtRain = $records->groupBy('district_id')->map(function (Collection $rows, $id) use ($names) {
-            $typicalYear = (float) $rows->groupBy('month')->map(fn (Collection $m) => $m->avg('rainfall_mm'))->sum();
-            $window = $rows->filter(fn ($r) => ($r->year == 2023 && $r->month >= 4) || ($r->year == 2024 && $r->month <= 3));
-
             return [
                 'name' => $names[$id] ?? 'District '.$id,
-                'typical' => $typicalYear,
-                'window' => $window->count() === 12 ? (float) $window->sum('rainfall_mm') : null,
+                'wettest_month' => $wet,
+                'wettest_rainfall' => $months[$wet],
+                'driest_month' => $dry,
+                'driest_rainfall' => $months[$dry],
+                'total' => (float) $rows->sum('rainfall_mm'),
             ];
         })->sortBy('name')->values();
 
@@ -146,36 +117,19 @@ class AssistantKnowledge
             ->map(fn (array $d) => $d['name'].' ('.$mm($d[$key]).')')->implode(', ');
         $provinceOf = $districts->pluck('province', 'name');
         $provinceRain = $districtRain->groupBy(fn (array $d) => $provinceOf[$d['name']] ?? 'Unknown')
-            ->map(fn (Collection $rows) => (float) $rows->avg('typical'))->sortDesc()
+            ->map(fn (Collection $rows) => (float) $rows->avg('total'))->sortDesc()
             ->map(fn (float $v, string $province) => $province.' ('.$mm($v).')')->implode(', ');
-        $districtLines = $districtRain->map(fn (array $d) => '- '.$d['name'].': '.$mm($d['typical']).' in a typical year'
-            .($d['window'] !== null ? ', '.$mm($d['window']).' from April 2023 to March 2024' : ''))->implode("
-");
+        $districtLines = $districtRain->map(fn (array $d) => '- '.$d['name'].': '.$mm($d['total']).' total; wettest '
+            .$this->monthName((int) $d['wettest_month']).' '.$mm($d['wettest_rainfall']).'; driest '
+            .$this->monthName((int) $d['driest_month']).' '.$mm($d['driest_rainfall']))->implode("\n");
 
-        return "Amount of rain (satellite estimate, millimetres per month, average of all districts and years):
-"
-            .'- Average rain by calendar month: '.$byCalendarMonth->map(fn (float $v, $m) => $this->monthName((int) $m).' '.$mm($v))->implode(', ').".
-"
-            .'- Wettest calendar month on average: '.$this->monthName((int) $wettest->keys()->first()).' ('.$mm($wettest->first()).'). '
-            .'Driest: '.$this->monthName((int) $driest->keys()->first()).' ('.$mm($driest->first()).").
-"
-            ."- Three wettest single months on record (average of all districts): {$wettestOnRecord}.
-"
-            ."- Total rain in each year, average of districts: {$totals}.
-"
-            ."- Districts with the MOST rain in a typical year (highest rainfall), wettest first: ".$rank('typical', true).".
-"
-            .'- Districts with the LEAST rain in a typical year (lowest rainfall), driest first: '.$rank('typical', false).".
-"
-            ."- Provinces ranked by average rain in a typical year (average of their districts), wettest first: {$provinceRain}.
-"
-            .'- Districts with the most rain from April 2023 to March 2024: '.$rank('window', true).'. Least: '.$rank('window', false).".
-"
-            ."Rain for each district (millimetres, rain in a typical year = sum of the 12 monthly averages over 2014 to 2024):
-{$districtLines}
-"
-            ."Wettest and driest calendar month for each district (average over the years):
-{$perDistrict}";
+        return 'Amount of rain during '.$this->comparisonPeriodLabel()." (satellite estimate, millimetres):\n"
+            .'- Average rain by month across districts: '.$byCalendarMonth->map(fn (float $v, $m) => $this->monthName((int) $m).' '.$mm($v))->implode(', ').".\n"
+            .'- Wettest month across districts: '.$this->monthName((int) $wettest->keys()->first()).' ('.$mm($wettest->first()).'). '
+            .'Driest: '.$this->monthName((int) $driest->keys()->first()).' ('.$mm($driest->first()).").\n"
+            .'- Districts ranked by total rainfall in the comparison period: '.$rank('total', true).".\n"
+            ."- Provinces ranked by average district rainfall in the comparison period: {$provinceRain}.\n"
+            ."Rain for each district in the comparison period:\n{$districtLines}";
     }
 
     private function provinceSummary(Collection $districts): string
@@ -215,15 +169,12 @@ class AssistantKnowledge
         $rows = $districts->map(function (array $d) {
             $s = $d['summary'];
             $poverty = $this->poverty->has($d['id']) ? round((float) $this->poverty[$d['id']], 1) : null;
-            $dryByYear = collect($d['history']['by_year'])->map(fn ($y) => $y['year'].':'.$y['dry_months'])->implode(' ');
 
             return implode(' | ', array_filter([
                 $d['name'],
                 $d['province'],
                 'households reporting drought: '.($d['household_drought_pct'] ?? 'n/a').'%',
-                'satellite dry months (Apr 2023-Mar 2024): '.$s['satellite_drought_months'],
-                'average dry months a year: '.($s['avg_dry_months_per_year'] ?? 'n/a'),
-                'dry months by year ['.$dryByYear.']',
+                'satellite dry months ('.$this->comparisonPeriodLabel().'): '.$s['satellite_drought_months'],
                 'satellite score: '.($s['satellite_rank_pct'] ?? 'n/a'),
                 'household score: '.($s['household_rank_pct'] ?? 'n/a'),
                 'gap: '.($s['basis_risk_pct'] ?? 'n/a').' points',
@@ -237,8 +188,7 @@ class AssistantKnowledge
     }
 
     /**
-     * Month by month rainfall for districts the user is asking about, so questions like
-     * "was April 2022 dry in Huye?" can be answered from real rows.
+     * Month by month rainfall for the comparison period and districts the user is asking about.
      */
     private function mentionedDistrictDetail(Collection $districts, array $messages): ?string
     {
@@ -254,14 +204,15 @@ class AssistantKnowledge
         }
 
         $blocks = $mentioned->map(function (array $d) {
-            $months = collect($d['rainfall'])->map(function (array $m) {
+            $matchedMonths = collect($d['rainfall'])->filter(fn (array $m) => $this->isInComparisonWindow($m['year'], $m['month']));
+            $months = $matchedMonths->map(function (array $m) {
                 $flag = ! $m['judged'] ? 'not judged' : ($m['satellite_drought'] ? 'DRY' : 'ok');
 
                 return sprintf('%04d-%02d %smm (normal %smm, %s%s%%) %s', $m['year'], $m['month'], $m['rainfall_mm'], $m['normal_mm'],
                     $m['rainfall_deficit_pct'] > 0 ? 'deficit ' : 'surplus ', abs($m['rainfall_deficit_pct']), $flag);
             })->implode("\n");
 
-            $dryMonths = collect($d['rainfall'])->where('satellite_drought', true)
+            $dryMonths = $matchedMonths->where('satellite_drought', true)
                 ->map(fn (array $m) => sprintf('%04d-%02d', $m['year'], $m['month']))->implode(', ');
 
             return "{$d['name']} district, every month (rainfall, normal for that month, difference, verdict):\n{$months}\n"
@@ -305,5 +256,21 @@ class AssistantKnowledge
     private function monthName(int $month): string
     {
         return date('F', mktime(0, 0, 0, $month, 1));
+    }
+
+    private function comparisonPeriodLabel(): string
+    {
+        [$startYear, $startMonth] = array_map('intval', explode('-', config('raincheck.comparison_start')));
+        [$endYear, $endMonth] = array_map('intval', explode('-', config('raincheck.comparison_end')));
+
+        return $this->monthName($startMonth).' '.$startYear.' to '.$this->monthName($endMonth).' '.$endYear;
+    }
+
+    private function isInComparisonWindow(int $year, int $month): bool
+    {
+        $key = sprintf('%04d-%02d', $year, $month);
+
+        return $key >= config('raincheck.comparison_start')
+            && $key <= config('raincheck.comparison_end');
     }
 }

@@ -7,18 +7,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
 {
-    public function __construct(private DistrictAnalysis $analysis)
-    {
-    }
+    public function __construct(private DistrictAnalysis $analysis) {}
 
     /**
-     * One row per district: households reporting drought, satellite drought history and basis risk.
+     * One row per district: household drought reports and matched-period satellite drought and basis risk.
      */
     public function districts(): StreamedResponse
     {
         $header = [
-            'district', 'province', 'households_reporting_drought_pct', 'avg_dry_months_per_year',
-            'dry_share_pct', 'satellite_dry_months_in_window',
+            'district', 'province', 'households_reporting_drought_pct', 'satellite_dry_months_in_window',
             'satellite_rank_pct', 'household_rank_pct', 'basis_risk_points', 'basis_risk_level', 'direction',
         ];
 
@@ -26,8 +23,6 @@ class ExportController extends Controller
             $d['name'],
             $d['province'],
             $d['household_drought_pct'],
-            $d['summary']['avg_dry_months_per_year'],
-            $d['history']['dry_share_pct'],
             $d['summary']['satellite_drought_months'],
             $d['summary']['satellite_rank_pct'] ?? null,
             $d['summary']['household_rank_pct'] ?? null,
@@ -40,26 +35,36 @@ class ExportController extends Controller
     }
 
     /**
-     * One row per district and month: satellite rainfall against normal.
+     * One row per district and month in the configured household comparison window.
      */
     public function rainfall(): StreamedResponse
     {
         $header = ['district', 'year', 'month', 'rainfall_mm', 'normal_mm', 'deficit_pct', 'judged', 'dry_month'];
 
         $rows = $this->analysis->all()->flatMap(
-            fn (array $d) => $d['rainfall']->map(fn (array $m) => [
-                $d['name'],
-                $m['year'],
-                $m['month'],
-                $m['rainfall_mm'],
-                $m['normal_mm'],
-                $m['rainfall_deficit_pct'],
-                $m['judged'] ? 'yes' : 'no',
-                $m['satellite_drought'] ? 'yes' : 'no',
-            ])
+            fn (array $d) => $d['rainfall']
+                ->filter(fn (array $m) => $this->inComparisonWindow($m))
+                ->map(fn (array $m) => [
+                    $d['name'],
+                    $m['year'],
+                    $m['month'],
+                    $m['rainfall_mm'],
+                    $m['normal_mm'],
+                    $m['rainfall_deficit_pct'],
+                    $m['judged'] ? 'yes' : 'no',
+                    $m['satellite_drought'] ? 'yes' : 'no',
+                ])
         );
 
         return $this->csv('raincheck_monthly_rainfall.csv', $header, $rows);
+    }
+
+    private function inComparisonWindow(array $month): bool
+    {
+        $key = sprintf('%04d-%02d', $month['year'], $month['month']);
+
+        return $key >= config('raincheck.comparison_start')
+            && $key <= config('raincheck.comparison_end');
     }
 
     private function csv(string $filename, array $header, iterable $rows): StreamedResponse

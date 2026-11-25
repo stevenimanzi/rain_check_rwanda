@@ -95,8 +95,7 @@ function PercentagePie({ label, unit, data, buildDetails }) {
 export default function CountryDroughtCharts({
   districts,
   series,
-  startYear,
-  endYear,
+  period,
   area,
   isAllDistricts,
   isSingleDistrict,
@@ -106,8 +105,8 @@ export default function CountryDroughtCharts({
   householdSourceName,
   includeCfsvaSource,
 }) {
-  const satelliteMonths = series.filter((month) => month.year >= startYear && month.year <= endYear && month.judged)
-  const periodLabel = startYear === endYear ? String(startYear) : `${startYear} to ${endYear}`
+  const satelliteMonths = series.filter((month) => month.judged)
+  const periodLabel = period
   const satelliteDrought = satelliteMonths.filter((month) => month.satellite_drought).length
   const householdValues = districts
     .map((district) => district.household_drought_pct)

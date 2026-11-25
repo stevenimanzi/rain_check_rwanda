@@ -10,13 +10,11 @@ use Illuminate\Support\Collection;
  */
 class DistrictAnalysis
 {
-    public function __construct(private DroughtMatchService $satellite)
-    {
-    }
+    public function __construct(private DroughtMatchService $satellite) {}
 
     /**
      * @param  array<int, float>|null  $surveyValues  household drought % by district id from another survey.
-     *                                                 They replace the stored (CFSVA 2024) values where present.
+     *                                                They replace the stored (CFSVA 2024) values where present.
      * @param  bool  $importedOnly  with $surveyValues, districts missing from the survey get no household value
      *                              instead of falling back to the stored value.
      * @param  array{start: string, end: string}|null  $window  the 12 months (YYYY-MM) households were asked about;
@@ -24,12 +22,11 @@ class DistrictAnalysis
      */
     public function all(?array $surveyValues = null, bool $importedOnly = false, ?array $window = null): Collection
     {
-        $start = $window['start'] ?? null;
-        $end = $window['end'] ?? null;
+        $start = $window['start'] ?? config('raincheck.comparison_start');
+        $end = $window['end'] ?? config('raincheck.comparison_end');
 
         $rows = District::with('rainfallRecords')->orderBy('name')->get()->map(function (District $district) use ($surveyValues, $importedOnly, $start, $end) {
             $series = $this->satellite->rainfallSeries($district->rainfallRecords);
-            $history = $this->satellite->history($series);
             $household = $this->number($district->household_drought_pct);
 
             if ($surveyValues !== null) {
@@ -43,10 +40,8 @@ class DistrictAnalysis
                 'name' => $district->name,
                 'province' => $district->province,
                 'household_drought_pct' => $household,
-                'rainfall' => $series,
-                'history' => $history,
+                'rainfall' => $this->rainfallInWindow($series, $start, $end),
                 'summary' => [
-                    'avg_dry_months_per_year' => $history['avg_dry_months_per_year'],
                     'satellite_drought_months' => $this->satellite->dryMonthsInWindow($series, $start, $end),
                     'satellite_window_months' => $this->satellite->monthsAvailableInWindow($series, $start, $end),
                 ],
@@ -56,15 +51,31 @@ class DistrictAnalysis
         return $this->addBasisRisk($rows);
     }
 
-    public function rainfall(array $districtIds): Collection
+    public function rainfall(array $districtIds, ?string $start = null, ?string $end = null): Collection
     {
+        $start ??= config('raincheck.comparison_start');
+        $end ??= config('raincheck.comparison_end');
+
         return District::with('rainfallRecords')
             ->whereKey($districtIds)
             ->get()
-            ->map(fn (District $district) => [
-                'id' => $district->id,
-                'rainfall' => $this->satellite->rainfallSeries($district->rainfallRecords),
-            ]);
+            ->map(function (District $district) use ($start, $end) {
+                $series = $this->satellite->rainfallSeries($district->rainfallRecords);
+
+                return [
+                    'id' => $district->id,
+                    'rainfall' => $this->rainfallInWindow($series, $start, $end),
+                ];
+            });
+    }
+
+    private function rainfallInWindow(Collection $series, string $start, string $end): Collection
+    {
+        return $series->filter(function (array $month) use ($start, $end) {
+            $key = sprintf('%04d-%02d', $month['year'], $month['month']);
+
+            return $key >= $start && $key <= $end;
+        })->values();
     }
 
     /**
