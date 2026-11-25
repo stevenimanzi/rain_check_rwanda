@@ -51,7 +51,7 @@ export default function App() {
 
     const pages = {
       overview: <OverviewPage districts={districts} overview={overview} />,
-      districts: <DistrictsPage districts={districts} selectedId={selectedId} onSelect={setSelectedId} />,
+      districts: <DistrictsPage districts={districts} overview={overview} selectedId={selectedId} onSelect={setSelectedId} />,
       map: <MapPage districts={districts} selectedId={selectedId} onSelect={setSelectedId} />,
       institutions: <InstitutionsPage districts={districts} overview={overview} onNavigate={goTo} />,
     }

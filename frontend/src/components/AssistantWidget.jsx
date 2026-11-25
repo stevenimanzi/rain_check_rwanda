@@ -1,6 +1,7 @@
 import { SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 import AssistantChat from './AssistantChat'
+import NewChatButton from './NewChatButton'
 
 /**
  * Floating button in the bottom right corner that opens the assistant in a small panel.
@@ -16,9 +17,12 @@ export default function AssistantWidget({ chat }) {
             <span>
               <SparklesIcon className="icon" /> AI Assistant
             </span>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Close assistant">
-              <XMarkIcon className="icon" />
-            </button>
+            <div className="assistant-header-actions">
+              <NewChatButton chat={chat} />
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close assistant">
+                <XMarkIcon className="icon" />
+              </button>
+            </div>
           </header>
           <AssistantChat chat={chat} compact />
         </section>

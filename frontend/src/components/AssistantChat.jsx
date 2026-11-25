@@ -13,7 +13,7 @@ const SUGGESTIONS = [
  * `chat` comes from useAssistantChat.
  */
 export default function AssistantChat({ chat, compact = false }) {
-  const { messages, loading, error, send, reset } = chat
+  const { messages, loading, error, send } = chat
   const [text, setText] = useState('')
   const endRef = useRef(null)
 
@@ -48,7 +48,7 @@ export default function AssistantChat({ chat, compact = false }) {
         )}
 
         {messages.map((message, index) => (
-          <div key={index} className={`assistant-message ${message.role}`}>
+          <div key={index} className={`assistant-message ${message.role}`} translate="no">
             {message.content}
           </div>
         ))}
@@ -74,11 +74,6 @@ export default function AssistantChat({ chat, compact = false }) {
 
       <div className="assistant-footer">
         <span>AI can make mistakes. Check important numbers on the charts.</span>
-        {messages.length > 0 && (
-          <button type="button" className="link-button" onClick={reset}>
-            New chat
-          </button>
-        )}
       </div>
     </div>
   )

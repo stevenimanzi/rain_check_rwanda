@@ -140,7 +140,8 @@ function CustomSelect({ label, value, options, onChange, className = '' }) {
   )
 }
 
-export default function OverviewPage({ districts, overview }) {
+// lockedDistrictId: show this page for one district only (used by the Districts page); the district picker is hidden.
+export default function OverviewPage({ districts, overview, lockedDistrictId = null }) {
   const { national, by_year: countryByYear, rank_correlation: matchScore } = overview
   const [surveyImports, setSurveyImports] = useState([])
   const [surveyImportsError, setSurveyImportsError] = useState(null)
@@ -166,7 +167,7 @@ export default function OverviewPage({ districts, overview }) {
   const defaultEndYear = yearOptions[yearOptions.length - 1]
   const startYear = selectedYears?.start ?? defaultStartYear
   const endYear = selectedYears?.end ?? defaultEndYear
-  const [selectedDistrictIds, setSelectedDistrictIds] = useState(null)
+  const [selectedDistrictIds, setSelectedDistrictIds] = useState(lockedDistrictId ? [lockedDistrictId] : null)
   const [districtRainfall, setDistrictRainfall] = useState({})
   const [districtError, setDistrictError] = useState(null)
 
@@ -428,52 +429,26 @@ export default function OverviewPage({ districts, overview }) {
     <section className="overview-filters" aria-label="Overview filters">
       <div className="overview-filter-heading">
         <div>
-          <h2>Explore by year and district</h2>
-          <p>Choose a rainfall period and districts to update the dashboard.</p>
-        </div>
-        <div className="overview-filter-range">
-          <CalendarDaysIcon className="icon" aria-hidden="true" />
-          <span>Showing {startYear} - {endYear}</span>
+          <h2>{lockedDistrictId ? 'Household survey data' : 'Explore by district'}</h2>
+          <p>
+            {lockedDistrictId
+              ? 'Choose which household survey the charts for this district use.'
+              : 'Choose districts to update every chart on this page.'}
+          </p>
         </div>
       </div>
 
       <div className="overview-filter-controls">
-        <div className="overview-filter-years" role="group" aria-label="Rainfall year range">
-          <CustomSelect
-            label="From year"
-            value={startYear}
-            className="overview-year-filter"
-            options={yearOptions.map((year) => ({ value: year, label: String(year) }))}
-            onChange={(year) => {
-              setSelectedYears((current) => {
-                const currentEnd = current?.end ?? defaultEndYear
-                return { start: Number(year), end: Number(year) > currentEnd ? Number(year) : currentEnd }
-              })
+        {!lockedDistrictId && (
+          <DistrictMultiSelect
+            districts={districts}
+            selectedIds={selectedDistrictIds}
+            onChange={(ids) => {
+              setSelectedDistrictIds(ids)
+              setDistrictError(null)
             }}
           />
-
-          <CustomSelect
-            label="To year"
-            value={endYear}
-            className="overview-year-filter"
-            options={yearOptions.map((year) => ({ value: year, label: String(year) }))}
-            onChange={(year) => {
-              setSelectedYears((current) => {
-                const currentStart = current?.start ?? defaultStartYear
-                return { start: Number(year) < currentStart ? Number(year) : currentStart, end: Number(year) }
-              })
-            }}
-          />
-        </div>
-
-        <DistrictMultiSelect
-          districts={districts}
-          selectedIds={selectedDistrictIds}
-          onChange={(ids) => {
-            setSelectedDistrictIds(ids)
-            setDistrictError(null)
-          }}
-        />
+        )}
 
         <div className="overview-filter-actions">
           <button
@@ -518,12 +493,60 @@ export default function OverviewPage({ districts, overview }) {
     </section>
   )
 
+  const yearFilter = (
+    <section className="overview-filters rainfall-year-filter" aria-label="Rainfall year filter">
+      <div className="overview-filter-heading">
+        <div>
+          <h2>Rainfall period</h2>
+          <p>Choose the years shown in the rainfall charts. The household comparison above always uses the survey period.</p>
+        </div>
+        <div className="overview-filter-range">
+          <CalendarDaysIcon className="icon" aria-hidden="true" />
+          <span>Showing {startYear} - {endYear}</span>
+        </div>
+      </div>
+
+      <div className="overview-filter-controls">
+        <div className="overview-filter-years" role="group" aria-label="Rainfall year range">
+          <CustomSelect
+            label="From year"
+            value={startYear}
+            className="overview-year-filter"
+            options={yearOptions.map((year) => ({ value: year, label: String(year) }))}
+            onChange={(year) => {
+              setSelectedYears((current) => {
+                const currentEnd = current?.end ?? defaultEndYear
+                return { start: Number(year), end: Number(year) > currentEnd ? Number(year) : currentEnd }
+              })
+            }}
+          />
+
+          <CustomSelect
+            label="To year"
+            value={endYear}
+            className="overview-year-filter"
+            options={yearOptions.map((year) => ({ value: year, label: String(year) }))}
+            onChange={(year) => {
+              setSelectedYears((current) => {
+                const currentStart = current?.start ?? defaultStartYear
+                return { start: Number(year) < currentStart ? Number(year) : currentStart, end: Number(year) }
+              })
+            }}
+          />
+        </div>
+
+      </div>
+    </section>
+  )
+
   return (
     <>
-      <p className="intro">
-        A dry month is a month with at least 20% less rain than normal. This page compares satellite rainfall with what
-        households told NISR about drought.
-      </p>
+      {!lockedDistrictId && (
+        <p className="intro">
+          A dry month is a month with at least 20% less rain than normal. This page compares satellite rainfall with what
+          households told NISR about drought.
+        </p>
+      )}
 
       {filters}
 
@@ -752,6 +775,7 @@ export default function OverviewPage({ districts, overview }) {
             tag={combinedTag}
             description="Whether each month, year and season was wetter or drier than normal."
           >
+          {yearFilter}
           <ExpandableChart>
             <h3>Was each month wetter or drier than normal?</h3>
             <p className="muted">

@@ -8,7 +8,7 @@ import RainDeviationChart from './RainDeviationChart'
 import RiskBadge from './RiskBadge'
 import StatCard from './StatCard'
 
-const VERDICTS = {
+export const VERDICTS = {
   agrees:
     'The satellite and households tell the same story here. Insurance based on rain looks reliable in this district.',
   satellite_understates:

@@ -18,8 +18,14 @@ export const fetchOverview = () => {
   return overviewRequest
 }
 
+// The language picked in the page menu is kept in the Google Translate cookie (/en/rw).
+const pageLanguage = () => {
+  const code = document.cookie.match(/(?:^|;\s*)googtrans=\/[^/]+\/([^;]+)/)?.[1]
+  return ['en', 'rw', 'fr'].includes(code) ? code : 'en'
+}
+
 export const sendAssistantMessages = (messages) =>
-  client.post('/assistant', { messages }).then((res) => res.data.reply)
+  client.post('/assistant', { messages, page_language: pageLanguage() }).then((res) => res.data.reply)
 
 export const fetchDistricts = () => client.get('/districts').then((res) => res.data.data)
 

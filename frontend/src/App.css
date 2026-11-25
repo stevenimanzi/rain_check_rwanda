@@ -1246,6 +1246,7 @@ body {
   padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  background: #fff;
   color: var(--muted);
 }
 
@@ -2143,6 +2144,59 @@ body {
   height: 20px;
 }
 
+.assistant-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assistant-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.assistant-page-header h3 {
+  margin: 0;
+}
+
+.assistant-new-chat,
+.assistant-panel header .assistant-new-chat {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--primary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.assistant-new-chat .icon,
+.assistant-panel header .assistant-new-chat .icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+.assistant-new-chat:hover:not(:disabled),
+.assistant-panel header .assistant-new-chat:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.assistant-new-chat:disabled,
+.assistant-panel header .assistant-new-chat:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 @media (max-width: 640px) {
   .assistant-widget {
     right: 16px;
@@ -2414,4 +2468,76 @@ body {
 .recharts-surface:focus,
 .recharts-surface:focus-visible {
   outline: none !important;
+}
+
+/* District page: header above the full overview of one district */
+.district-hero {
+  display: grid;
+  gap: 16px;
+}
+
+.district-back {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 8px;
+  padding: 8px 14px 8px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.district-back:hover {
+  background: var(--secondary);
+  color: #fff;
+}
+
+.district-back .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.district-hero-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.district-hero-title h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.district-hero-title .muted {
+  margin: 4px 0 0;
+}
+
+.district-hero .stats {
+  margin: 0;
+}
+
+.district-hero .verdict {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--primary);
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.district-hero + * {
+  margin-top: 16px;
+}
+
+.district-hero .stat-card {
+  background: #fff;
+  border-radius: 12px;
 }
