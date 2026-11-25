@@ -491,10 +491,9 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
     <>
       {!lockedDistrictId && (
         <p className="intro">
-          A satellite measures how much rain falls in each district. Rwandan families also told the national statistics
-          office (NISR) whether drought hurt them. This page checks if the two tell the same story. A dry month is a
-          month with much less rain than usual: at least 20% less. If the satellite and families disagree, insurance
-          that pays out on satellite rain could pay the wrong people.
+          Compare satellite rainfall with household drought reports collected by the National Institute of Statistics
+          of Rwanda (NISR). A dry month has at least 20% less rain than usual. If they disagree, rain-based insurance
+          may miss people who need it.
         </p>
       )}
 
