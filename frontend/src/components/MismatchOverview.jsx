@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { RISK_COLORS } from '../utils'
+import ChartClickHint from './ChartClickHint'
 import ChartDetailsDialog from './ChartDetailsDialog'
 import { districtTabs } from './chartDetails'
 import ChartInfo from './ChartInfo'
@@ -98,6 +99,8 @@ function MismatchBreakdown({ compared, period, noData }) {
           )}
         </div>
       </div>
+      <p className="chart-unit">Unit: number of districts, with their share of all compared districts (%)</p>
+      <ChartClickHint>Click a slice or a row to see which districts are in that group.</ChartClickHint>
 
       {level && (
         <ChartDetailsDialog

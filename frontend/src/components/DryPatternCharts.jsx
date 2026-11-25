@@ -177,7 +177,10 @@ export default function DryPatternCharts({
           data={yearData}
           color={CHART_COLORS.dry}
           legendLabel="Dry months"
+          xLabel="Year"
+          yLabel={isAverage ? 'Dry months per district (months)' : 'Dry months (months per year)'}
           onBarClick={(row) => setSelected({ kind: 'year', value: row.label })}
+          clickHint="Click a year to see its months or a table of districts."
         />
         <ChartInfo
           shows={`How many months each year had at least 20% less rain than normal${
@@ -201,7 +204,10 @@ export default function DryPatternCharts({
           color={CHART_COLORS.normal}
           unit="%"
           legendLabel="Share of assessed years with dry months"
+          xLabel="Month of the year"
+          yLabel="Years when dry (% of assessed years)"
           onBarClick={(row) => setSelected({ kind: 'month', value: row.fullLabel })}
+          clickHint="Click a month to see how often it was dry in each year or district."
         />
         <ChartInfo
           shows={`For each month of the year, the share of years (${periodLabel}) when rain was at least 20% below normal${

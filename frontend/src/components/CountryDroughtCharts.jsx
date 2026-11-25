@@ -4,6 +4,7 @@ import ChartInfo from './ChartInfo'
 import ExpandableChart, { useChartHeight } from './ExpandableChart'
 import { CHART_COLORS, formatPercent } from '../utils'
 import ChartDetailsDialog from './ChartDetailsDialog'
+import ChartClickHint from './ChartClickHint'
 import { districtRow, monthColumns, monthRow } from './chartDetails'
 
 const COLORS = {
@@ -12,7 +13,7 @@ const COLORS = {
 }
 
 // `buildDetails(sliceName)` returns the props of the table dialog shown when a slice (or legend row) is clicked.
-function PercentagePie({ label, data, buildDetails }) {
+function PercentagePie({ label, unit, data, buildDetails }) {
   const height = useChartHeight(230)
   const [selected, setSelected] = useState(null)
   const total = data.reduce((sum, item) => sum + item.value, 0)
@@ -68,6 +69,8 @@ function PercentagePie({ label, data, buildDetails }) {
         <p className="muted country-pie-empty">No data is available for this comparison.</p>
       )}
 
+      {unit && <p className="chart-unit">Unit: {unit}</p>}
+
       <ul className="pie-legend" aria-label={`${label} legend`}>
         {data.map(({ name, color, value }) => (
           <li key={name}>
@@ -79,6 +82,10 @@ function PercentagePie({ label, data, buildDetails }) {
           </li>
         ))}
       </ul>
+
+      {chartData.length > 0 && buildDetails && (
+        <ChartClickHint>Click a slice or a label to see the districts and months behind it.</ChartClickHint>
+      )}
 
       {selected && buildDetails && <ChartDetailsDialog {...buildDetails(selected)} onClose={() => setSelected(null)} />}
     </>
@@ -187,6 +194,7 @@ export default function CountryDroughtCharts({
         </p>
         <PercentagePie
           label="Satellite rainfall"
+          unit="% of the months judged (each slice is a share of 100%)"
           buildDetails={satelliteDetails}
           data={[
             { name: 'Drought', value: satelliteDrought, color: COLORS.drought },
@@ -217,6 +225,7 @@ export default function CountryDroughtCharts({
         </p>
         <PercentagePie
           label="Household drought reports"
+          unit="% of households (each slice is a share of 100%)"
           buildDetails={householdDetails}
           data={[
             {

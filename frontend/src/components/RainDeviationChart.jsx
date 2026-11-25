@@ -12,8 +12,10 @@ import { GRID_LINE, linesBetweenColumns } from '../chartGrid'
 import ChartLegend from './ChartLegend'
 import { useChartHeight } from './ExpandableChart'
 import { useState } from 'react'
+import { xAxisTitle, yAxisTitle } from '../chartAxis'
 import { CHART_COLORS, longMonth, MONTH_NAMES, monthShort } from '../utils'
 import ChartDetailsDialog from './ChartDetailsDialog'
+import ChartClickHint from './ChartClickHint'
 import { monthColumns } from './chartDetails'
 
 const MONTHS_SHOWN = 36
@@ -112,12 +114,13 @@ export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN })
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart data={data} margin={{ top: 10, right: 12, left: 4, bottom: 0 }} barGap={3}>
           <CartesianGrid {...GRID_LINE} verticalCoordinatesGenerator={linesBetweenColumns(data.length)} />
-          <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" minTickGap={24} />
+          <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" minTickGap={24} height={46} label={xAxisTitle('Month')} />
           <YAxis
             domain={[0, 'auto']}
             tickFormatter={(value) => `${value} mm`}
             tick={{ fontSize: 11 }}
-            width={56}
+            width={80}
+            label={yAxisTitle('Rainfall (mm per month)')}
           />
           <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
           <Bar
@@ -149,6 +152,7 @@ export default function RainDeviationChart({ series, maxMonths = MONTHS_SHOWN })
       </ResponsiveContainer>
       </div>
       <ChartLegend items={LEGEND_ITEMS} />
+      <ChartClickHint>Click a month to see its details and a table of all months.</ChartClickHint>
 
       {selectedPoint && (
         <ChartDetailsDialog

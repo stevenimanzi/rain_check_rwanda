@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import ChartDetailsDialog from './ChartDetailsDialog'
+import ChartClickHint from './ChartClickHint'
 import { districtColumns, districtRow } from './chartDetails'
 import ChartLegend from './ChartLegend'
+import { xAxisTitle } from '../chartAxis'
 import { CHART_COLORS, RISK_LABELS } from '../utils'
 
 const formatValue = (value) => {
@@ -50,7 +52,7 @@ export default function DryMonthsChart({ districts, getValue, unit, color, perio
   return (
     <>
       <div className="clickable-chart">
-      <ResponsiveContainer width="100%" height={data.length * 26 + 56}>
+      <ResponsiveContainer width="100%" height={data.length * 26 + 76}>
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 48, left: 4, bottom: 8 }}>
           <CartesianGrid vertical stroke="#dbe4ee" strokeDasharray="3 3" />
           <XAxis
@@ -59,7 +61,8 @@ export default function DryMonthsChart({ districts, getValue, unit, color, perio
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            height={30}
+            height={50}
+            label={xAxisTitle(`Unit: ${unit}`)}
           />
           <YAxis
             type="category"
@@ -96,6 +99,7 @@ export default function DryMonthsChart({ districts, getValue, unit, color, perio
           ...(hasMissingValues ? [{ color: CHART_COLORS.skipped, label: 'No data' }] : []),
         ]}
       />
+      <ChartClickHint>Click a bar to see that district and a table of all districts.</ChartClickHint>
 
       {selected && (
         <ChartDetailsDialog

@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { GRID_LINE, linesBetweenRows } from '../chartGrid'
 import ChartDetailsDialog from './ChartDetailsDialog'
+import ChartClickHint from './ChartClickHint'
 import { districtColumns, districtRow } from './chartDetails'
 import ChartLegend from './ChartLegend'
+import { xAxisTitle } from '../chartAxis'
 import { CHART_COLORS, RISK_LABELS } from '../utils'
 
 /**
@@ -50,10 +52,17 @@ export default function GapChart({ districts, period }) {
   return (
     <>
       <div className="clickable-chart">
-      <ResponsiveContainer width="100%" height={data.length * 24 + 40}>
+      <ResponsiveContainer width="100%" height={data.length * 24 + 64}>
         <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
           <CartesianGrid {...GRID_LINE} horizontalCoordinatesGenerator={linesBetweenRows(data.length)} />
-          <XAxis type="number" domain={[-100, 100]} ticks={[-100, -50, 0, 50, 100]} tick={{ fontSize: 11 }} />
+          <XAxis
+            type="number"
+            domain={[-100, 100]}
+            ticks={[-100, -50, 0, 50, 100]}
+            tick={{ fontSize: 11 }}
+            height={46}
+            label={xAxisTitle('Gap (score points, on a 0 to 100 scale)')}
+          />
           <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} interval={0} />
           <Tooltip content={tooltip} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
           <ReferenceLine x={0} stroke="#64748b" strokeDasharray="4 4" />
@@ -72,6 +81,7 @@ export default function GapChart({ districts, period }) {
           { color: '#64748b', label: 'Same rank (0)', line: 'dashed' },
         ]}
       />
+      <ChartClickHint>Click a bar to see that district and a table of all districts.</ChartClickHint>
 
       {selected && selectedGap !== undefined && (
         <ChartDetailsDialog
