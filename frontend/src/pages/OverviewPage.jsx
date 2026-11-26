@@ -287,11 +287,15 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
   const filteredSeries = rainfallSeries.filter(isInComparisonWindow)
   const assessedMonths = filteredSeries.filter((month) => month.judged)
   const dryMonths = assessedMonths.filter((month) => month.satellite_drought).length
-  const highRisk = activeDistricts.filter((district) => district.summary.risk_level === 'high').length
+  const satelliteDryShare = assessedMonths.length ? (dryMonths / assessedMonths.length) * 100 : null
+  const comparedDistricts = activeDistricts.filter((district) =>
+    ['low', 'medium', 'high'].includes(district.summary.risk_level),
+  )
+  const highRisk = comparedDistricts.filter((district) => district.summary.risk_level === 'high').length
   const periodLabel = surveyPeriod
   const mismatchValue = isSingleDistrict
     ? RISK_LABELS[singleDistrict.summary.risk_level] ?? 'No survey data'
-    : `${highRisk} of ${districtCount}`
+    : `${highRisk} of ${comparedDistricts.length}`
   const combinedTag = isSingleDistrict ? area : 'All selected districts combined'
   const surveyTitle = comparisonActive && selectedImport
     ? `${selectedImport.source_name} (${selectedImport.survey_year})`
@@ -336,6 +340,12 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
         ? `Selected district value source: ${householdChartDistricts[0]?.household_source ?? 'no value available'}.`
         : `${selectedImport.source_name} (${selectedImport.survey_year}) values are used where available; missing districts use CFSVA 2024. The summary is an unweighted district average across the available values, not a single-survey national estimate.`
       : `Household reports cover ${surveyPeriodLong}.`
+  const householdDroughtAverage = average(
+    householdChartDistricts.map((district) => Number(district.household_drought_pct)),
+  )
+  const householdDroughtHint = householdDroughtAverage === null
+    ? `${householdSurveyLabel}; no household values available`
+    : `${isSingleDistrict ? area : `Unweighted average across ${householdChartDistricts.length} districts`}; ${householdSurveyLabel}`
   const includeCfsvaSource = surveyView === 'merged'
 
   const handleSurveyImport = (imported) => {
@@ -567,17 +577,21 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
               hint={isAllDistricts ? 'All 30 districts of Rwanda' : isSingleDistrict ? singleDistrict.province : 'District charts show each selection separately'}
             />
             <StatCard
-              label={`Dry months in ${area}`}
-              value={dryMonths}
-              hint={`${assessedMonths.length} assessable months, ${periodLabel}`}
+              label="Satellite dry-month share"
+              value={satelliteDryShare === null ? 'No data' : `${satelliteDryShare.toFixed(1)}%`}
+              hint={`${dryMonths} of ${assessedMonths.length} assessable months, ${periodLabel}`}
             />
             <StatCard
-              label="Satellite data coverage"
-              value={`${filteredSeries.length} of 12`}
-              hint={`Monthly records for ${surveyPeriod}`}
+              label="Households reporting drought"
+              value={householdDroughtAverage === null ? 'No data' : `${householdDroughtAverage.toFixed(1)}%`}
+              hint={householdDroughtHint}
             />
             <StatCard label={mismatchLabel} value={mismatchValue} hint={`Household survey comparison: ${surveyPeriod}`} />
           </div>
+          <p className="muted">
+            Household reports give annual district percentages, not month-by-month drought data, so they cannot be
+            converted into a combined number of dry months.
+          </p>
 
           <ChartSection
             number={1}
