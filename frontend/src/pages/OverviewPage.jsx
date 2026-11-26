@@ -471,9 +471,7 @@ export default function OverviewPage({ districts, overview, lockedDistrictId = n
     <>
       {!lockedDistrictId && (
         <p className="intro">
-          Compare satellite rainfall with household drought reports collected by the National Institute of Statistics
-          of Rwanda (NISR). A dry month has at least 20% less rain than usual. If they disagree, rain-based insurance
-          may miss people who need it.
+          This page shows and compares satellite rainfall with household drought reports collected by NISR.
         </p>
       )}
 
